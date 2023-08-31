@@ -11,10 +11,7 @@
       {
         devShell = pkgs.mkShell
           {
-            nativeBuildInputs = [ pkgs.opam pkgs.gnumake pkgs.gmp pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi ];
-            shellHook = ''
-              eval $(opam env)
-            '';
+            nativeBuildInputs = [ pkgs.gnumake pkgs.gmp pkgs.coq pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi pkgs.coqPackages.hierarchy-builder ];
           };
       });
 }
