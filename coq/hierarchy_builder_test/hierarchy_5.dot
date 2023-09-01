@@ -1,0 +1,13 @@
+digraph Hierarchy { AddComoid -> AddAG;
+AddMonoid -> AddAG;
+AddMonoid -> AddComoid;
+AddMonoid -> BiNearRing;
+AddAG -> Ring;
+AddComoid -> Ring;
+AddMonoid -> Ring;
+BiNearRing -> Ring;
+SemiRing -> Ring;
+AddComoid -> SemiRing;
+AddMonoid -> SemiRing;
+BiNearRing -> SemiRing;
+}
