@@ -1,32 +1,30 @@
-From Coq Require Import ssreflect ssrfun Relations.
+From Coq Require Import ssreflect ssrfun.
+From stdpp Require Export ssreflect.
 From HB Require Import structures.
 
+Ltac done :=
+  trivial; hnf; intros; solve
+   [ auto | do ![solve [trivial | apply: sym_equal; trivial]
+         | discriminate | contradiction | split]
+   | case not_locked_false_eq_true; assumption
+   | match goal with H : ~ _ |- _ => solve [case H; trivial] end].
+
 HB.mixin Record RA_of_TYPE M := {
-  valid : M -> Prop;
+  ν : M -> Prop;
   core : M -> option M;
   op : M -> M -> M;
   lte : M -> M -> Prop;
-  lteINCL : forall a b, exists c, b = op a c;
+  lteDEF : forall a b, lte a b <-> exists c, b = op a c;
   opA : associative op;
   opC : commutative op;
-  coreID : forall a, (exists a', core a = Some a' /\ op a' a = a);
-  coreIDEM : forall a, (exists a', core a = Some a' /\ core a' = Some a');
-  coreMONO : forall a b, 
-    (exists a', core a = Some a' /\ lte a' b -> 
+  coreID : forall a a', core a = Some a' -> op a' a = a;
+  coreIDEM : forall a a', core a = Some a' -> core a' = Some a';
+  coreMONO : forall a b a', core a = Some a' -> lte a' b -> 
       (exists b', core b = Some b' /\ lte a' b')
-    );
-  validOP : forall a b, valid (op a b) -> valid a;
+    ;
+  νOP : forall a b, ν (op a b) -> ν a;
 }.
 HB.structure Definition RA := { M of RA_of_TYPE M }.
-
-(* This does not work with the error, (equ n) is not a Type, but I don't know why *)
-Fail HB.mixin Record OFE_of_TYPE T := {
-  equ : nat -> T -> T -> Prop;
-  equREFL : forall n, reflexive (equ n);
-  equTRANS : forall n, transitive (equ n);
-  equSYMM : forall n, symmetric (equ n);
-  equMONO : forall n m, n >= m -> inclusion (equ n) (equ m);
-}.
 
 HB.mixin Record OFE_of_TYPE T := {
   equ : nat -> T -> T -> Prop;
@@ -38,98 +36,140 @@ HB.mixin Record OFE_of_TYPE T := {
 }.
 HB.structure Definition OFE := { T of OFE_of_TYPE T }.
 
+Notation "x ≡{ n }≡ y" := (equ n x y)
+  (at level 70, n at next level, format "x  ≡{ n }≡  y").
+Notation "(≡{ n }≡)" := (equ n) (only parsing).
+Global Hint Extern 0 (_ ≡{_}≡ _) => apply equREFL : core.
+Global Hint Extern 0 (_ ≡{_}≡ _) => apply equSYMM; assumption : core.
+
 Definition non_expansive {T1 T2 : OFE.type} (f : T1 -> T2) := 
-  forall n x y, equ n x y -> equ n (f x) (f y).
+  forall n x y, x ≡{ n }≡ y -> (f x) ≡{n}≡ (f y).
 
-Definition option_equ {T : OFE.type} (n : nat) (x y : option T) :=
-  match x with
-  | Some x => (
-    match y with
-    | Some y => equ n x y
-    | None => False
-    end)
-  | None => (
-    match y with
-    | Some y => False
-    | None => True
-    end)
-  end.
+Section option_OFE. 
+  Context {T : OFE.type}.
+  
+  Definition option_equ (n : nat) (x y : option T) :=
+    match x, y with
+    | Some x, Some y => x ≡{n}≡ y
+    | None, None => True
+    | _, _ => False
+    end.
+  Hint Unfold option_equ : core.
 
-Lemma option_equ_refl {T : OFE.type} : 
-  forall n (x : option T), option_equ n x x.
-Proof.
-  intros. 
-  destruct x.
-  - simpl. apply equREFL.
-  - done.  
-Qed.
+  Fact option_equ_refl : forall n (x : option T),
+    option_equ n x x.
+  Proof.
+    intros n [].
+    - done.
+    - auto.
+  Qed.
 
-Lemma option_equ_trans {T : OFE.type} : 
-  forall n (x : option T) (y : option T) (z : option T), 
-    option_equ n x y -> option_equ n y z -> option_equ n x z.
-Proof.
-  intros.
-  destruct x, y, z; try done.
-  simpl in *.
-  eapply equTRANS.
-  - apply H.
-  - apply H0.
-Qed.
+  Fact option_equ_trans : 
+    forall n (x : option T) (y : option T) (z : option T), 
+      option_equ n x y -> option_equ n y z -> option_equ n x z.
+  Proof.
+    intros.
+    destruct x, y, z; try done.
+    simpl in *.
+    eapply equTRANS.
+    - apply H.
+    - apply H0.
+  Qed.
 
-Lemma option_equ_symm {T : OFE.type} : 
-  forall n (x : option T) (y : option T), option_equ n x y -> option_equ n y x.
-Proof.
-  intros.
-  destruct x, y; try done.
-  simpl in *.
-  eauto using equSYMM.
-Qed.
+  Fact option_equ_symm : 
+    forall n (x : option T) (y : option T), option_equ n x y -> option_equ n y x.
+  Proof.
+    intros.
+    destruct x, y; try done.
+    simpl in *.
+    eauto using equSYMM.
+  Qed.
 
-Lemma option_equ_mono {T : OFE.type} : 
-  forall n m, n >= m -> 
-    forall (x : option T) (y : option T), option_equ n x y -> option_equ m x y.
-Proof.
-  intros.
-  destruct x, y; try done.
-  simpl in *.
-  eauto using equMONO.
-Qed.
+  Fact option_equ_mono : 
+    forall n m, n >= m -> 
+      forall (x : option T) (y : option T), option_equ n x y -> option_equ m x y.
+  Proof.
+    intros.
+    destruct x, y; try done.
+    simpl in *.
+    eauto using equMONO.
+  Qed.
 
-Lemma option_equ_limit {T : OFE.type} : 
-  forall (x : option T) (y : option T), x = y <-> forall n, option_equ n x y.
-Proof.
-  intros.
-  split.
-  - intros.
-    subst.
-    apply option_equ_refl.
-  - intros.
-    destruct x, y; try done; simpl in *.
-    + f_equal.
-      by apply equLIMIT.
-    + by specialize (H 0).
-    + by specialize (H 0).
-Qed.
+  Fact option_equ_limit : 
+    forall (x : option T) (y : option T), x = y <-> forall n, option_equ n x y.
+  Proof.
+    intros.
+    split.
+    - intros.
+      subst.
+      apply option_equ_refl.
+    - intros.
+      destruct x, y; try done; simpl in *.
+      + f_equal.
+        by apply equLIMIT.
+      + by specialize (H 0).
+      + by specialize (H 0).
+  Qed.
 
-HB.instance Definition option_OFE (T : OFE.type) :=
-  OFE_of_TYPE.Build (option T) 
+  HB.instance 
+  Definition option_OFE := OFE_of_TYPE.Build (option T) 
     option_equ option_equ_refl option_equ_trans 
     option_equ_symm option_equ_mono option_equ_limit.
 
-(* Is this the way to define chains? *)
-Definition is_chain {T : OFE.type} (c : nat -> T) := 
-  forall n m, n <= m -> equ n (c m) (c n).
+End option_OFE.
 
-(* This does not work since we can't define lim like this, 
-   however, I also don't know how to do it otherwise. *)
-Fail HB.mixin Record COFE_of_OFE T of OFE T := {
-    lim : forall c : nat -> T, is_chain T c -> c -> T;
-    limCOMPL : forall n c, equ n (lim c _) (c n);
+Section arrow_OFE.
+  Context {T1 T2 : OFE.type}.
+
+  Definition arrow_equ (n : nat) (f g : T1 -> T2) :=
+    forall x, (f x) ≡{n}≡ (g x).
+
+    Fact arrow_equ_refl n (f : T1 -> T2) : 
+      arrow_equ n f f.
+    Proof.
+      intros x.
+      apply equREFL.
+    Qed.
+
+    Fact arrow_equ_trans : 
+      forall n (f : T1 -> T2) (g : T1 -> T2) (h : T1 -> T2), 
+        arrow_equ n f g -> arrow_equ n g h -> arrow_equ n f h.
+    Proof.
+      intros n f g h H1 H2 x.
+      by eapply equTRANS.
+    Qed.
+
+    Fact arrow_equ_symm : 
+      forall n (f : T1 -> T2) (g : T1 -> T2), 
+      arrow_equ n f g -> arrow_equ n g f.
+    Proof.
+      intros n f g H x.
+      by eapply equSYMM.
+    Qed.
+
+    Fact arrow_equ_mono : 
+      forall n m, n >= m -> 
+        forall (f : T1 -> T2) (g : T1 -> T2), 
+          arrow_equ n f g -> arrow_equ m f g.
+    Proof.
+      intros n m Hnm f g Hfg x.
+      eapply equMONO; try done.
+
+(* Add OFE on A -> B with OFE A B *)
+
+Record chain {T : OFE.type} := {
+  chain_car :> nat -> T;
+  chain_cauchy : forall n m, n <= m -> equ n (chain_car m) (chain_car n);
+}.
+
+HB.mixin Record COFE_of_OFE T of OFE T := {
+    lim : forall c : chain, T;
+    limCOMPL : forall n c, equ n (lim c) (c n);
 }. 
 
 HB.mixin Record CAMERA_of_OFE M of OFE M := {
-  valid : M -> Prop; (* Should be SProp, but don't understand that yet *)
-  (* validNE : non_expansive valid; *)
+  ν : M -> Prop; (* Should be SProp, but don't understand that yet *)
+  (* νNE : non_expansive ν; *)
   (* does not work since Prop is not OFE, but maybe SProp is? *)
   core : M -> option M;
   coreNE : non_expansive core;
@@ -137,8 +177,8 @@ HB.mixin Record CAMERA_of_OFE M of OFE M := {
   (* opNE : non_expansive op; *)
   (* Don't yet know how to define non_expansive for M -> M -> M *)
   lte : M -> M -> Prop;
-  lteINCL : forall a b, exists c, b = op a c;
-  lteINCLN : forall a b n, exists c, equ n b (op a c);
+  lteINCL : forall a b, lte a b -> exists c, b = op a c;
+  lteINCLN : forall a b n, lte a b -> exists c, equ n b (op a c);
   opA : associative op;
   opC : commutative op;
   coreID : forall a, (exists a', core a = Some a' /\ op a' a = a);
@@ -147,10 +187,10 @@ HB.mixin Record CAMERA_of_OFE M of OFE M := {
     (exists a', core a = Some a' /\ lte a' b -> 
       (exists b', core b = Some b' /\ lte a' b')
     );
-  validop : forall a b, valid (op a b) -> valid a;
-  EXTEND : forall n a b1 b2, (* n is element of valid a /\ *) 
-    equ n a (op b1 b2) -> 
-      exists c1 c2, equ n a (op c1 c2) /\ equ n c1 b1 /\ equ n c2 b2;
+  νop : forall a b, ν (op a b) -> ν a;
+  EXTEND n a b1 b2 : (* n is element of ν a /\ *) 
+    ν a -> equ n a (op b1 b2) -> 
+      exists c1 c2, a = op c1 c2 /\ equ n c1 b1 /\ equ n c2 b2;
 }.
 HB.structure Definition CAMERA := { M of OFE M & CAMERA_of_OFE M }.
 
@@ -170,7 +210,7 @@ HB.structure Definition CAMERA := { M of OFE M & CAMERA_of_OFE M }.
 
     coreNE : non_expansive core;
     lteINCLN : forall a b n, exists c, equ n b (op a c);
-    EXTEND : forall n a b1 b2, (* n is element of valid a /\ *) 
+    EXTEND : forall n a b1 b2, (* n is element of ν a /\ *) 
       equ n a (op b1 b2) -> 
         exists c1 c2, equ n a (op c1 c2) /\ equ n c1 b1 /\ equ n c2 b2;
   }.
@@ -183,8 +223,8 @@ HB.structure Definition CAMERA := { M of OFE M & CAMERA_of_OFE M }.
 
     Fail HB.instance
     Definition to_CAMERA_of_OFE :=
-      CAMERA_of_OFE.Build M valid core coreNE op lte lteINCL lteINCLN 
-        opA opC coreID coreIDEM coreMONO validOP EXTEND.
+      CAMERA_of_OFE.Build M ν core coreNE op lte lteINCL lteINCLN 
+        opA opC coreID coreIDEM coreMONO νOP EXTEND.
   Fail HB.end.
 (* End of part I have questions about *)
 

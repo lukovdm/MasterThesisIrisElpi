@@ -11,7 +11,7 @@
       {
         devShell = pkgs.mkShell
           {
-            nativeBuildInputs = [ pkgs.gnumake pkgs.gmp pkgs.coq pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi pkgs.coqPackages.hierarchy-builder ];
+            nativeBuildInputs = [ pkgs.gnumake pkgs.gmp pkgs.coq pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi pkgs.coqPackages.hierarchy-builder pkgs.coqPackages.stdpp ];
           };
       });
 }
