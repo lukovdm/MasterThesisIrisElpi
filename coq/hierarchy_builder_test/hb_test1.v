@@ -1,13 +1,5 @@
 From Coq Require Import ssreflect ssrfun.
-From stdpp Require Export ssreflect.
 From HB Require Import structures.
-
-Ltac done :=
-  trivial; hnf; intros; solve
-   [ auto | do ![solve [trivial | apply: sym_equal; trivial]
-         | discriminate | contradiction | split]
-   | case not_locked_false_eq_true; assumption
-   | match goal with H : ~ _ |- _ => solve [case H; trivial] end].
 
 HB.mixin Record RA_of_TYPE M := {
   ν : M -> Prop;
@@ -59,28 +51,22 @@ Section option_OFE.
   Fact option_equ_refl : forall n (x : option T),
     option_equ n x x.
   Proof.
-    intros n [].
-    - done.
-    - auto.
+    intros n []; auto.
   Qed.
 
   Fact option_equ_trans : 
     forall n (x : option T) (y : option T) (z : option T), 
       option_equ n x y -> option_equ n y z -> option_equ n x z.
   Proof.
-    intros.
-    destruct x, y, z; try done.
+    intros n [] [] [] Hxy Hyzl; try done.
     simpl in *.
-    eapply equTRANS.
-    - apply H.
-    - apply H0.
+    eauto using equTRANS.
   Qed.
 
   Fact option_equ_symm : 
     forall n (x : option T) (y : option T), option_equ n x y -> option_equ n y x.
   Proof.
-    intros.
-    destruct x, y; try done.
+    intros n [] []; try done.
     simpl in *.
     eauto using equSYMM.
   Qed.
@@ -89,8 +75,7 @@ Section option_OFE.
     forall n m, n >= m -> 
       forall (x : option T) (y : option T), option_equ n x y -> option_equ m x y.
   Proof.
-    intros.
-    destruct x, y; try done.
+    intros n m Hgte [] [] Hn; try done.
     simpl in *.
     eauto using equMONO.
   Qed.
@@ -98,8 +83,7 @@ Section option_OFE.
   Fact option_equ_limit : 
     forall (x : option T) (y : option T), x = y <-> forall n, option_equ n x y.
   Proof.
-    intros.
-    split.
+    intros x y; split.
     - intros.
       subst.
       apply option_equ_refl.
@@ -153,7 +137,21 @@ Section arrow_OFE.
           arrow_equ n f g -> arrow_equ m f g.
     Proof.
       intros n m Hnm f g Hfg x.
-      eapply equMONO; try done.
+      eapply equMONO; eauto.
+    Qed.
+
+    Fact arrow_equ_limit : 
+      forall (f : T1 -> T2) (g : T1 -> T2), f = g <-> forall n, arrow_equ n f g.
+    Proof.
+      intros f g; split.
+      - intros.
+        subst.
+        apply arrow_equ_refl.
+      - intros.
+        unfold arrow_equ in *.
+        Fail rewrite <- equLIMIT in H. 
+    Admitted.
+End arrow_OFE.
 
 (* Add OFE on A -> B with OFE A B *)
 

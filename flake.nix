@@ -9,9 +9,17 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        # Using released versions
+        # devShell = pkgs.mkShell
+        #   {
+        #     nativeBuildInputs = [ pkgs.gnumake pkgs.gmp pkgs.coq pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi pkgs.coqPackages.hierarchy-builder pkgs.coqPackages.stdpp ];
+        #   };
         devShell = pkgs.mkShell
           {
-            nativeBuildInputs = [ pkgs.gnumake pkgs.gmp pkgs.coq pkgs.coqPackages.iris pkgs.coqPackages.coq-elpi pkgs.coqPackages.hierarchy-builder pkgs.coqPackages.stdpp ];
+            nativeBuildInputs = with pkgs; [ gnumake gmp opam ];
           };
+        shellHook = ''
+          eval $(opam env --switch=iris-dev)
+        '';
       });
 }
