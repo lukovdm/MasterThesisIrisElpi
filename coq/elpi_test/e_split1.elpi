@@ -21,4 +21,5 @@ solve (goal _Ctx _Trigger _Type _Proof [str HSS] as G) GL :-
         coq.ltac.open pm_reduce G2 GL2,
         % std.nth 0 GL2 G3,
         % coq.ltac.open split G3 GL3,
+        % Find out why it shelves
         std.append GL1 GL2 GL.
