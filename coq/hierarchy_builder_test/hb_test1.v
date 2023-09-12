@@ -150,7 +150,7 @@ Section arrow_OFE.
       - intros.
         unfold arrow_equ in *.
         Fail rewrite <- equLIMIT in H. 
-    Admitted.
+    Admitted. (* I need some kind of functional existensionality: https://coq.inria.fr/distrib/current/stdlib/Coq.Logic.FunctionalExtensionality.html#functional_extensionality *)
 End arrow_OFE.
 
 (* Add OFE on A -> B with OFE A B *)
@@ -175,8 +175,8 @@ HB.mixin Record CAMERA_of_OFE M of OFE M := {
   (* opNE : non_expansive op; *)
   (* Don't yet know how to define non_expansive for M -> M -> M *)
   lte : M -> M -> Prop;
-  lteINCL : forall a b, lte a b -> exists c, b = op a c;
-  lteINCLN : forall a b n, lte a b -> exists c, equ n b (op a c);
+  lteINCL : forall a b, lte a b <-> exists c, b = op a c;
+  lteINCLN : forall a b n, lte a b <-> exists c, equ n b (op a c);
   opA : associative op;
   opC : commutative op;
   coreID : forall a, (exists a', core a = Some a' /\ op a' a = a);
