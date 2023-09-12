@@ -1,0 +1,11 @@
+digraph Hierarchy { Top -> A1;
+Top -> A2;
+A1 -> B1;
+Top -> B1;
+A2 -> B2;
+Top -> B2;
+A1 -> B2A1;
+A2 -> B2A1;
+B2 -> B2A1;
+Top -> B2A1;
+}

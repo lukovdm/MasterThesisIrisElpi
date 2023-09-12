@@ -1,2 +1,4 @@
-digraph Hierarchy { OFE -> CAMERA;
+digraph Hierarchy { OFE -> CAMERA_O;
+OFE -> CAMERA_OR;
+RA -> CAMERA_OR;
 }
