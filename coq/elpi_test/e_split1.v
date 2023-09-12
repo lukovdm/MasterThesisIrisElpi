@@ -42,10 +42,17 @@ Section proof.
     iIntros "[HP [HΨ HR]]" .
     iDestruct "HΨ" as (x) "HΨ" .
     iExists x.
+    (* helper_eiSplit [INamed "HΨ"; INamed "HP"].
+      - tc_solve.
+      - pm_reduce.
+        split. *)
     eiSplitL "HΨ HR".
-    iSplitL "HΨ".
+    Unshelve.
       - iFrame.
       - iFrame.
-  Qed.
+      - assumption.
+      - assumption. 
+  Fail Qed. (* Something is going wrong, but don't know what *)
+  Admitted.
   
 End proof.

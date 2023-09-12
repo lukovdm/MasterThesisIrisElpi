@@ -14,12 +14,8 @@ solve (goal _Ctx _Trigger _Type _Proof [str HSS] as G) GL :-
         rex.split " " HSS HS,
         std.map HS string->stringterm HTS,
         std.map HTS (x\ r\ r = {{ INamed lp:x }}) HI,
-        sep_split HI G GL0,
-        std.nth 0 GL0 G1,
-        coq.ltac.open tc_solve G1 GL1,
-        std.nth 0 GL0 G2,
-        coq.ltac.open pm_reduce G2 GL2,
-        % std.nth 0 GL2 G3,
-        % coq.ltac.open split G3 GL3,
-        % Find out why it shelves
-        std.append GL1 GL2 GL.
+        sep_split HI G [G0, G1 | GL0],
+        coq.ltac.open tc_solve G0 GL1,
+        coq.ltac.open pm_reduce G1 [G3 | GL2],
+        coq.ltac.open split G3 GL3,
+        std.append { std.append { std.append GL0 GL1 } GL2 } GL3 GL.
