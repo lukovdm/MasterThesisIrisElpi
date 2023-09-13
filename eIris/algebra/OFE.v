@@ -1,26 +1,6 @@
 From Coq Require Import ssreflect ssrfun.
 From HB Require Import structures.
 From Coq.Logic Require Import FunctionalExtensionality.
-(* From iris.prelude Require Import options. *)
-
-HB.mixin Record RA_of_TYPE M := {
-  valid : M -> Prop;
-  core : M -> option M;
-  op : M -> M -> M;
-  lte : M -> M -> Prop;
-  lteDEF : forall a b, lte a b <-> exists c, b = op a c;
-  opA : associative op;
-  opC : commutative op;
-  coreID : forall a a', core a = Some a' -> op a' a = a;
-  coreIDEM : forall a a', core a = Some a' -> core a' = Some a';
-  coreMONO : forall a b a', core a = Some a' -> lte a' b -> 
-      (exists b', core b = Some b' /\ lte a' b')
-    ;
-  validOP : forall a b, valid (op a b) -> valid a;
-}.
-HB.structure Definition RA := { M of RA_of_TYPE M }.
-
-(* How to make multiple instances of the same type with different op, ex. nat +, nat max*)
 
 HB.mixin Record OFE_of_TYPE T := {
   equ : nat -> T -> T -> Prop;
@@ -40,10 +20,6 @@ Notation "x ≡{ n }≡ y" := (@equ _ n x y)
 Notation "(≡{ n }≡)" := (equ n) (only parsing).
 Global Hint Extern 0 (_ ≡{_}≡ _) => apply equREFL : core.
 Global Hint Extern 0 (_ ≡{_}≡ _) => apply equSYMM; assumption : core.
-
-Infix "⋅" := op (at level 50, left associativity).
-
-Notation "✓ x" := (valid x) (at level 20).
 
 Definition non_expansive {T1 T2 : OFE.type} (f : T1 -> T2) := 
   forall n x y, x ≡{ n }≡ y -> (f x) ≡{n}≡ (f y).
@@ -170,84 +146,4 @@ Section arrow_OFE.
       arrow_equ arrow_equ_refl arrow_equ_trans 
       arrow_equ_symm arrow_equ_mono arrow_equ_limit.
 End arrow_OFE.
-
-(* Add OFE on A -> B with OFE A B *)
-
-Record chain {T : OFE.type} := {
-  chain_car :> nat -> T;
-  chain_cauchy : forall n m, n <= m -> equ n (chain_car m) (chain_car n);
-}.
-
-HB.mixin Record COFE_of_OFE T of OFE T := {
-    lim : forall c : chain, T;
-    limCOMPL : forall n c, equ n (lim c) (c n);
-}.
-
-(* Somehow use ofe for equivalence in the assoc, etc rules *)
-HB.mixin Record CAMERA_of_OFE_and_RA M of OFE M & RA M := {
-  validN : nat -> M -> Prop;
-  (*  validNE : non_expansive valid; *)
-  opNE : non_expansive (@op M);
-  coreNE : non_expansive (@core M);
-  lteN : nat -> M -> M -> Prop;
-  lteNDEF : forall a b n, lteN n a b <-> exists c, b ≡{n}≡ a ⋅ c;
-  EXTEND n (a b1 b2 : M) : 
-    validN n a -> a ≡{n}≡ b1 ⋅ b2 -> 
-      exists c1 c2, a = c1 ⋅ c2 /\ c1 ≡{n}≡ b1 /\ c2 ≡{n}≡ b2;
-  validNOP : forall n a b, validN n (op a b) -> validN n a;
-  validLIMIT a : valid a <-> forall n, validN n a;
-}.
-HB.structure Definition CAMERA_OR := { M of OFE M & RA M & CAMERA_of_OFE_and_RA M }.
-
-(* make instance of CAMERA, start with N *)
-(* Look at instace of excl, option, gmap *)
-
-HB.about CAMERA_OR.
-
-Notation "x ≼{ n } y" := (lteN n x y) (at level 70, n at next level, format "x  ≼{ n }  y").
-Global Hint Extern 0 (_ ≼{_} _) => reflexivity : core.
-Notation "✓{ n } x" := (validN n x) (at level 20, n at next level, format "✓{ n }  x").
-
-HB.mixin Record CAMERA_of_OFE M of OFE M := {
-  valid : M -> Prop; (* Should be SProp, but don't understand that yet *)
-  (* validNE : non_expansive valid; *)
-  (* does not work since Prop is not OFE, but maybe SProp is? *)
-  core : M -> option M;
-  coreNE : non_expansive core;
-  op : M -> M -> M;
-  (* opNE : non_expansive op; *)
-  (* Don't yet know how to define non_expansive for M -> M -> M *)
-  lte : M -> M -> Prop;
-  lteINCL : forall a b, lte a b <-> exists c, b = op a c;
-  lteN : nat -> M -> M -> Prop;
-  lteNDEF : forall a b n, lteN n a b <-> exists c, b ≡{n}≡ op a c;
-  opA : associative op;
-  opC : commutative op;
-  coreID : forall a, (exists a', core a = Some a' /\ op a' a = a);
-  coreIDEM : forall a, (exists a', core a = Some a' /\ core a' = Some a');
-  coreMONO : forall a b, 
-    (exists a', core a = Some a' /\ lte a' b -> 
-      (exists b', core b = Some b' /\ lte a' b')
-    );
-  validOP : forall a b, valid (op a b) -> valid a;
-  EXTEND n a b1 b2 : (* n is element of valid a /\ *) 
-    valid a -> equ n a (op b1 b2) -> 
-      exists c1 c2, a = op c1 c2 /\ equ n c1 b1 /\ equ n c2 b2;
-}.
-HB.structure Definition CAMERA_O := { M of OFE M & CAMERA_of_OFE M }.
-
-HB.graph "iris_hierarchy.dot".
-
-Declare Scope hb_scope.
-Delimit Scope hb_scope with G.
-Local Open Scope hb_scope.
-
-Section camera.
-Variable (M : CAMERA_OR.type).
-Implicit Types x y z : M.
-
-(* op *)
-Lemma opA_aux x y z : @op M x (@op M y z) = @op M (@op M x y) z.
-Proof.
-  apply opA.
-Qed.
+  
