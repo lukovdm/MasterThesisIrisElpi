@@ -13,7 +13,7 @@ HB.mixin Record OFE_of_TYPE T := {
 HB.structure Definition OFE := { T of OFE_of_TYPE T }.
 
 (* TODO: Make instance for OFE of basic types using just equality *)
-(* TODO later: Make automatic instance for inductive types using elpi *)
+(* TODO: later: Make automatic instance for inductive types using elpi *)
 
 Notation "x ≡{ n }≡ y" := (@equ _ n x y)
   (at level 70, n at next level, format "x  ≡{ n }≡  y").

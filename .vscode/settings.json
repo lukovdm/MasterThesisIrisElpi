@@ -1,4 +1,9 @@
 {
-    "coqtop.coqidetopExe": "/home/luko/.opam/iris-dev/bin/coqidetop.opt",
-    "coqtop.coqtopExe": "/home/luko/.opam/iris-dev/bin/coqtop"
+  "coqtop.coqidetopExe": "/home/luko/.opam/iris-dev/bin/coqidetop.opt",
+  "coqtop.coqtopExe": "/home/luko/.opam/iris-dev/bin/coqtop",
+  "todo-tree.filtering.includeGlobs": [
+    "**/*.v",
+    "**/*.elpi"
+  ],
+  "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)"
 }

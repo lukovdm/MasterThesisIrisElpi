@@ -10,6 +10,7 @@ Elpi Tactic eiSplitL.
 
 Ltac helper_eiSplit HS := eapply tac_sep_split with Left HS _ _.
 
+(* TODO: Look at how to use refine instead of eapply here or in another tactic*)
 Elpi Accumulate File stdpp.
 Elpi Accumulate File iris_ltac.
 Elpi Accumulate lp:{{
