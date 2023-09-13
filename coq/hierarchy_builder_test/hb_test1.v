@@ -20,6 +20,8 @@ HB.mixin Record RA_of_TYPE M := {
 }.
 HB.structure Definition RA := { M of RA_of_TYPE M }.
 
+(* How to make multiple instances of the same type with different op, ex. nat +, nat max*)
+
 HB.mixin Record OFE_of_TYPE T := {
   equ : nat -> T -> T -> Prop;
   equREFL : forall n x, equ n x x;
@@ -29,6 +31,9 @@ HB.mixin Record OFE_of_TYPE T := {
   equLIMIT : forall x y, x = y <-> forall n, equ n x y;
 }.
 HB.structure Definition OFE := { T of OFE_of_TYPE T }.
+
+(* TODO: Make instance for OFE of basic types using just equality *)
+(* TODO later: Make automatic instance for inductive types using elpi *)
 
 Notation "x ≡{ n }≡ y" := (@equ _ n x y)
   (at level 70, n at next level, format "x  ≡{ n }≡  y").
@@ -42,7 +47,6 @@ Notation "✓ x" := (valid x) (at level 20).
 
 Definition non_expansive {T1 T2 : OFE.type} (f : T1 -> T2) := 
   forall n x y, x ≡{ n }≡ y -> (f x) ≡{n}≡ (f y).
-
 
   Section option_OFE. 
   Context {T : OFE.type}.
@@ -113,7 +117,7 @@ Section arrow_OFE.
   Context {T1 T2 : OFE.type}.
 
   Definition arrow_equ (n : nat) (f g : T1 -> T2) :=
-    forall x, (f x) ≡{n}≡ (g x).
+    forall x, f x ≡{n}≡ g x.
 
     Fact arrow_equ_refl n (f : T1 -> T2) : 
       arrow_equ n f f.
@@ -190,8 +194,15 @@ HB.mixin Record CAMERA_of_OFE_and_RA M of OFE M & RA M := {
   EXTEND n (a b1 b2 : M) : 
     validN n a -> a ≡{n}≡ b1 ⋅ b2 -> 
       exists c1 c2, a = c1 ⋅ c2 /\ c1 ≡{n}≡ b1 /\ c2 ≡{n}≡ b2;
+  validNOP : forall n a b, validN n (op a b) -> validN n a;
+  validLIMIT a : valid a <-> forall n, validN n a;
 }.
 HB.structure Definition CAMERA_OR := { M of OFE M & RA M & CAMERA_of_OFE_and_RA M }.
+
+(* make instance of CAMERA, start with N *)
+(* Look at instace of excl, option, gmap *)
+
+HB.about CAMERA_OR.
 
 Notation "x ≼{ n } y" := (lteN n x y) (at level 70, n at next level, format "x  ≼{ n }  y").
 Global Hint Extern 0 (_ ≼{_} _) => reflexivity : core.
