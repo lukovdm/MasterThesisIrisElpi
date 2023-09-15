@@ -4,11 +4,11 @@ From Coq.Logic Require Import FunctionalExtensionality.
 
 HB.mixin Record OFE_of_TYPE T := {
   equ : nat -> T -> T -> Prop;
-  equREFL : forall n x, equ n x x;
-  equTRANS : forall n x y z, equ n x y -> equ n y z -> equ n x z;
-  equSYMM : forall n x y, equ n x y -> equ n y x;
-  equMONO : forall n m, n >= m -> forall x y, equ n x y -> equ m x y;
-  equLIMIT : forall x y, x = y <-> forall n, equ n x y;
+  equREFL n x : equ n x x;
+  equTRANS n x y z : equ n x y -> equ n y z -> equ n x z;
+  equSYMM n x y : equ n x y -> equ n y x;
+  equMONO n m : n >= m -> forall x y, equ n x y -> equ m x y;
+  equLIMIT x y : x = y <-> forall n, equ n x y;
 }.
 HB.structure Definition OFE := { T of OFE_of_TYPE T }.
 
@@ -146,4 +146,37 @@ Section arrow_OFE.
       arrow_equ arrow_equ_refl arrow_equ_trans 
       arrow_equ_symm arrow_equ_mono arrow_equ_limit.
 End arrow_OFE.
-  
+
+Section NatOFE.
+
+  Definition nat_equ (n : nat) (x y : nat) := x = y.
+  Local Notation "x ≡N{ n }≡ y" := (nat_equ n x y)
+    (at level 70, n at next level, format "x  ≡N{ n }≡  y").
+  Local Notation "(≡N{ n }≡)" := (nat_equ n) (only parsing).
+
+  Fact nat_equ_refl : forall n (x : nat),
+    x ≡N{n}≡ x.
+  Proof. done. Qed.
+
+  Fact nat_equ_trans : 
+    forall n (x : nat) (y : nat) (z : nat), 
+      x ≡N{n}≡ y -> y ≡N{n}≡ z -> x ≡N{n}≡ z.
+  Proof. by intros n x y z -> ->. Qed. 
+
+  Fact nat_equ_sym : 
+    forall n (x : nat) (y : nat), x ≡N{n}≡ y -> y ≡N{n}≡ x.
+  Proof using Type. by intros n x y ->. Qed. (* What does Type do here? *)
+
+  Fact nat_equ_mono : 
+    forall n m, n >= m -> 
+      forall (x : nat) (y : nat), x ≡N{n}≡ y -> x ≡N{m}≡ y.
+  Proof. by intros n m Hnm x y ->. Qed.
+
+  Fact nat_equ_limit : 
+    forall (x : nat) (y : nat), x = y <-> forall n, x ≡N{n}≡ y.
+  Proof. intros x y. by split; intros ->. Qed.
+
+  HB.instance Definition _ := OFE_of_TYPE.Build nat nat_equ 
+    nat_equ_refl nat_equ_trans nat_equ_sym nat_equ_mono nat_equ_limit.
+
+End NatOFE.
