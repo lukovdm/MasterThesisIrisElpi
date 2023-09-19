@@ -28,35 +28,58 @@ Notation "x ≼{ n } y" := (lteN n x y) (at level 70, n at next level, format "x
 Global Hint Extern 0 (_ ≼{_} _) => reflexivity : core.
 Notation "✓{ n } x" := (validN n x) (at level 20, n at next level, format "✓{ n }  x").
 
-(* 
 HB.factory Record CAMERA_of_TYPE M := {
-  core : M -> option M;
-  op : M -> M -> M;
-  lte : M -> M -> Prop;
-  validN : nat -> M -> Prop;
+  coreCoT : M -> option M;
+  opCoT : M -> M -> M;
+  lteNCoT : nat -> M -> M -> Prop;
+  validNCoT : nat -> M -> Prop;
+  equCoT : nat -> M -> M -> Prop;
 
-  (* TODO: validNE : non_expansive valid; *)
-  opNE : non_expansive (@op M);
-  coreNE : non_expansive (@core M);
+  (* TODO: validNE : non_expansive valid;
+  opNE : non_expansive opCoT;
+  coreNE : non_expansive coreCoT; *)
 
-  lteDEF : forall a b, lte a b <-> exists c, b = op a c;
+  lteNDEF n a b : lteNCoT n a b <-> exists c, equCoT n b (opCoT a c);
   
-  opA : associative op;
-  opC : commutative op;
+  opCoTA : associative opCoT;
+  opCoTC : commutative opCoT;
 
-  coreID : forall a a', core a = Some a' -> op a' a = a;
-  coreIDEM : forall a a', core a = Some a' -> core a' = Some a';
-  coreMONO : forall a b a', core a = Some a' -> lte a' b -> 
-      (exists b', core b = Some b' /\ lte a' b')
+  coreCoTID a a': coreCoT a = Some a' -> opCoT a' a = a;
+  coreCoTIDEM a a': coreCoT a = Some a' -> coreCoT a' = Some a';
+  coreCoTMONO n a b a': coreCoT a = Some a' -> lteNCoT n a' b -> 
+      (exists b', coreCoT b = Some b' /\ lteNCoT n a' b')
     ;
 
-  EXTEND n (a b1 b2 : M) : 
-    validN n a -> a ≡{n}≡ b1 ⋅ b2 -> 
-      exists c1 c2, a = c1 ⋅ c2 /\ c1 ≡{n}≡ b1 /\ c2 ≡{n}≡ b2;
-  validNOP : forall n a b, validN n (op a b) -> validN n a;
-  validLIMIT a : valid a <-> forall n, validN n a;
-  
-}. *)
+  EXTENDN n (a b1 b2 : M) : 
+    validNCoT n a -> equCoT n a (opCoT b1 b2) -> 
+      exists c1 c2, a = (opCoT c1 c2) /\ equCoT n c1 b1 /\ equCoT n c2 b2;
+  validNOP n a b: validNCoT n (opCoT a b) -> validNCoT n a;
+
+  equREFL n x : equCoT n x x;
+  equTRANS n x y z : equCoT n x y -> equCoT n y z -> equCoT n x z;
+  equSYMM n x y : equCoT n x y -> equCoT n y x;
+  equMONO n m : n >= m -> forall x y, equCoT n x y -> equCoT m x y;
+  equLIMIT x y : x = y <-> forall n, equCoT n x y;
+}.
+
+HB.builders Context M (m : CAMERA_of_TYPE M).
+
+  HB.instance
+  Definition to_OFE_of_TYPE :=
+    OFE_of_TYPE.Build M equCoT equREFL equTRANS equSYMM equMONO equLIMIT.
+
+  Definition validCoT m := forall n, validNCoT n m.
+  Definition lteCoT m1 m2 := forall n, lteNCoT n m1 m2.
+
+  Fact lteCoTDEF m1 m2 : lteCoT m1 m2 <-> exists m, m2 = (opCoT m1 m).
+  Proof.
+    unfold lteCoT.
+    split.
+    - intros H.
+      setoid_rewrite lteNDEF in H.
+      setoid_rewrite equLIMIT.
+  Admitted.
+HB.end.
 
 Section NatCAMERA.
   Definition nat_validN (n x : nat) := valid x.
