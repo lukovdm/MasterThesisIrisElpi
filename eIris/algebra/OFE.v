@@ -2,13 +2,15 @@ From Coq Require Import ssreflect ssrfun.
 From HB Require Import structures.
 From Coq.Logic Require Import FunctionalExtensionality.
 
-HB.mixin Record OFE_of_TYPE T := {
-  equ : nat -> T -> T -> Prop;
-  equREFL n x : equ n x x;
-  equTRANS n x y z : equ n x y -> equ n y z -> equ n x z;
-  equSYMM n x y : equ n x y -> equ n y x;
+From eIris Require Import EQU.
+
+HB.mixin Record OFE_of_TYPE T of EQUIV T := {
+  equ : nat -> relation T;
+  equREFL n : Reflexive (equ n);
+  equTRANS n : Transitive (equ n);
+  equSYMM n : Symmetric (equ n);
   equMONO n m : n >= m -> forall x y, equ n x y -> equ m x y;
-  equLIMIT x y : x = y <-> forall n, equ n x y;
+  equLIMIT x y : x ≡🪥 y <-> forall n, equ n x y;
 }.
 HB.structure Definition OFE := { T of OFE_of_TYPE T }.
 
@@ -35,23 +37,25 @@ Definition non_expansive {T1 T2 : OFE.type} (f : T1 -> T2) :=
     end.
   Hint Unfold option_equ : core.
 
-  Fact option_equ_refl : forall n (x : option T),
-    option_equ n x x.
+  Fact option_equ_refl : forall n,
+  Reflexive (option_equ n).
   Proof.
     intros n []; auto.
   Qed.
 
   Fact option_equ_trans : 
-    forall n (x : option T) (y : option T) (z : option T), 
-      option_equ n x y -> option_equ n y z -> option_equ n x z.
+    forall n, Transitive (option_equ n).
   Proof.
     intros n [] [] [] Hxy Hyzl; try done.
     simpl in *.
-    eauto using equTRANS.
+    eapply equTRANS.
+    - apply Hxy.
+    - done.
+    (* debug eauto using equTRANS. This doesn't work for some reason, don't know why *)
   Qed.
 
   Fact option_equ_symm : 
-    forall n (x : option T) (y : option T), option_equ n x y -> option_equ n y x.
+    forall n, Symmetric (option_equ n).
   Proof.
     intros n [] []; try done.
     simpl in *.
@@ -68,16 +72,17 @@ Definition non_expansive {T1 T2 : OFE.type} (f : T1 -> T2) :=
   Qed.
 
   Fact option_equ_limit : 
-    forall (x : option T) (y : option T), x = y <-> forall n, option_equ n x y.
+    forall (x : option T) (y : option T), x ≡🪥 y <-> forall n, option_equ n x y.
   Proof.
     intros x y; split.
     - intros.
-      subst.
+      setoid_rewrite H.
       apply option_equ_refl.
     - intros.
       destruct x, y; try done; simpl in *.
-      + f_equal.
-        by apply equLIMIT.
+      + f_equiv.
+        apply equLIMIT in H.
+        simpl in H.
       + by specialize (H 0).
       + by specialize (H 0).
   Qed.

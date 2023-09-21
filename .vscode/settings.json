@@ -5,5 +5,801 @@
     "**/*.v",
     "**/*.elpi"
   ],
-  "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)"
+  "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)",
+  "generic-input-methods.input-methods": [
+    {
+      "name": "Iris Math",
+      "commandName": "text.math",
+      "languages": ["coq"],
+      "triggers": ["\\"],
+      "dictionary": [
+        //New custom input
+        {
+          "label": "HB",
+          "body": "🪥",
+          "description": "HB"
+        },
+        // Standard LaTeX math notations
+        {
+          "label": "forall",
+          "body": "∀",
+          "description": "∀"
+        },
+        {
+          "label": "exists",
+          "body": "∃",
+          "description": "∃"
+        },
+        {
+          "label": "lam",
+          "body": "λ",
+          "description": "λ"
+        },
+        {
+          "label": "not",
+          "body": "¬",
+          "description": "¬"
+        },
+        {
+          "label": "->",
+          "body": "→",
+          "description": "→"
+        },
+        {
+          "label": "<->",
+          "body": "↔",
+          "description": "↔"
+        },
+        {
+          "label": "<-",
+          "body": "←",
+          "description": "←"
+        },
+        {
+          "label": "==",
+          "body": "≡",
+          "description": "≡"
+        },
+        {
+          "label": "/==",
+          "body": "≢",
+          "description": "≢"
+        },
+        {
+          "label": "/=",
+          "body": "≠",
+          "description": "≠"
+        },
+        {
+          "label": "neq",
+          "body": "≠",
+          "description": "≠"
+        },
+        {
+          "label": "nequiv",
+          "body": "≢",
+          "description": "≢"
+        },
+        {
+          "label": "<=",
+          "body": "≤",
+          "description": "≤"
+        },
+        {
+          "label": "leq",
+          "body": "≤",
+          "description": "≤"
+        },
+        {
+          "label": "in",
+          "body": "∈",
+          "description": "∈"
+        },
+        {
+          "label": "notin",
+          "body": "∉",
+          "description": "∉"
+        },
+        {
+          "label": "cup",
+          "body": "∪",
+          "description": "∪"
+        },
+        {
+          "label": "cap",
+          "body": "∩",
+          "description": "∩"
+        },
+        {
+          "label": "setminus",
+          "body": "∖",
+          "description": "∖"
+        },
+        {
+          "label": "subset",
+          "body": "⊂",
+          "description": "⊂"
+        },
+        {
+          "label": "subseteq",
+          "body": "⊆",
+          "description": "⊆"
+        },
+        {
+          "label": "sqsubseteq",
+          "body": "⊑",
+          "description": "⊑"
+        },
+        {
+          "label": "sqsubseteq",
+          "body": "⊑",
+          "description": "⊑"
+        },
+        {
+          "label": "notsubseteq",
+          "body": "⊈",
+          "description": "⊈"
+        },
+        {
+          "label": "meet",
+          "body": "⊓",
+          "description": "⊓"
+        },
+        {
+          "label": "join",
+          "body": "⊔",
+          "description": "⊔"
+        },
+        {
+          "label": "top",
+          "body": "⊤",
+          "description": "⊤"
+        },
+        {
+          "label": "bottom",
+          "body": "⊥",
+          "description": "⊥"
+        },
+        {
+          "label": "vdash",
+          "body": "⊢",
+          "description": "⊢"
+        },
+        {
+          "label": "|-",
+          "body": "⊢",
+          "description": "⊢"
+        },
+        {
+          "label": "dashv",
+          "body": "⊣",
+          "description": "⊣"
+        },
+        {
+          "label": "Vdash",
+          "body": "⊨",
+          "description": "⊨"
+        },
+        {
+          "label": "infty",
+          "body": "∞",
+          "description": "∞"
+        },
+        {
+          "label": "comp",
+          "body": "∘",
+          "description": "∘"
+        },
+        {
+          "label": "prf",
+          "body": "↾",
+          "description": "↾"
+        },
+        {
+          "label": "bind",
+          "body": "≫=",
+          "description": "≫="
+        },
+        {
+          "label": "mapsto",
+          "body": "↦",
+          "description": "↦"
+        },
+        {
+          "label": "hookrightarrow",
+          "body": "↪",
+          "description": "↪"
+        },
+        {
+          "label": "uparrow",
+          "body": "↑",
+          "description": "↑"
+        },
+        // Iris specific
+        {
+          "label": "fun",
+          "body": "λ",
+          "description": "λ"
+        },
+        {
+          "label": "mult",
+          "body": "⋅",
+          "description": "⋅"
+        },
+        {
+          "label": "ent",
+          "body": "⊢",
+          "description": "⊢"
+        },
+        {
+          "label": "valid",
+          "body": "✓",
+          "description": "✓"
+        },
+        {
+          "label": "diamond",
+          "body": "◇",
+          "description": "◇"
+        },
+        {
+          "label": "box",
+          "body": "□",
+          "description": "□"
+        },
+        {
+          "label": "bbox",
+          "body": "■",
+          "description": "■"
+        },
+        {
+          "label": "later",
+          "body": "▷",
+          "description": "▷"
+        },
+        {
+          "label": "pred",
+          "body": "φ",
+          "description": "φ"
+        },
+        {
+          "label": "and",
+          "body": "∧",
+          "description": "∧"
+        },
+        {
+          "label": "or",
+          "body": "∨",
+          "description": "∨"
+        },
+        {
+          "label": "comp",
+          "body": "∘",
+          "description": "∘"
+        },
+        {
+          "label": "ccomp",
+          "body": "◎",
+          "description": "◎"
+        },
+        {
+          "label": "all",
+          "body": "∀",
+          "description": "∀"
+        },
+        {
+          "label": "ex",
+          "body": "∃",
+          "description": "∃"
+        },
+        {
+          "label": "to",
+          "body": "→",
+          "description": "→"
+        },
+        {
+          "label": "sep",
+          "body": "∗",
+          "description": "∗"
+        },
+        {
+          "label": "star",
+          "body": "∗",
+          "description": "∗"
+        },
+        {
+          "label": "lc",
+          "body": "⌜",
+          "description": "⌜"
+        },
+        {
+          "label": "rc",
+          "body": "⌝",
+          "description": "⌝"
+        },
+        {
+          "label": "Lc",
+          "body": "⎡",
+          "description": "⎡"
+        },
+        {
+          "label": "Rc",
+          "body": "⎤",
+          "description": "⎤"
+        },
+        {
+          "label": "empty",
+          "body": "∅",
+          "description": "∅"
+        },
+        {
+          "label": "Lam",
+          "body": "Λ",
+          "description": "Λ"
+        },
+        {
+          "label": "Sig",
+          "body": "Σ",
+          "description": "Σ"
+        },
+        {
+          "label": "-",
+          "body": "∖",
+          "description": "∖"
+        },
+        {
+          "label": "aa",
+          "body": "●",
+          "description": "●"
+        },
+        {
+          "label": "af",
+          "body": "◯",
+          "description": "◯"
+        },
+        {
+          "label": "auth",
+          "body": "●",
+          "description": "●"
+        },
+        {
+          "label": "frag",
+          "body": "◯",
+          "description": "◯"
+        },
+        {
+          "label": "iff",
+          "body": "↔",
+          "description": "↔"
+        },
+        {
+          "label": "gname",
+          "body": "γ",
+          "description": "γ"
+        },
+        {
+          "label": "incl",
+          "body": "≼",
+          "description": "≼"
+        },
+        {
+          "label": "latert",
+          "body": "▶",
+          "description": "▶"
+        },
+        {
+          "label": "update",
+          "body": "⇝",
+          "description": "⇝"
+        },
+        {
+          "label": "bind",
+          "body": "≫=",
+          "description": "≫="
+        },
+        // accents (for iLöb)
+        {
+          "label": "\"o",
+          "body": "ö",
+          "description": "ö"
+        },
+        // subscripts and superscripts
+        {
+          "label": "^^+",
+          "body": "⁺",
+          "description": "⁺"
+        },
+        {
+          "label": "__+",
+          "body": "₊",
+          "description": "₊"
+        },
+        {
+          "label": "^^-",
+          "body": "⁻",
+          "description": "⁻"
+        },
+        {
+          "label": "__0",
+          "body": "₀",
+          "description": "₀"
+        },
+        {
+          "label": "__1",
+          "body": "₁",
+          "description": "₁"
+        },
+        {
+          "label": "__2",
+          "body": "₂",
+          "description": "₂"
+        },
+        {
+          "label": "__3",
+          "body": "₃",
+          "description": "₃"
+        },
+        {
+          "label": "__4",
+          "body": "₄",
+          "description": "₄"
+        },
+        {
+          "label": "__5",
+          "body": "₅",
+          "description": "₅"
+        },
+        {
+          "label": "__6",
+          "body": "₆",
+          "description": "₆"
+        },
+        {
+          "label": "__7",
+          "body": "₇",
+          "description": "₇"
+        },
+        {
+          "label": "__8",
+          "body": "₈",
+          "description": "₈"
+        },
+        {
+          "label": "__9",
+          "body": "₉",
+          "description": "₉"
+        },
+        {
+          "label": "__a",
+          "body": "ₐ",
+          "description": "ₐ"
+        },
+        {
+          "label": "__e",
+          "body": "ₑ",
+          "description": "ₑ"
+        },
+        {
+          "label": "__h",
+          "body": "ₕ",
+          "description": "ₕ"
+        },
+        {
+          "label": "__i",
+          "body": "ᵢ",
+          "description": "ᵢ"
+        },
+        {
+          "label": "__k",
+          "body": "ₖ",
+          "description": "ₖ"
+        },
+        {
+          "label": "__l",
+          "body": "ₗ",
+          "description": "ₗ"
+        },
+        {
+          "label": "__m",
+          "body": "ₘ",
+          "description": "ₘ"
+        },
+        {
+          "label": "__n",
+          "body": "ₙ",
+          "description": "ₙ"
+        },
+        {
+          "label": "__o",
+          "body": "ₒ",
+          "description": "ₒ"
+        },
+        {
+          "label": "__p",
+          "body": "ₚ",
+          "description": "ₚ"
+        },
+        {
+          "label": "__r",
+          "body": "ᵣ",
+          "description": "ᵣ"
+        },
+        {
+          "label": "__s",
+          "body": "ₛ",
+          "description": "ₛ"
+        },
+        {
+          "label": "__t",
+          "body": "ₜ",
+          "description": "ₜ"
+        },
+        {
+          "label": "__u",
+          "body": "ᵤ",
+          "description": "ᵤ"
+        },
+        {
+          "label": "__v",
+          "body": "ᵥ",
+          "description": "ᵥ"
+        },
+        {
+          "label": "__x",
+          "body": "ₓ",
+          "description": "ₓ"
+        },
+        // Greek alphabet
+        {
+          "label": "Alpha",
+          "body": "Α",
+          "description": "Α"
+        },
+        {
+          "label": "alpha",
+          "body": "α",
+          "description": "α"
+        },
+        {
+          "label": "Beta",
+          "body": "Β",
+          "description": "Β"
+        },
+        {
+          "label": "beta",
+          "body": "β",
+          "description": "β"
+        },
+        {
+          "label": "Gamma",
+          "body": "Γ",
+          "description": "Γ"
+        },
+        {
+          "label": "gamma",
+          "body": "γ",
+          "description": "γ"
+        },
+        {
+          "label": "Delta",
+          "body": "Δ",
+          "description": "Δ"
+        },
+        {
+          "label": "delta",
+          "body": "δ",
+          "description": "δ"
+        },
+        {
+          "label": "Epsilon",
+          "body": "Ε",
+          "description": "Ε"
+        },
+        {
+          "label": "epsilon",
+          "body": "ε",
+          "description": "ε"
+        },
+        {
+          "label": "Zeta",
+          "body": "Ζ",
+          "description": "Ζ"
+        },
+        {
+          "label": "zeta",
+          "body": "ζ",
+          "description": "ζ"
+        },
+        {
+          "label": "Eta",
+          "body": "Η",
+          "description": "Η"
+        },
+        {
+          "label": "eta",
+          "body": "η",
+          "description": "η"
+        },
+        {
+          "label": "Theta",
+          "body": "Θ",
+          "description": "Θ"
+        },
+        {
+          "label": "theta",
+          "body": "θ",
+          "description": "θ"
+        },
+        {
+          "label": "Iota",
+          "body": "Ι",
+          "description": "Ι"
+        },
+        {
+          "label": "iota",
+          "body": "ι",
+          "description": "ι"
+        },
+        {
+          "label": "Kappa",
+          "body": "Κ",
+          "description": "Κ"
+        },
+        {
+          "label": "kappa",
+          "body": "κ",
+          "description": "κ"
+        },
+        {
+          "label": "Lamda",
+          "body": "Λ",
+          "description": "Λ"
+        },
+        {
+          "label": "lamda",
+          "body": "λ",
+          "description": "λ"
+        },
+        {
+          "label": "Lambda",
+          "body": "Λ",
+          "description": "Λ"
+        },
+        {
+          "label": "lambda",
+          "body": "λ",
+          "description": "λ"
+        },
+        {
+          "label": "Mu",
+          "body": "Μ",
+          "description": "Μ"
+        },
+        {
+          "label": "mu",
+          "body": "μ",
+          "description": "μ"
+        },
+        {
+          "label": "Nu",
+          "body": "Ν",
+          "description": "Ν"
+        },
+        {
+          "label": "nu",
+          "body": "ν",
+          "description": "ν"
+        },
+        {
+          "label": "Xi",
+          "body": "Ξ",
+          "description": "Ξ"
+        },
+        {
+          "label": "xi",
+          "body": "ξ",
+          "description": "ξ"
+        },
+        {
+          "label": "Omicron",
+          "body": "Ο",
+          "description": "Ο"
+        },
+        {
+          "label": "omicron",
+          "body": "ο",
+          "description": "ο"
+        },
+        {
+          "label": "Pi",
+          "body": "Π",
+          "description": "Π"
+        },
+        {
+          "label": "pi",
+          "body": "π",
+          "description": "π"
+        },
+        {
+          "label": "Rho",
+          "body": "Ρ",
+          "description": "Ρ"
+        },
+        {
+          "label": "rho",
+          "body": "ρ",
+          "description": "ρ"
+        },
+        {
+          "label": "Sigma",
+          "body": "Σ",
+          "description": "Σ"
+        },
+        {
+          "label": "sigma",
+          "body": "σ",
+          "description": "σ"
+        },
+        {
+          "label": "Tau",
+          "body": "Τ",
+          "description": "Τ"
+        },
+        {
+          "label": "tau",
+          "body": "τ",
+          "description": "τ"
+        },
+        {
+          "label": "Upsilon",
+          "body": "Υ",
+          "description": "Υ"
+        },
+        {
+          "label": "upsilon",
+          "body": "υ",
+          "description": "υ"
+        },
+        {
+          "label": "Phi",
+          "body": "Φ",
+          "description": "Φ"
+        },
+        {
+          "label": "phi",
+          "body": "φ",
+          "description": "φ"
+        },
+        {
+          "label": "Chi",
+          "body": "Χ",
+          "description": "Χ"
+        },
+        {
+          "label": "chi",
+          "body": "χ",
+          "description": "χ"
+        },
+        {
+          "label": "Psi",
+          "body": "Ψ",
+          "description": "Ψ"
+        },
+        {
+          "label": "psi",
+          "body": "ψ",
+          "description": "ψ"
+        },
+        {
+          "label": "Omega",
+          "body": "Ω",
+          "description": "Ω"
+        },
+        {
+          "label": "omega",
+          "body": "ω",
+          "description": "ω"
+        }
+      ]
+    }
+  ],
 }

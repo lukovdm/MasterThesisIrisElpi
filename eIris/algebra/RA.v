@@ -1,15 +1,18 @@
+From stdpp Require Import finite.
 From Coq Require Import ssreflect ssrfun.
 From HB Require Import structures.
 Require Import Lia.
 
-HB.mixin Record RA_of_TYPE M := {
+From eIris Require Import EQU.
+
+HB.mixin Record RA_of_TYPE M of EQUIV M := {
   valid : M -> Prop;
   core : M -> option M;
   op : M -> M -> M;
   lte : M -> M -> Prop;
   lteDEF a b : lte a b <-> exists c, b = op a c;
-  opA : associative op;
-  opC : commutative op;
+  opA : Assoc (≡🪥@{M}) op;
+  opC : Comm (≡🪥@{M}) op;
   coreID a a' : core a = Some a' -> op a' a = a;
   coreIDEM a a' : core a = Some a' -> core a' = Some a';
   coreMONO a b a' : core a = Some a' -> lte a' b -> 
@@ -37,11 +40,11 @@ Section NatRA.
       - destruct H. lia.
   Qed.
 
-  Fact nat_opA : associative plus.
-  Proof. unfold associative. intros. lia. Qed.
+  Fact nat_opA : Assoc (=) plus.
+  Proof. unfold Assoc. intros. lia. Qed.
 
-  Fact nat_opC : commutative plus.
-  Proof. unfold commutative. intros. lia. Qed.
+  Fact nat_opC : Comm (=) plus.
+  Proof. unfold Comm. intros. lia. Qed.
 
   Fact nat_coreID a a' : nat_core a = Some a' -> a' + a = a.
   Proof. unfold nat_core. intros. inversion H. lia. Qed.

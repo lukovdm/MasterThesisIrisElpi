@@ -67,7 +67,7 @@ Section proof.
     Show Proof. *)
     eiStartProof.
     Show Proof.
-    iIntros.
+    by iIntros.
     Show Proof.
   Qed.
   

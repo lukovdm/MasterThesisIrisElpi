@@ -3,7 +3,7 @@ From HB Require Import structures.
 From eIris.algebra Require Import OFE.
 From eIris.algebra Require Import RA.
 
-(* TODO: Somehow use ofe for equivalence in the assoc, etc rules *)
+(* TODO: Somehow use ofe for equivalence in the assoc, etc rules, is this maybe where setoids come in to play? *)
 HB.mixin Record CAMERA_of_OFE_and_RA M of OFE M & RA M := {
   validN : nat -> M -> Prop;
   lteN : nat -> M -> M -> Prop;
@@ -21,7 +21,6 @@ HB.mixin Record CAMERA_of_OFE_and_RA M of OFE M & RA M := {
 }.
 HB.structure Definition CAMERA := { M of OFE M & RA M & CAMERA_of_OFE_and_RA M }.
 
-(* TODO: make instance of CAMERA, start with N *)
 (* TODO: Look at instace of excl, option, gmap *)
 
 Notation "x ≼{ n } y" := (lteN n x y) (at level 70, n at next level, format "x  ≼{ n }  y").
