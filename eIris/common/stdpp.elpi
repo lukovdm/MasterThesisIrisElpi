@@ -2,8 +2,8 @@ pred foldr i:list B, i:A, i:(B -> A -> A -> prop), o:A.
 foldr [] A _ A.
 foldr [X|XS] A F R :- foldr XS A F A', F X A' R.
 
-pred int->bools i:int o:list bool.
-pred int->bools.unpadded i:int o:list bool.
+pred int->bools i:int, o:list bool.
+pred int->bools.unpadded i:int, o:list bool.
 int->bools.unpadded 0 [].
 int->bools.unpadded INT BITS :-
     if ({ calc (INT mod 2) } == 1) (BIT is tt) (BIT is ff),
@@ -23,7 +23,7 @@ string->ascii S BSS :-
     std.map {std.iota LENGTH} (x\ r\ string->ascii.aux x S r) BSS.
 
 pred string->stringterm i:string, o:term.
-pred string->stringterm.aux i:list bool i:term, o:term.
+pred string->stringterm.aux i:list bool, i:term, o:term.
 string->stringterm.aux X ACC RES :-
     std.map X (x\ r\ if (x == tt) (r = {{ true }}) (r = {{ false }})) BITSTERM,
     RES = app [{{ String }}, app [{{ Ascii }} | BITSTERM], ACC].
@@ -31,5 +31,15 @@ string->stringterm STRING T :-
     string->ascii STRING BSS,
     foldr BSS {{ EmptyString }} string->stringterm.aux T.
 
-pred list->listterm i:list term o:term.
+pred list->listterm i:list term, o:term.
 list->listterm TS T :- foldr TS {{ [] }} (x\ a\ r\ r = {{ cons lp:x lp:a }}) T.
+
+pred take-while-split i:list A, i:(A -> prop), o:list A, o:list A.
+take-while-split [X|XS] Pred [X|YS] ZS :- Pred X, !, take-while-split XS Pred YS ZS.
+take-while-split XS _ [] XS.
+
+pred is-digit i:string.
+is-digit S :- 1 is size S, C is rhc S, C >= 48, C =< 57.
+
+pred is-identifier i:string.
+is-identifier S :- 1 is size S, C is rhc S, ((C >= 48, C =< 57); (C >= 65, C =< 90); (C >= 97, C =< 122); C = 39; C = 95).

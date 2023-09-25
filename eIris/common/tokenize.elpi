@@ -1,0 +1,58 @@
+kind direction type.
+type left, right direction.
+
+kind token type.
+
+type tAnon, tFrame, tBar, tBracketL, tBracketR, tAmp, tParenL, tParenR, tBraceL, tBraceR, tIntuitionistic, tModal, tPureIntro, tIntuitionisticIntro, tModalIntro, tSimpl, tDone, tForall, tAll, tSpatial, tSep token.
+type tName string -> token.
+type tNat int -> token.
+type tPure option string -> token.
+type tArrow direction -> token.
+
+pred tokenize.rec i:list string, o:list token.
+tokenize.rec [] [].
+tokenize.rec [" " | SL] TS :- tokenize.rec SL TS.
+tokenize.rec ["?" | SL] [tAnon | TS] :- tokenize.rec SL TS.
+tokenize.rec ["$" | SL] [tFrame | TS] :- tokenize.rec SL TS.
+tokenize.rec ["|" | SL] [tBar | TS] :- tokenize.rec SL TS.
+tokenize.rec ["[" | SL] [tBracketL | TS] :- tokenize.rec SL TS.
+tokenize.rec ["]" | SL] [tBracketR | TS] :- tokenize.rec SL TS.
+tokenize.rec ["&" | SL] [tAmp | TS] :- tokenize.rec SL TS.
+tokenize.rec ["(" | SL] [tParenL | TS] :- tokenize.rec SL TS.
+tokenize.rec [")" | SL] [tParenR | TS] :- tokenize.rec SL TS.
+tokenize.rec ["{" | SL] [tBraceL | TS] :- tokenize.rec SL TS.
+tokenize.rec ["}" | SL] [tBraceR | TS] :- tokenize.rec SL TS.
+tokenize.rec ["#" | SL] [tIntuitionistic | TS] :- tokenize.rec SL TS.
+tokenize.rec [">" | SL] [tModal | TS] :- tokenize.rec SL TS.
+tokenize.rec ["!", "%" | SL] [tPureIntro | TS] :- tokenize.rec SL TS.
+tokenize.rec ["!", "#" | SL] [tIntuitionisticIntro | TS] :- tokenize.rec SL TS.
+tokenize.rec ["!", ">" | SL] [tModalIntro | TS] :- tokenize.rec SL TS.
+tokenize.rec ["/", "/", "=" | SL] [tSimpl, tDone | TS] :- tokenize.rec SL TS.
+tokenize.rec ["/", "/" | SL] [tDone | TS] :- tokenize.rec SL TS.
+tokenize.rec ["/", "=" | SL] [tSimpl | TS] :- tokenize.rec SL TS.
+tokenize.rec ["*", "*" | SL] [tAll | TS] :- tokenize.rec SL TS.
+tokenize.rec ["*" | SL] [tForall | TS] :- tokenize.rec SL TS.
+tokenize.rec ["-", ">" | SL] [tArrow right | TS] :- tokenize.rec SL TS.
+tokenize.rec ["<", "-" | SL] [tArrow left | TS] :- tokenize.rec SL TS.
+tokenize.rec ["-", "#" | SL] [tSpatial | TS] :- tokenize.rec SL TS.
+tokenize.rec ["�", "�", "�" | SL] [tSep | TS] :- tokenize.rec SL TS. % TODO:Sep unicode character
+tokenize.rec ["%", " " | SL] [tPure none | TS] :- !, tokenize.rec SL TS.
+tokenize.rec ["%" | SL] [tPure (some S) | TS] :- 
+  take-while-split SL (x\ is-identifier x) S' SL',
+  tokenize.rec SL' TS,
+  std.string.concat "" S' S.
+tokenize.rec SL [tNat N | TS] :-
+  take-while-split SL (x\ is-digit x) S' SL',
+  std.string.concat "" S' S,
+  { calc (size S) } > 0,
+  N is string_to_int S,
+  tokenize.rec SL' TS.
+tokenize.rec SL [tName S | TS] :-
+  take-while-split SL (x\ is-identifier x) S' SL',
+  std.string.concat "" S' S,
+  { calc (size S) } > 0,
+  tokenize.rec SL' TS.
+tokenize.rec [X|_] _ :- coq.error { calc ("unrecognized token " ^ X) }.
+
+pred tokenize i:string, o:list token.
+tokenize S O :- tokenize.rec {rex.split "" S} O.

@@ -2,8 +2,4 @@
 
 eIris/proofmode/split.v
 eIris/proofmode/startProof.v
-eIris/algebra/EQU.v
-eIris/algebra/OFE.v
-eIris/algebra/RA.v
-eIris/algebra/COFE.v
-eIris/algebra/CAMERA.v
+

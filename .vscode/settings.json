@@ -396,12 +396,6 @@
           "body": "≫=",
           "description": "≫="
         },
-        // accents (for iLöb)
-        {
-          "label": "\"o",
-          "body": "ö",
-          "description": "ö"
-        },
         // subscripts and superscripts
         {
           "label": "^^+",
