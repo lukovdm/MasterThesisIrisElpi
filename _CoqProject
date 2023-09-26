@@ -2,4 +2,5 @@
 
 eIris/proofmode/split.v
 eIris/proofmode/startProof.v
+eIris/proofmode/intros.v
 

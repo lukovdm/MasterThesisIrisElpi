@@ -5,7 +5,7 @@
     "**/*.v",
     "**/*.elpi"
   ],
-  "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)",
+  "todo-tree.regex.regex": "(%|//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)",
   "generic-input-methods.input-methods": [
     {
       "name": "Iris Math",
