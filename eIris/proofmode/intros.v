@@ -54,14 +54,49 @@ Elpi Accumulate lp:{{
   type go_iExFalso tactic.
   go_iExFalso G GL :-
     open startProof G [G'],
-    open (refine.warn {{ tac_ex_falso _ _ _ _ }}) G' GL.
+    open (refine {{ @tac_ex_falso _ _ _ _ }}) G' GL.
+
+  type go_iAndDestruct ident -> ident -> ident -> tactic.
+  go_iAndDestruct HID H1ID H2ID G GL :-
+    ident->term HID _ HIDT,
+    ident->term H1ID _ H1IDT,
+    ident->term H2ID _ H2IDT,
+    open (refine {{ @tac_and_destruct _ _ HIDT _ H1IDT H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+    (open pm_reflexivity G1 []; coq.ltac.fail 0 "iAndDestruct:" ID "not found"),
+    (
+      thenl [
+        open pm_reduce,
+        open tc_solve
+      ] G2 []; 
+      coq.ltac.fail 0 "iAndDestruct: cannot destruct"
+    ),
+    thenl [
+      open pm_reduce,
+      open (false-error "iAndDestruct: H1 or H2 not fresh")
+    ] G3 GL.
+
+  type go_iExact ident -> tactic.
+  go_iExact ID G [] :-
+    ident->term ID _ IDT,
+    open (refine {{ @tac_assumption _ _ lp:IDT _ _ _ _ _ _ }}) G [G1, G2, G3],
+    (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExact:" ID "not found"),
+    (open tc_solve G2 []; coq.ltac.fail 0 "iExact:" ID "does not match goal"),
+    (
+      thenl [
+        open pm_reduce,
+        open tc_solve
+      ] G3 [];
+      coq.ltac.fail 0 "iExact: remaining hypotheses not affine and the goal not absorbing"
+    ).
 
   type go_iDestruct ident -> list (list intro_pat) -> tactic.
   go_iDestruct ID [[]] G GL :-
     thenl [
       go_iExFalso,
-      open (coq.ltac.call "iExact" [trm {ident->term ID _}])
+      go_iExact ID
     ] G GL.
+  % go_iDestruct ID [[IP1, IP2]] G GL :-
+
   go_iDestruct ID IP G [G] :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})}.
 
@@ -145,7 +180,7 @@ Section Proof.
   Lemma intros (P : nat -> iProp) :
     False -∗ (P 0 ∨ P 1) -∗ ∃y, P y.
   Proof.
-    eiIntros "[]".
+    eiIntros "[]". 
     (* eiIntros (a). *)
     eiIntros "?".
     eiIntros "? ? ?".
