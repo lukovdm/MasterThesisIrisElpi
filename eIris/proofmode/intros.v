@@ -21,75 +21,133 @@ Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
   type parse_args (list intro_pat) -> open-tactic.
-  parse_args IPS (goal _ _ _ Proof [str Args] as G) [SG] :-
+  parse_args [iCoqIntro Intro | IPS] (goal _ _ _ _ [str Intro, str Args] as G) [SG] :-
     tokenize Args T, !,
     parse_ipl T IPS, !,
     coq.ltac.set-goal-arguments [] G (seal G) SG.
+  parse_args IPS (goal _ _ _ _ [str Args] as G) [SG] :-
+    tokenize Args T, !,
+    parse_ipl T IPS, !,
+    coq.ltac.set-goal-arguments [] G (seal G) SG.
+
+  parse_args IPS (goal _ _ _ _ Args as G) [SG] :-
+    coq.say Args,
+    coq.ltac.fail 0 "Did not regocnize arguments" Args.
 
   type false-error string -> open-tactic.
   false-error S (goal _ _ {{ False }} _ _ as G) GL :- !, coq.ltac.fail 0 S.
   false-error _ G [seal G].
 
-  type go (list intro_pat) -> tactic.
-  % go IPS G GL :-
-  %   coq.say "---------- go: ",
-  %   coq.say IPS,
-  %   coq.say G,
-  %   coq.say "---------- End",
-  %   fail.
-  go [] G [G].
-  go [iSimpl | IPS] G GL :-
+  type intro string -> open-tactic.
+  intro ID G GL :-
+    std.assert! (coq.ltac.id-free? ID G) "eiIntro: name already taken",
+    coq.id->name ID N,
+    refine (fun N _ _) G GL.
+
+  type go_iDestruct intro_pat -> tactic.
+  go_iDestruct (iList [[]]) G GL :-
+    thenl [
+      open (coq.ltac.call "iExFalso" []),
+      % open (coq.ltac.call "iExact")
+    ] G GL.
+  go_iDestruct IP G [G'] :-
+    coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})}.
+
+  type go_iFresh term -> open-tactic. % Not at all sure this works, in one call it works, but in the next it resets.
+  go_iFresh N (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} Proof Args as G) [SG] :-
+    SG = seal (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} Proof Args).
+
+  type go_iIntros (list intro_pat) -> tactic.
+  go_iIntros [] G [G].
+  go_iIntros [iCoqIntro X | IPS] G GL :-
+    thenl [
+      open (coq.ltac.call-ltac1 X),
+      go_iIntros IPS
+    ] G GL.
+  go_iIntros [iSimpl | IPS] G GL :-
     coq.ltac "simpl" G [G'],
-    go IPS G' GL.
-  go [iDrop | IPS] G GL :- !,
+    go_iIntros IPS G' GL.
+  go_iIntros [iPure (some X) | IPS] G GL :-
+    open (intro X) G [G'],
+    go_iIntros IPS G' GL.
+  go_iIntros [iDrop | IPS] G GL :- !,
     open startProof G [G'],
     (
       open (refine {{ @tac_impl_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
       open (refine {{ @tac_wand_intro_drop _ _ _ _ _ _ _ _ }}) G' [GRes];
-      (!, coq.ltac.fail 0 "Could not introduce", fail) % This never hits
       % TODO: Not sure what the forall case is.
+      (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
     ),
-    go IPS GRes GL.
-  go [iIdent (some X) | IPS] G GL :- !,
-    string->stringterm X ST,
+    go_iIntros IPS GRes GL.
+  go_iIntros [iIdent (iNamed XN) | IPS] G GL :- !,
+    string->stringterm XN ST,
+    coq.say ST,
     open startProof G [G'],
     (
       open (refine {{ @tac_impl_intro _ _ _ _ _ _ _ _ _ _ }}) G' [GRes];
       thenl [
-        open (refine {{ @tac_wand_intro _ _ lp:ST _ _ _ _ _ }}),
+        open (refine {{ @tac_wand_intro _ _ _ _ _ _ _ _ }}),
         open (pm_reduce),
         open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}),
       ] G' [GRes];
-      (!, coq.ltac.fail 0 "Could not introduce", fail) % This never hits
+      (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
     ),
-    go IPS GRes GL.
-    
-  go [IP | IPS] G GL :-
-    coq.say { calc ("Skipping: " ^ {std.any->string IP})},
-    go IPS G GL.
+    go_iIntros IPS GRes GL.
+  go_iIntros [iFresh | IPS] G GL :-
+    open (go_iFresh N) G [G'],
+    coq.say N,
+    go_iIntros IPS G' GL. 
+  go_iIntros [iList IPS | IPSS] G GL :-
+    open (go_iFresh N) G [G'],
+    go_iIntros [iIdent (iAnon N)] G' GL.
+  go_iIntros [IP | IPS] G GL :-
+    coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})},
+    go_iIntros IPS G GL.
 
   msolve [SG] GL :-
     open (parse_args IPS) SG [SG'],
     !,
-    go IPS SG' GL.
+    coq.say IPS,
+    go_iIntros IPS SG' GL.
     
 }}.
 Elpi Typecheck.
 Elpi Trace Browser.
+
+
+Tactic Notation "eiIntros" string(x) :=
+  elpi eiIntros ltac_string:(x).
+
+Tactic Notation "eiIntros" :=
+  elpi eiIntros "**".
+
+Tactic Notation "eiIntros" "(" simple_intropattern_list(x) ")" :=
+  let pureintro := intros x in
+  elpi eiIntros pureintro "".
 
 Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
   Lemma intros (P : nat -> iProp) :
-    (∀x, P x) -∗ (∀x, P x) -∗ ∃y, P y.
+    (P 0 ∨ P 1) -∗ ∃y, P y.
   Proof.
-    elpi eiIntros "_ H".
-    (* Show Proof. *)
-    (* elpi eiIntros x Hx "!> $ [[] | #[HQ HR]] /= !>". *)
-    (* iIntros (x) "H". *)
-    iSpecialize ("H" $! 0).
-    iExists 0.
-    iExact "H".
+    Test Debug.
+    Set Debug "all,-Cbv".
+    eiIntros "H".
+    iStartProof.
+    (* eiIntros (a). *)
+    eiIntros "?".
+    eiIntros "? ? ?".
+    eiIntros "? ? ?".
+    let i := iFresh in
+    let j := iFresh in
+    elpi eiIntros asdf asdf (i) (j).
+    iIntros "[H1|H2]".
+    Show Proof.
+    iDestruct "H1" as "[H1 | H2]".
+    (* iSpecialize ("H" $! 0). *)
+    iExists a.
+    iExact "H1".
   Qed.
 End Proof.
