@@ -38,19 +38,31 @@ Elpi Accumulate lp:{{
   false-error S (goal _ _ {{ False }} _ _ as G) GL :- !, coq.ltac.fail 0 S.
   false-error _ G [seal G].
 
+  pred ident->term i:ident, o:string, o:term.
+  ident->term (iNamed S) S T :-
+    string->stringterm S ST,
+    T = {{ INamed lp:ST }}.
+  ident->term (iAnon N) "anon" T :-
+    T = {{ IAnon lp:N }}.
+
   type intro string -> open-tactic.
   intro ID G GL :-
     std.assert! (coq.ltac.id-free? ID G) "eiIntro: name already taken",
     coq.id->name ID N,
     refine (fun N _ _) G GL.
 
-  type go_iDestruct intro_pat -> tactic.
-  go_iDestruct (iList [[]]) G GL :-
+  type go_iExFalso tactic.
+  go_iExFalso G GL :-
+    open startProof G [G'],
+    open (refine {{ tac_ex_falso _ _ _ _ }}) G' GL.
+
+  type go_iDestruct ident -> list (list intro_pat) -> tactic.
+  go_iDestruct ID [[]] G GL :-
     thenl [
-      open (coq.ltac.call "iExFalso" []),
-      % open (coq.ltac.call "iExact")
+      go_iExFalso,
+      open (coq.ltac.call "iExact" [trm {ident->term ID _}])
     ] G GL.
-  go_iDestruct IP G [G'] :-
+  go_iDestruct ID IP G [G'] :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})}.
 
   type go_iFresh term -> open-tactic. % Not at all sure this works, in one call it works, but in the next it resets.
@@ -79,14 +91,13 @@ Elpi Accumulate lp:{{
       (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
     ),
     go_iIntros IPS GRes GL.
-  go_iIntros [iIdent (iNamed XN) | IPS] G GL :- !,
-    string->stringterm XN ST,
-    coq.say ST,
+  go_iIntros [iIdent ID | IPS] G GL :- !,
+    ident->term ID X T,
     open startProof G [G'],
     (
-      open (refine {{ @tac_impl_intro _ _ _ _ _ _ _ _ _ _ }}) G' [GRes];
+      open (refine {{ @tac_impl_intro _ _ lp:T _ _ _ _ _ _ _ }}) G' [GRes];
       thenl [
-        open (refine {{ @tac_wand_intro _ _ _ _ _ _ _ _ }}),
+        open (refine {{ @tac_wand_intro _ _ lp:T _ _ _ _ _ }}),
         open (pm_reduce),
         open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}),
       ] G' [GRes];
@@ -94,12 +105,15 @@ Elpi Accumulate lp:{{
     ),
     go_iIntros IPS GRes GL.
   go_iIntros [iFresh | IPS] G GL :-
-    open (go_iFresh N) G [G'],
+    open startProof G [G'],
+    open (go_iFresh N) G' [G''],
     coq.say N,
-    go_iIntros IPS G' GL. 
+    go_iIntros IPS G'' GL. 
   go_iIntros [iList IPS | IPSS] G GL :-
-    open (go_iFresh N) G [G'],
-    go_iIntros [iIdent (iAnon N)] G' GL.
+    open startProof G [StartedGoal],
+    open (go_iFresh N) StartedGoal [FreshGoal],
+    go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
+    go_iDestruct (iAnon N) IPS IntroGoal GL.
   go_iIntros [IP | IPS] G GL :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})},
     go_iIntros IPS G GL.
@@ -107,7 +121,6 @@ Elpi Accumulate lp:{{
   msolve [SG] GL :-
     open (parse_args IPS) SG [SG'],
     !,
-    coq.say IPS,
     go_iIntros IPS SG' GL.
     
 }}.
@@ -130,12 +143,9 @@ Section Proof.
   Notation iProp := (iProp Σ).
 
   Lemma intros (P : nat -> iProp) :
-    (P 0 ∨ P 1) -∗ ∃y, P y.
+    False -∗ (P 0 ∨ P 1) -∗ ∃y, P y.
   Proof.
-    Test Debug.
-    Set Debug "all,-Cbv".
-    eiIntros "H".
-    iStartProof.
+    eiIntros "[]".
     (* eiIntros (a). *)
     eiIntros "?".
     eiIntros "? ? ?".
