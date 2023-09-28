@@ -6,3 +6,12 @@ pm_reduce G GL :- coq.ltac.call "pm_reduce" [] G GL.
 
 type split open-tactic.
 split G GL :- coq.ltac.call "split" [] G GL.
+
+pred refine.warn i:term, i:goal, o:list sealed-goal.
+refine.warn T (goal _ RawEv Ty Ev _) GS :-
+  rm-evar RawEv Ev,
+  @keepunivs! => coq.elaborate-skeleton T TY TR D,
+  if (D = error Msg) (coq.say Msg, fail) true,
+  coq.ltac.collect-goals TR GS _,
+  RawEv = T,
+  Ev = TR.

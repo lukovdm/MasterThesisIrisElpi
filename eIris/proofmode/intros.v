@@ -54,7 +54,7 @@ Elpi Accumulate lp:{{
   type go_iExFalso tactic.
   go_iExFalso G GL :-
     open startProof G [G'],
-    open (refine {{ tac_ex_falso _ _ _ _ }}) G' GL.
+    open (refine.warn {{ tac_ex_falso _ _ _ _ }}) G' GL.
 
   type go_iDestruct ident -> list (list intro_pat) -> tactic.
   go_iDestruct ID [[]] G GL :-
@@ -62,7 +62,7 @@ Elpi Accumulate lp:{{
       go_iExFalso,
       open (coq.ltac.call "iExact" [trm {ident->term ID _}])
     ] G GL.
-  go_iDestruct ID IP G [G'] :-
+  go_iDestruct ID IP G [G] :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})}.
 
   type go_iFresh term -> open-tactic. % Not at all sure this works, in one call it works, but in the next it resets.
