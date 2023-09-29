@@ -13,7 +13,7 @@ type iIntuitionistic intro_pat -> intro_pat.
 type iSpatial intro_pat -> intro_pat.
 type iModalElim intro_pat -> intro_pat.
 type iRewrite direction -> intro_pat.
-type iCoqIntro string -> intro_pat.
+type iCoqIntro ltac1-tactic -> intro_pat.
 % type iClear sel_pat -> intro_pat.
 % type iClearFrame sel_pat -> intro_pat.
 

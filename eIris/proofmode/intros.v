@@ -21,7 +21,7 @@ Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
   type parse_args (list intro_pat) -> open-tactic.
-  parse_args [iCoqIntro Intro | IPS] (goal _ _ _ _ [str Intro, str Args] as G) [SG] :-
+  parse_args [iCoqIntro Intro | IPS] (goal _ _ _ _ [tac Intro, str Args] as G) [SG] :-
     tokenize Args T, !,
     parse_ipl T IPS, !,
     coq.ltac.set-goal-arguments [] G (seal G) SG.
@@ -51,6 +51,17 @@ Elpi Accumulate lp:{{
     coq.id->name ID N,
     refine (fun N _ _) G GL.
 
+  type ident_for_pat intro_pat -> ident -> tactic.
+  ident_for_pat (iIdent ID) ID G [G].
+  ident_for_pat _ (iAnon NT) G GL :-
+    open (go_iFresh NT) G GL.
+
+  type ident_for_pat.default intro_pat -> ident -> ident -> tactic.
+  ident_for_pat.default (iIdent ID) _ ID G [G].
+  ident_for_pat.default _ (iAnon NT) (iAnon NT) G GL.
+  ident_for_pat.default _ _ (iAnon NT) G GL :-
+    open (go_iFresh NT) G GL.
+
   type go_iExFalso tactic.
   go_iExFalso G GL :-
     open startProof G [G'],
@@ -58,10 +69,11 @@ Elpi Accumulate lp:{{
 
   type go_iAndDestruct ident -> ident -> ident -> tactic.
   go_iAndDestruct HID H1ID H2ID G GL :-
+    coq.say "go_iAndDestruct with " HID H1ID H2ID,
     ident->term HID _ HIDT,
     ident->term H1ID _ H1IDT,
     ident->term H2ID _ H2IDT,
-    open (refine {{ @tac_and_destruct _ _ HIDT _ H1IDT H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+    open (refine {{ @tac_and_destruct _ _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
     (open pm_reflexivity G1 []; coq.ltac.fail 0 "iAndDestruct:" ID "not found"),
     (
       thenl [
@@ -72,7 +84,8 @@ Elpi Accumulate lp:{{
     ),
     thenl [
       open pm_reduce,
-      open (false-error "iAndDestruct: H1 or H2 not fresh")
+      open simpl,
+      open (false-error "iAndDestruct: left or right not fresh")
     ] G3 GL.
 
   type go_iExact ident -> tactic.
@@ -89,16 +102,25 @@ Elpi Accumulate lp:{{
       coq.ltac.fail 0 "iExact: remaining hypotheses not affine and the goal not absorbing"
     ).
 
-  type go_iDestruct ident -> list (list intro_pat) -> tactic.
-  go_iDestruct ID [[]] G GL :-
+  pred go_iDestruct i:ident, o:intro_pat, i:sealed-goal, o:list sealed-goal.
+  go_iDestruct ID (iIdent ID) G [G].
+  go_iDestruct (iAnon _) iFresh G [G]. 
+  go_iDestruct ID (iList [[]]) G GL :-
     thenl [
       go_iExFalso,
       go_iExact ID
     ] G GL.
-  % go_iDestruct ID [[IP1, IP2]] G GL :-
+  go_iDestruct ID (iList [[IP1, IP2]]) G GL :-
+    ident_for_pat.default IP1 ID ID1 G [G'],
+    ident_for_pat IP2 ID2 G' [G''],
+    thenl [
+      go_iAndDestruct ID ID1 ID2,
+      go_iDestruct ID1 IP1,
+      go_iDestruct ID2 IP2
+    ] G'' GL.
 
   go_iDestruct ID IP G [G] :-
-    coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})}.
+    coq.say { calc ("eiDestruct: Skipping " ^ {std.any->string IP})}.
 
   type go_iFresh term -> open-tactic. % Not at all sure this works, in one call it works, but in the next it resets.
   go_iFresh N (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} Proof Args as G) [SG] :-
@@ -148,7 +170,7 @@ Elpi Accumulate lp:{{
     open startProof G [StartedGoal],
     open (go_iFresh N) StartedGoal [FreshGoal],
     go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
-    go_iDestruct (iAnon N) IPS IntroGoal GL.
+    go_iDestruct (iAnon N) (iList IPS) IntroGoal GL.
   go_iIntros [IP | IPS] G GL :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})},
     go_iIntros IPS G GL.
@@ -160,38 +182,29 @@ Elpi Accumulate lp:{{
     
 }}.
 Elpi Typecheck.
-Elpi Trace Browser.
 
-
-Tactic Notation "eiIntros" string(x) :=
-  elpi eiIntros ltac_string:(x).
 
 Tactic Notation "eiIntros" :=
   elpi eiIntros "**".
 
-Tactic Notation "eiIntros" "(" simple_intropattern_list(x) ")" :=
-  let pureintro := intros x in
-  elpi eiIntros pureintro "".
+Tactic Notation "eiIntros" "(" simple_intropattern_list(l) ")" :=
+  elpi eiIntros ltac_tactic:( intros l ) "".
+
+Tactic Notation "eiIntros" string(x) :=
+  elpi eiIntros ltac_string:(x).
+
+Tactic Notation "eiIntros" "(" simple_intropattern_list(l) ")" string(x) :=
+  elpi eiIntros ltac_tactic:( intros l ) ltac_string:(x).
 
 Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
+  (* Elpi Trace Browser. *)
   Lemma intros (P : nat -> iProp) :
-    False -∗ (P 0 ∨ P 1) -∗ ∃y, P y.
+    ∀a, (P a ∗ P 1 ∗ P 3 ∗ P 4) -∗ ∃y, P y.
   Proof.
-    eiIntros "[]". 
-    (* eiIntros (a). *)
-    eiIntros "?".
-    eiIntros "? ? ?".
-    eiIntros "? ? ?".
-    let i := iFresh in
-    let j := iFresh in
-    elpi eiIntros asdf asdf (i) (j).
-    iIntros "[H1|H2]".
-    Show Proof.
-    iDestruct "H1" as "[H1 | H2]".
-    (* iSpecialize ("H" $! 0). *)
+    eiIntros (a) "(H1 & H2 & H3 & H4)".
     iExists a.
     iExact "H1".
   Qed.
