@@ -67,10 +67,26 @@ Elpi Accumulate lp:{{
     open startProof G [G'],
     open (refine {{ @tac_ex_falso _ _ _ _ }}) G' GL.
 
+  type go_iClear ident -> tactic.
+  go_iClear ID G GL :-
+    ident->term ID IDS IDT,
+    open (refine {{ @tac_clear _ _ lp:IDT _ _ _ _ _ _ }}) G [G1, G2, G3],
+    (open pm_reflexivity G1 []; coq.ltac.fail 0 "iClear:" IDS "not found"),
+    (
+      thenl [
+        open pm_reduce,
+        open tc_solve
+      ] G2 []; 
+      coq.ltac.fail 0 "iClear:" IDS "not affine and the goal not absorbing"
+    ),
+    thenl [
+      open pm_reduce,
+      open simpl,
+    ] G3 GL.
+
   type go_iAndDestruct ident -> ident -> ident -> tactic.
   go_iAndDestruct HID H1ID H2ID G GL :-
-    coq.say "go_iAndDestruct with " HID H1ID H2ID,
-    ident->term HID _ HIDT,
+    ident->term HID ID HIDT,
     ident->term H1ID _ H1IDT,
     ident->term H2ID _ H2IDT,
     open (refine {{ @tac_and_destruct _ _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
@@ -87,6 +103,27 @@ Elpi Accumulate lp:{{
       open simpl,
       open (false-error "iAndDestruct: left or right not fresh")
     ] G3 GL.
+
+  type go_iOrDestruct ident -> ident -> ident -> tactic.
+  go_iOrDestruct HID H1ID H2ID G GL :-
+    ident->term HID ID HIDT,
+    ident->term H1ID _ H1IDT,
+    ident->term H2ID _ H2IDT,
+    open (refine {{ @tac_or_destruct _ _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+    (open pm_reflexivity G1 []; coq.ltac.fail 0 "iOrDestruct:" ID "not found"),
+    (open tc_solve G2 []; coq.ltac.fail 0 "iOrDestruct: cannot destruct"),
+    thenl [
+      open pm_reduce,
+      open (false-error "iAndDestruct: left or right not fresh"),
+      open split
+    ] G3 GL.
+
+  type go_iExistDestruct ident -> option string -> ident -> tactic.
+  go_iExistDestruct ID X HID G GL :-
+    ident->term ID _ IDT,
+    ident->term HID _ HIDT, !, % only works with refine.warn not with just refine % TODO: figure out why
+    open (refine.warn {{ @tac_exist_destruct _ _ _ lp:IDT _ lp:HIDT _ _ _ _ _ _ }}) G GL.% [G1, G2, G3, G4]
+    % Why does into Exists have a name?
 
   type go_iExact ident -> tactic.
   go_iExact ID G [] :-
@@ -105,11 +142,19 @@ Elpi Accumulate lp:{{
   pred go_iDestruct i:ident, o:intro_pat, i:sealed-goal, o:list sealed-goal.
   go_iDestruct ID (iIdent ID) G [G].
   go_iDestruct (iAnon _) iFresh G [G]. 
+  go_iDestruct ID iDrop G GL :-
+    go_iClear ID G GL.
   go_iDestruct ID (iList [[]]) G GL :-
     thenl [
       go_iExFalso,
       go_iExact ID
     ] G GL.
+  go_iDestruct ID (iList [[iPure none, IP]]) G GL :- !,
+    ident_for_pat.default IP ID HID G [G'],
+    go_iExistDestruct ID none HID G' GL.
+    % This case now also handles the pure and case with typeclasses,
+    % however, that is not neccessary as we can just backtrack in here
+    % And take the next case if iExistsDestruct fails.
   go_iDestruct ID (iList [[IP1, IP2]]) G GL :-
     ident_for_pat.default IP1 ID ID1 G [G'],
     ident_for_pat IP2 ID2 G' [G''],
@@ -118,7 +163,13 @@ Elpi Accumulate lp:{{
       go_iDestruct ID1 IP1,
       go_iDestruct ID2 IP2
     ] G'' GL.
-
+  go_iDestruct ID (iList [[IP1], [IP2]]) G GL :-
+    ident_for_pat.default IP1 ID ID1 G [G'],
+    ident_for_pat IP2 ID2 G' [G''],
+    go_iOrDestruct ID ID1 ID2 G'' [G1, G2],
+    go_iDestruct ID1 IP1 G1 GL1,
+    go_iDestruct ID2 IP2 G2 GL2,
+    std.append GL1 GL2 GL.
   go_iDestruct ID IP G [G] :-
     coq.say { calc ("eiDestruct: Skipping " ^ {std.any->string IP})}.
 
@@ -134,7 +185,10 @@ Elpi Accumulate lp:{{
       go_iIntros IPS
     ] G GL.
   go_iIntros [iSimpl | IPS] G GL :-
-    coq.ltac "simpl" G [G'],
+    open simpl G [G'],
+    go_iIntros IPS G' GL.
+  go_iIntros [iDone | IPS] G GL :-
+    (open done G [G']; G' = G),
     go_iIntros IPS G' GL.
   go_iIntros [iPure (some X) | IPS] G GL :-
     open (intro X) G [G'],
@@ -200,11 +254,12 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  (* Elpi Trace Browser. *)
+  Elpi Trace Browser.
+  Elpi Bound Steps 1000.
   Lemma intros (P : nat -> iProp) :
-    ∀a, (P a ∗ P 1 ∗ P 3 ∗ P 4) -∗ ∃y, P y.
+    (∃b, P b) -∗ ∃y, P y.
   Proof.
-    eiIntros (a) "(H1 & H2 & H3 & H4)".
+    eiIntros "[% H]".
     iExists a.
     iExact "H1".
   Qed.

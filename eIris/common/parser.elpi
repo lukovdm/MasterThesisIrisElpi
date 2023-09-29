@@ -40,6 +40,8 @@ parse_ip [tAnon | TS] TS (iFresh).
 parse_ip [tFrame | TS] TS (iFrame).
 parse_ip [tForall | TS] TS (iForall).
 parse_ip [tAll | TS] TS (iAll).
+parse_ip [tSimpl | TS] TS (iSimpl).
+parse_ip [tDone | TS] TS (iDone).
 parse_ip [tPureIntro | TS] TS (iPureIntro).
 parse_ip [tModalIntro | TS] TS (iModalIntro).
 

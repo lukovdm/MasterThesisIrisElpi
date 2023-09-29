@@ -13,6 +13,9 @@ simpl G GL :- coq.ltac.call "simpl" [] G GL.
 type split open-tactic.
 split G GL :- coq.ltac.call "split" [] G GL.
 
+type done open-tactic.
+done G GL :- coq.ltac.call "done" [] G GL.
+
 pred refine.warn i:term, i:goal, o:list sealed-goal.
 refine.warn T (goal _ RawEv Ty Ev _) GS :-
   rm-evar RawEv Ev,
