@@ -25,14 +25,14 @@ Lemma tac_exist_destruct_without_name {A} Δ i p j P (Φ : A → PROP) (name: id
         end) →
   envs_entails Δ Q.
 Proof.
-Admitted.
-End tactics.
   (* rewrite envs_entails_unseal => ?? HΦ. rewrite envs_lookup_sound //.
   rewrite (into_exist P) intuitionistically_if_exist sep_exist_r.
   apply exist_elim=> a; specialize (HΦ a) as Hmatch.
   destruct (envs_simple_replace _ _ _ _) as [Δ'|] eqn:Hrep; last done.
   rewrite envs_simple_replace_singleton_sound' //; simpl. by rewrite wand_elim_r.
 Qed. *)
+Admitted.
+End tactics.
 
 Elpi Tactic eiIntros.
 
@@ -151,7 +151,9 @@ Elpi Accumulate lp:{{
     (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
     if (X = some XN) true (XN = "x"),
     open (intro XN) G3 [G4],
-    open pm_reduce G4 GL.
+    open pm_reduce G4 [G5],
+    open simpl G5 [G6],
+    open (false-error "iExistDestruct: name already in use.") G6 GL.
     % Why does into Exists have a name?
 
   type go_iExact ident -> tactic.
@@ -181,7 +183,8 @@ Elpi Accumulate lp:{{
     ] G GL.
   go_iDestruct ID (iList [[iPure PN, IP]]) G GL :- !,
     ident_for_pat.default IP ID HID G [G'],
-    go_iExistDestruct ID PN HID G' GL.
+    go_iExistDestruct ID PN HID G' [G''],
+    go_iDestruct HID IP G'' GL.
     % This case now also handles the pure and case with typeclasses,
     % however, that is not neccessary as we can just backtrack in here
     % And take the next case if iExistsDestruct fails.
@@ -289,11 +292,9 @@ Section Proof.
   (* Elpi Trace Browser. *)
   (* Elpi Bound Steps 10000. *)
   Lemma intros (P : nat -> iProp) :
-    (∃b, P b) -∗ (∃b, P b) -∗ ∃y, P y.
+    (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
-    eiIntros "[%b H] [%c H]".
-    simpl.
-    intros H.
+    eiIntros "[%b [[H1 H11] | H3]] [%c H2]".
     (* clear H. *)
     Show Proof.
     intros _.
