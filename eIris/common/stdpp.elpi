@@ -4,14 +4,14 @@ foldr [X|XS] A F R :- foldr XS A F A', F X A' R.
 
 pred int->bools i:int, o:list bool.
 pred int->bools.unpadded i:int, o:list bool.
-int->bools.unpadded 0 [].
+int->bools.unpadded 0 [] :- !.
 int->bools.unpadded INT BITS :-
     if ({ calc (INT mod 2) } == 1) (BIT is tt) (BIT is ff),
     BITS = [BIT | { int->bools.unpadded { calc (INT div 2) } }].
 int->bools INT BITS :-
     int->bools.unpadded INT BITSSHORT,
     std.length BITSSHORT SIZE,
-    std.map {std.iota { calc  (8 - SIZE) } } (x\ r\ r = ff) PADDING,
+    std.map { std.iota { calc  (8 - SIZE) } } (x\ r\ r = ff) PADDING,
     std.append BITSSHORT PADDING BITS.
 
 pred string->ascii i:string, o:list (list bool).

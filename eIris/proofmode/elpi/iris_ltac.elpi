@@ -18,9 +18,14 @@ done G GL :- coq.ltac.call "done" [] G GL.
 
 pred refine.warn i:term, i:goal, o:list sealed-goal.
 refine.warn T (goal _ RawEv Ty Ev _) GS :-
+  coq.say "refine.warn: " T Ty, 
   rm-evar RawEv Ev,
-  @keepunivs! => coq.elaborate-skeleton T TY TR D,
-  if (D = error Msg) (coq.say Msg, fail) true,
+  @keepunivs! => coq.elaborate-skeleton T Ty TR D,
+  D = ok,
   coq.ltac.collect-goals TR GS _,
   RawEv = T,
   Ev = TR.
+
+pred thenl! i:list tactic, i:sealed-goal, o:list sealed-goal.
+thenl! [] G [G].
+thenl! [T|Ts] G GS :- T G NG, !, all (thenl Ts) NG GS.

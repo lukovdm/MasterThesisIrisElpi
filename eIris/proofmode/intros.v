@@ -1,6 +1,7 @@
 From elpi Require Import elpi.
 From iris.proofmode Require Export tactics coq_tactics reduction.
 From iris.prelude Require Import options.
+From iris.bi Require Export bi telescopes.
 
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
 From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
@@ -9,6 +10,29 @@ From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiStartProof.elpi" as startProof.
 
 From iris.heap_lang Require Import proofmode.
+
+Section tactics.
+Context {PROP : bi}.
+Implicit Types Γ : env PROP.
+Implicit Types Δ : envs PROP.
+Implicit Types P Q : PROP.
+
+Lemma tac_exist_destruct_without_name {A} Δ i p j P (Φ : A → PROP) (name: ident_name) Q :
+  envs_lookup i Δ = Some (p, P) → IntoExist P Φ name →
+  (∀ a, match envs_simple_replace i p (Esnoc Enil j (Φ a)) Δ with
+        | Some Δ' => envs_entails Δ' Q
+        | None => False
+        end) →
+  envs_entails Δ Q.
+Proof.
+Admitted.
+End tactics.
+  (* rewrite envs_entails_unseal => ?? HΦ. rewrite envs_lookup_sound //.
+  rewrite (into_exist P) intuitionistically_if_exist sep_exist_r.
+  apply exist_elim=> a; specialize (HΦ a) as Hmatch.
+  destruct (envs_simple_replace _ _ _ _) as [Δ'|] eqn:Hrep; last done.
+  rewrite envs_simple_replace_singleton_sound' //; simpl. by rewrite wand_elim_r.
+Qed. *)
 
 Elpi Tactic eiIntros.
 
@@ -39,10 +63,10 @@ Elpi Accumulate lp:{{
   false-error _ G [seal G].
 
   pred ident->term i:ident, o:string, o:term.
-  ident->term (iNamed S) S T :-
+  ident->term (iNamed S) S T :- !,
     string->stringterm S ST,
     T = {{ INamed lp:ST }}.
-  ident->term (iAnon N) "anon" T :-
+  ident->term (iAnon N) "anon" T :- !,
     T = {{ IAnon lp:N }}.
 
   type intro string -> open-tactic.
@@ -119,10 +143,15 @@ Elpi Accumulate lp:{{
     ] G3 GL.
 
   type go_iExistDestruct ident -> option string -> ident -> tactic.
-  go_iExistDestruct ID X HID G GL :-
+  go_iExistDestruct ID X HID G GL :- !,
     ident->term ID _ IDT,
-    ident->term HID _ HIDT, !, % only works with refine.warn not with just refine % TODO: figure out why
-    open (refine.warn {{ @tac_exist_destruct _ _ _ lp:IDT _ lp:HIDT _ _ _ _ _ _ }}) G GL.% [G1, G2, G3, G4]
+    ident->term HID _ HIDT,
+    open (refine {{ @tac_exist_destruct_without_name _ _ _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+    (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExistDestruct:" ID "not found"),
+    (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
+    if (X = some XN) true (XN = "x"),
+    open (intro XN) G3 [G4],
+    open pm_reduce G4 GL.
     % Why does into Exists have a name?
 
   type go_iExact ident -> tactic.
@@ -140,6 +169,7 @@ Elpi Accumulate lp:{{
     ).
 
   pred go_iDestruct i:ident, o:intro_pat, i:sealed-goal, o:list sealed-goal.
+  % go_iDestruct ID IP _ _ :- coq.say "go_iDestruct: " ID IP, fail.
   go_iDestruct ID (iIdent ID) G [G].
   go_iDestruct (iAnon _) iFresh G [G]. 
   go_iDestruct ID iDrop G GL :-
@@ -149,9 +179,9 @@ Elpi Accumulate lp:{{
       go_iExFalso,
       go_iExact ID
     ] G GL.
-  go_iDestruct ID (iList [[iPure none, IP]]) G GL :- !,
+  go_iDestruct ID (iList [[iPure PN, IP]]) G GL :- !,
     ident_for_pat.default IP ID HID G [G'],
-    go_iExistDestruct ID none HID G' GL.
+    go_iExistDestruct ID PN HID G' GL.
     % This case now also handles the pure and case with typeclasses,
     % however, that is not neccessary as we can just backtrack in here
     % And take the next case if iExistsDestruct fails.
@@ -178,6 +208,7 @@ Elpi Accumulate lp:{{
     SG = seal (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} Proof Args).
 
   type go_iIntros (list intro_pat) -> tactic.
+  % go_iIntros IPS _ _ :- coq.say "go_iIntros: " IPS, fail.
   go_iIntros [] G [G].
   go_iIntros [iCoqIntro X | IPS] G GL :-
     thenl [
@@ -207,11 +238,11 @@ Elpi Accumulate lp:{{
     open startProof G [G'],
     (
       open (refine {{ @tac_impl_intro _ _ lp:T _ _ _ _ _ _ _ }}) G' [GRes];
-      thenl [
-        open (refine {{ @tac_wand_intro _ _ lp:T _ _ _ _ _ }}),
-        open (pm_reduce),
-        open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}),
-      ] G' [GRes];
+      (
+        open (refine {{ @tac_wand_intro _ _ lp:T _ _ _ _ _ }}) G' [G''], !,
+        open (pm_reduce) G'' [G'''],
+        open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}) G''' [GRes]
+       );
       (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
     ),
     go_iIntros IPS GRes GL.
@@ -220,11 +251,12 @@ Elpi Accumulate lp:{{
     open (go_iFresh N) G' [G''],
     coq.say N,
     go_iIntros IPS G'' GL. 
-  go_iIntros [iList IPS | IPSS] G GL :-
+  go_iIntros [iList IPS | IPSS] G GL :- !,
     open startProof G [StartedGoal],
     open (go_iFresh N) StartedGoal [FreshGoal],
     go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
-    go_iDestruct (iAnon N) (iList IPS) IntroGoal GL.
+    go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
+    all (go_iIntros IPSS) GL' GL.
   go_iIntros [IP | IPS] G GL :-
     coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})},
     go_iIntros IPS G GL.
@@ -254,12 +286,22 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  Elpi Trace Browser.
-  Elpi Bound Steps 1000.
+  (* Elpi Trace Browser. *)
+  (* Elpi Bound Steps 10000. *)
   Lemma intros (P : nat -> iProp) :
-    (∃b, P b) -∗ ∃y, P y.
+    (∃b, P b) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
-    eiIntros "[% H]".
+    eiIntros "[%b H] [%c H]".
+    simpl.
+    intros H.
+    (* clear H. *)
+    Show Proof.
+    intros _.
+    Show Proof.
+    intros asdfasdf.
+    pm_reduce.
+    revert asdfasdf.
+    intros b.
     iExists a.
     iExact "H1".
   Qed.
