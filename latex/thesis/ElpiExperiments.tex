@@ -1,0 +1,100 @@
+\documentclass[thesis.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Elpi tactic for iIntros}
+\section{Intros}
+In coq proofs onften start with the same few tactics. They start with some forall introductions, some implication introductions and some destructs of existential quantifiers, \mintinline{coq}{\/}, \mintinline{coq}{/\} and others. Because these happen so often, a little DSL has been made to quickly write these steps down, and are called intro patterns. These intro patterns are included in many tactics to quickly deal with the result of these tactics, but we will focus on \mintinline{coq}{intros}.
+
+\subsection{Coq \mintinline{coq}{intros}}
+We look at a subset of the total intro pattern syntax that is used in coq. Our subset is shown here
+\begin{grammar}
+    <intropattern> ::= `*'
+    \alt `**'
+    \alt <simple\_intropattern>
+
+    <simple\_intropattern> ::= <naming\_intropattern>
+    \alt `\_'
+    \alt <or\_and\_intropattern>
+    \alt <equality\_intropattern>
+
+    <naming\_intropattern> ::= <ident>
+    \alt `?'
+    \alt `?'<ident>
+
+    <or\_and\_intropattern> ::= `[' ( <intropattern>$^\star$ )$_\text{\enquote*{|}}^\star$ `]'
+    \alt `(' <intropattern>$_\text{\enquote*{\&}}^\star$ `)'
+
+    <equality\_intropattern> ::= `->'
+    \alt `<-'
+    \alt `[=' <intropattern>$^\star$ `]'
+\end{grammar}
+\dots
+
+\subsection{Iris \mintinline{coq}{iIntros}}
+Iris has in its logic several more connectives that behave like \mintinline{coq}{/\} and \mintinline{coq}{\/}, but are not them. This combined with the seperate environments that iris adds, result in us not being able to use the coq \mintinline{coq}{intros} tactic. Thus we have written our own tactic that can deal with the Iris logic. We call this tactic \mintinline{coq}{iIntros}.
+
+\dots
+
+\subsection{Elpi implementation of iIntros}
+We implement our tactic in the $\lambda$Prolog programming language Elpi \cite{dunchevELPIFastEmbeddable2015}. Elpi implements $\lambda$prolog and adds constraint handling rules to it. To use it as a coq meta programming language we make use of the elpi coq connector, coq-elpi \cite{tassiElpiExtensionLanguage2018}.
+
+\paragraph*{Elpi goals}
+Goals in coq-elpi are represented as three main parts. A context of existential variables (evars) together with added rules assigning a type or definition to each variable. A goal, represented as a unification variable applied on all evars, together with a pending constraint typing the goal as the type of the goal. Lastly, a list of arguments applied to a tactic is given as part of every goal. The arguments are part of the goal, since they can refrence the evars, and thus can't be taken out of the scope of the existential variables. Thus a tactic invocation on the left is translated to an elpi goal on the right.
+\\\\
+\begin{minipage}[t]{0.2\linewidth}
+    \begin{minted}[escapeinside=||]{coq}
+P : Prop
+H : P
+===========
+P
+
+tac (P) asdf 12
+\end{minted}
+\end{minipage}
+\begin{minipage}[t]{0.45\linewidth}
+    \begin{minted}[escapeinside=||]{elpi}
+pi c1\ decl c1 `P` (sort prop) =>
+    pi c2\ decl c2 `H` c1 =>
+      declare_constraint (evar (T c1 c2) 
+                               c1
+                               (P c1 c2)) 
+                         on (T c1 c2),
+      solve (goal [decl c1 `P` (sort prop), decl c2 `H` c1] 
+                  (T c1 c2)
+                  c1 
+                  (P c1 c2)
+                  [trm c1, str "asdf", int 123])
+\end{minted}
+    \vspace{.1cm}
+\end{minipage}
+
+This setup of the goal allows us to unify the trigger \mintinline{elpi}{T} with a proof term, which will trigger a the elaboration of \mintinline{elpi}{T} against the type (here \mintinline{elpi}{c1}) and unification of the resulting term with our proof variable \mintinline{elpi}{P}. This resulting proof term will likely contain more unification variables, representing subgoals, which we can collect as our resulting goal list (elpi has the builtin \mintinline{elpi}{coq.ltac.collect-goals} predicate, that does this for us).
+
+We do have a problem with these goals. They are not very portable. Since they need existential variables to have been created and rules to be assumend, we can't just pass around a goal without being very carefull about the context it is in. This problem was solved by adding a sealed-goal. A sealed goal is a lambda function that takes existential variables for each element in its context. The arguments of the lambda functions can then be used in place of the existential variables in the goal. This allows us to pass around goals without having to worry about the context they are in. The sealed goal is then opened by applying it to existential variables. This is done by \mint{elpi}{pred open i:open-tactic, i:sealed-goal, o:list sealed-goal.} It opens a sealed goal and then applies the \mintinline{elpi}{open-tactic} to the opend goal. The resulting list of sealed goals is unified with the last argument.
+
+Sealed goals allow us to program our tactics in seperate steps, where each step is an \mintinline{elpi}{open-tactic}. This is especially usefull since we have to call quite some LTac code on our goals within Elpi to solve side-goals.
+
+\paragraph*{Calling LTac}
+There are builtin API's in coq-elpi to call LTac code by name. When calling LTac code we can give arguments by setting the arguments in our goal. This does mean we have to be carefull to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which coq-elpi has a type, and mapping. Thus for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use coq intro patterns or any other syntax, until support has been added for these in coq-elpi.
+
+% \begin{grammar}
+%     <intropattern> ::= `*'
+%     \alt `**'
+%     \alt <simple\_intropattern>
+
+%     <simple\_intropattern> ::= <naming\_intropattern>
+%     \alt `\_'
+%     \alt `[' <or\_and\_intropattern>
+%     \alt <equality\_intropattern>
+
+%     <naming\_intropattern> ::= <ident>
+%     \alt `?'
+%     \alt `?'<ident>
+
+%     <or\_and\_intropattern> ::= `]'
+%     \alt <simple\_intropattern> `|' <or\_and\_intropattern>
+%     \alt <simple\_intropattern> <or\_and\_intropattern>
+% \end{grammar}
+
+\end{document}

@@ -16,7 +16,7 @@
         #   };
         devShell = pkgs.mkShell
           {
-            nativeBuildInputs = with pkgs; [ gnumake gmp opam ];
+            nativeBuildInputs = with pkgs; [ gnumake gmp opam python310Packages.pygments ];
           };
         shellHook = ''
           eval $(opam env --switch=iris-dev)

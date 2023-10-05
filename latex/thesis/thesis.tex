@@ -1,0 +1,94 @@
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[rgb]{xcolor}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage[a4paper]{geometry}
+\usepackage[style=numeric]{biblatex}
+
+\usepackage{subfiles}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{empheq}
+\usepackage{stmaryrd}
+\usepackage{amssymb}
+
+\usepackage{thesiscommands}
+
+\allowdisplaybreaks
+    
+\newcommand{\todo}[1]{\footnote{\color{red} #1}}
+
+\makeatletter %otherwise geometry resets everything
+\Gm@restore@org
+\makeatother
+
+\setlength{\itemsep}{0cm}
+\setlength{\voffset}{0cm}
+\setlength{\headheight}{0cm}
+\setlength{\topmargin}{0cm}
+\lstset{basicstyle = \footnotesize, breaklines = true}
+
+\graphicspath{{imgs/}}
+
+\addbibresource{iris-elpi.bib}
+
+\begin{document}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\chapterautorefname}{Chapter}
+
+\begin{titlepage}
+    \begin{center}
+        \textsc{\LARGE Bachelor thesis\\Computing Science}\\[1.5cm]
+        \includegraphics[height=100pt]{logo}
+
+        \vspace{0.4cm}
+        \textsc{\Large Radboud University}\\[1cm]
+        \hrule
+        \vspace{0.4cm}
+        \textbf{\huge Iris or something}\\[0.4cm]
+        \hrule
+        \vspace{2cm}
+        \begin{minipage}[t]{0.45\textwidth}
+            \begin{flushleft} \large
+                \textit{Author:}\\
+                Luko van der Maas\\
+                \texttt{luko.vandermaas@ru.nl}\\
+                s1010320
+            \end{flushleft}
+        \end{minipage}
+        \begin{minipage}[t]{0.45\textwidth}
+            \begin{flushright} \large
+                \textit{Supervisor:}\\
+                dr. Robbert Krebbers\\
+                \texttt{robbert@cs.ru.nl}\\[1.3cm]
+                \textit{Assessor:}\\
+                \dots\\
+                \texttt{\dots}
+            \end{flushright}
+        \end{minipage}
+        \vfill
+        {\large \today}
+    \end{center}
+\end{titlepage}
+
+\input{abstract}
+
+\tableofcontents
+
+\subfile{ElpiExperiments}
+
+\printbibliography
+
+\newpage
+\mbox{}
+\thispagestyle{empty}
+\newpage
+\mbox{}
+\thispagestyle{empty}
+\end{document}

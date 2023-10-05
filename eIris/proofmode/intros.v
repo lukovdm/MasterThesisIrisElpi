@@ -231,7 +231,7 @@ Elpi Accumulate lp:{{
     open startProof G [G'],
     (
       open (refine {{ @tac_impl_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
-      open (refine {{ @tac_wand_intro_drop _ _ _ _ _ _ _ _ }}) G' [GRes];
+      open (refine {{ tac_wand_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
       % TODO: Not sure what the forall case is.
       (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
     ),
@@ -274,7 +274,7 @@ Elpi Typecheck.
 
 
 Tactic Notation "eiIntros" :=
-  elpi eiIntros "**".
+  elpi eiIntros asdfasf.
 
 Tactic Notation "eiIntros" "(" simple_intropattern_list(l) ")" :=
   elpi eiIntros ltac_tactic:( intros l ) "".
@@ -285,12 +285,39 @@ Tactic Notation "eiIntros" string(x) :=
 Tactic Notation "eiIntros" "(" simple_intropattern_list(l) ")" string(x) :=
   elpi eiIntros ltac_tactic:( intros l ) ltac_string:(x).
 
+(* Error handling, intro patterns *)
+(* iInduction see photo *)
+(* Type class search in elpi *)
+(* Diaframe: Automated Verification of Fine-Grained Concurrent Programs in Iris *)
+(* Maak een thesis.tex en schrijf pros en cons op *)
+
 Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  (* Elpi Trace Browser. *)
+  Elpi Trace Browser.
   (* Elpi Bound Steps 10000. *)
+  (* Lemma intros (P : nat -> iProp) :
+    ⊢ ∀a b : nat, P a.
+  Proof.
+    eiIntros (a b).
+    
+    eiIntros "[%b [[H1 H11] | H3]] [%c H2]".
+    (* clear H. *)
+    Show Proof.
+    intros _.
+    Show Proof.
+    intros asdfasdf.
+    pm_reduce.
+    revert asdfasdf.
+    intros b.
+    iExists a.
+    iExact "H1".
+  Qed. *)
+
+  Lemma test (P Q : Prop) :
+    P \/ Q.
+
   Lemma intros (P : nat -> iProp) :
     (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
