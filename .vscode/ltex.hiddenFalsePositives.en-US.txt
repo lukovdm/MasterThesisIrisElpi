@@ -1,0 +1,16 @@
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QThe syntax we parse is <intropatternlist> ::= \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q <intropattern> <intropatternlist>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<intropattern> ::= <ident> `_' | `?'\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q| `#' | `*' | `**' | `/=' | `//' | `!%' `!>' | `->' | `<-' `[' <intropatternlist> `]' `(' <intropatternconjlist> `)' `%' <ident> `#' <intropattern> % Wait this one is weird `-#' <intropattern> `>' <intropattern>\\E$"}
+{"rule":"ARROWS","sentence":"^\\Q| `#' | `*' | `**' | `/=' | `//' | `!%' `!>' | `->' | `<-' `[' <intropatternlist> `]' `(' <intropatternconjlist> `)' `%' <ident> `#' <intropattern> % Wait this one is weird `-#' <intropattern> `>' <intropattern>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<intropatternlist> ::= \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q <intropattern> `|' <intropatternlist> <intropattern> <intropatternlist>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<intropatternconjlist> ::= \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q <intropattern> ` ' <intropatternconjlist> With the caveat that a \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q has to have at least length 2.\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\Q<intropatternconjlist> ::= \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q <intropattern> ` ' <intropatternconjlist> With the caveat that a \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q has to have at least length 2.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QOur subset is shown here <intropattern> ::= `*' `**' <simpleintropattern>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<simpleintropattern> ::= <namingintropattern> `' <orandintropattern> <equalityintropattern>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<namingintropattern> ::= <ident> `?'\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<orandintropattern> ::= `[' ( <intropattern>\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q )\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q|\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q `]' `(' <intropattern>\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q&\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q `)'\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q`?'<ident>\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q<equalityintropattern> ::= `->' `<-' `[=' <intropattern>\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q `]' …\\E$"}
+{"rule":"ARROWS","sentence":"^\\Q<equalityintropattern> ::= `->' `<-' `[=' <intropattern>\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q `]' …\\E$"}
+{"rule":"EN_A_VS_AN","sentence":"^\\QSealed goals allow us to program our tactics in separate steps, where each step is an \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QThese are cases like `//', `/=' and `%a'.\\E$"}

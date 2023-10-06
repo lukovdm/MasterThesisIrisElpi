@@ -27,8 +27,7 @@ parse_ilist TS R [[IP | L] | LL'] :-
   parse_ilist RT R [L | LL'].
 
 pred parse_conj_ilist i:list token, o:list token, o:list intro_pat.
-parse_conj_ilist TS [tParenR | R] [IP] :-
-  parse_ip TS [tParenR | R] IP.
+parse_conj_ilist [tParenR | R] [tParenR | R] [IP].
 parse_conj_ilist TS R [IP | L'] :-
   parse_ip TS [tAmp | RT] IP,
   parse_conj_ilist RT R L'.

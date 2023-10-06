@@ -230,7 +230,7 @@ Elpi Accumulate lp:{{
   go_iIntros [iDrop | IPS] G GL :- !,
     open startProof G [G'],
     (
-      open (refine {{ @tac_impl_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
+      open (refine {{ tac_impl_intro_drop _ _ _ _ _ _ }}) G' [GRes];
       open (refine {{ tac_wand_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
       % TODO: Not sure what the forall case is.
       (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)

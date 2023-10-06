@@ -4,46 +4,46 @@
 
 \chapter{Elpi tactic for iIntros}
 \section{Intros}
-In coq proofs onften start with the same few tactics. They start with some forall introductions, some implication introductions and some destructs of existential quantifiers, \mintinline{coq}{\/}, \mintinline{coq}{/\} and others. Because these happen so often, a little DSL has been made to quickly write these steps down, and are called intro patterns. These intro patterns are included in many tactics to quickly deal with the result of these tactics, but we will focus on \mintinline{coq}{intros}.
+In Coq proofs often start with the same few tactics. They start with some $\forall$ introductions, some $\rightarrow$ introductions and some destructs of existential quantifiers, \mintinline{coq}{\/}, \mintinline{coq}{/\} and others. Because these happen so often, a little DSL has been made to quickly write these steps down, and are called intro patterns. These intro patterns are included in many tactics to quickly deal with the result of these tactics, but we will focus on \mintinline{coq}{intros}.
 
 \subsection{Coq \mintinline{coq}{intros}}
 We look at a subset of the total intro pattern syntax that is used in coq. Our subset is shown here
 \begin{grammar}
-    <intropattern> ::= `*'
-    \alt `**'
-    \alt <simple\_intropattern>
+  <intropattern> ::= `*'
+  \alt `**'
+  \alt <simple\_intropattern>
 
-    <simple\_intropattern> ::= <naming\_intropattern>
-    \alt `\_'
-    \alt <or\_and\_intropattern>
-    \alt <equality\_intropattern>
+  <simple\_intropattern> ::= <naming\_intropattern>
+  \alt `\_'
+  \alt <or\_and\_intropattern>
+  \alt <equality\_intropattern>
 
-    <naming\_intropattern> ::= <ident>
-    \alt `?'
-    \alt `?'<ident>
+  <naming\_intropattern> ::= <ident>
+  \alt `?'
+  \alt `?'<ident>
 
-    <or\_and\_intropattern> ::= `[' ( <intropattern>$^\star$ )$_\text{\enquote*{|}}^\star$ `]'
-    \alt `(' <intropattern>$_\text{\enquote*{\&}}^\star$ `)'
+  <or\_and\_intropattern> ::= `[' ( <intropattern>$^\star$ )$_\text{\enquote*{|}}^\star$ `]'
+  \alt `(' <intropattern>$_\text{\enquote*{\&}}^\star$ `)'
 
-    <equality\_intropattern> ::= `->'
-    \alt `<-'
-    \alt `[=' <intropattern>$^\star$ `]'
+  <equality\_intropattern> ::= `->'
+  \alt `<-'
+  \alt `[=' <intropattern>$^\star$ `]'
 \end{grammar}
 \dots
 
-\subsection{Iris \mintinline{coq}{iIntros}}
-Iris has in its logic several more connectives that behave like \mintinline{coq}{/\} and \mintinline{coq}{\/}, but are not them. This combined with the seperate environments that iris adds, result in us not being able to use the coq \mintinline{coq}{intros} tactic. Thus we have written our own tactic that can deal with the Iris logic. We call this tactic \mintinline{coq}{iIntros}.
+\subsection[Iris iIntros]{Iris \mintinline{coq}{iIntros}}
+Iris has in its logic several more connectives that behave like \mintinline{coq}{/\} and \mintinline{coq}{\/}, but are not them. This combined with the separate environments that iris adds, result in us not being able to use the coq \mintinline{coq}{intros} tactic. Thus, we have written our own tactic that can deal with the Iris logic. We call this tactic \mintinline{coq}{iIntros}.
 
 \dots
 
 \subsection{Elpi implementation of iIntros}
-We implement our tactic in the $\lambda$Prolog programming language Elpi \cite{dunchevELPIFastEmbeddable2015}. Elpi implements $\lambda$prolog and adds constraint handling rules to it. To use it as a coq meta programming language we make use of the elpi coq connector, coq-elpi \cite{tassiElpiExtensionLanguage2018}.
+We implement our tactic in the $\lambda$Prolog programming language Elpi \cite{dunchevELPIFastEmbeddable2015}. Elpi implements $\lambda$prolog and adds constraint handling rules to it. To use it as a coq meta programming language we make use of the Elpi Coq connector, coq-elpi \cite{tassiElpiExtensionLanguage2018}.
 
 \paragraph*{Elpi goals}
-Goals in coq-elpi are represented as three main parts. A context of existential variables (evars) together with added rules assigning a type or definition to each variable. A goal, represented as a unification variable applied on all evars, together with a pending constraint typing the goal as the type of the goal. Lastly, a list of arguments applied to a tactic is given as part of every goal. The arguments are part of the goal, since they can refrence the evars, and thus can't be taken out of the scope of the existential variables. Thus a tactic invocation on the left is translated to an elpi goal on the right.
+Goals in coq-elpi are represented as three main parts. A context of existential variables (evars) together with added rules assigning a type or definition to each variable. A goal, represented as a unification variable applied on all evars, together with a pending constraint typing the goal as the type of the goal. Lastly, a list of arguments applied to a tactic is given as part of every goal. The arguments are part of the goal, since they can reference the evars, and thus can't be taken out of the scope of the existential variables. Thus, a tactic invocation on the left is translated to an Elpi goal on the right.
 \\\\
 \begin{minipage}[t]{0.2\linewidth}
-    \begin{minted}[escapeinside=||]{coq}
+  \begin{minted}[escapeinside=||]{coq}
 P : Prop
 H : P
 ===========
@@ -53,48 +53,123 @@ tac (P) asdf 12
 \end{minted}
 \end{minipage}
 \begin{minipage}[t]{0.45\linewidth}
-    \begin{minted}[escapeinside=||]{elpi}
+  \begin{minted}[escapeinside=||]{elpi}
 pi c1\ decl c1 `P` (sort prop) =>
     pi c2\ decl c2 `H` c1 =>
       declare_constraint (evar (T c1 c2) 
                                c1
                                (P c1 c2)) 
                          on (T c1 c2),
-      solve (goal [decl c1 `P` (sort prop), decl c2 `H` c1] 
+      solve (goal [decl c1 `P` (sort prop), 
+                   decl c2 `H` c1] 
                   (T c1 c2)
                   c1 
                   (P c1 c2)
                   [trm c1, str "asdf", int 123])
 \end{minted}
-    \vspace{.1cm}
+  \vspace{.1cm}
 \end{minipage}
 
-This setup of the goal allows us to unify the trigger \mintinline{elpi}{T} with a proof term, which will trigger a the elaboration of \mintinline{elpi}{T} against the type (here \mintinline{elpi}{c1}) and unification of the resulting term with our proof variable \mintinline{elpi}{P}. This resulting proof term will likely contain more unification variables, representing subgoals, which we can collect as our resulting goal list (elpi has the builtin \mintinline{elpi}{coq.ltac.collect-goals} predicate, that does this for us).
+This setup of the goal allows us to unify the trigger \mintinline{elpi}{T} with a proof term, which will trigger the elaboration of \mintinline{elpi}{T} against the type (here \mintinline{elpi}{c1}) and unification of the resulting term with our proof variable \mintinline{elpi}{P}. This resulting proof term will likely contain more unification variables, representing subgoals, which we can collect as our resulting goal list (Elpi has the built-in \mintinline{elpi}{coq.ltac.collect-goals} predicate, that does this for us).
 
-We do have a problem with these goals. They are not very portable. Since they need existential variables to have been created and rules to be assumend, we can't just pass around a goal without being very carefull about the context it is in. This problem was solved by adding a sealed-goal. A sealed goal is a lambda function that takes existential variables for each element in its context. The arguments of the lambda functions can then be used in place of the existential variables in the goal. This allows us to pass around goals without having to worry about the context they are in. The sealed goal is then opened by applying it to existential variables. This is done by \mint{elpi}{pred open i:open-tactic, i:sealed-goal, o:list sealed-goal.} It opens a sealed goal and then applies the \mintinline{elpi}{open-tactic} to the opend goal. The resulting list of sealed goals is unified with the last argument.
+We do have a problem with these goals. They are not very portable. Since they need existential variables to have been created and rules to be assumed, we can't just pass around a goal without being very careful about the context it is in. This problem was solved by adding a sealed-goal. A sealed goal is a lambda function that takes existential variables for each element in its context. The arguments of the lambda functions can then be used in place of the existential variables in the goal. This allows us to pass around goals without having to worry about the context they are in. The sealed goal is then opened by applying it to existential variables. This is done by \mint{elpi}{pred open i:open-tactic, i:sealed-goal, o:list sealed-goal.} It opens a sealed goal and then applies the \mintinline{elpi}{open-tactic} to the opened goal. The resulting list of sealed goals is unified with the last argument.
 
-Sealed goals allow us to program our tactics in seperate steps, where each step is an \mintinline{elpi}{open-tactic}. This is especially usefull since we have to call quite some LTac code on our goals within Elpi to solve side-goals.
+Sealed goals allow us to program our tactics in separate steps, where each step is an \mintinline{elpi}{open-tactic}. This is especially useful since we have to call quite some LTac code on our goals within Elpi to solve side-goals.
 
 \paragraph*{Calling LTac}
-There are builtin API's in coq-elpi to call LTac code by name. When calling LTac code we can give arguments by setting the arguments in our goal. This does mean we have to be carefull to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which coq-elpi has a type, and mapping. Thus for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use coq intro patterns or any other syntax, until support has been added for these in coq-elpi.
+There are built-in API's in coq-elpi to call LTac code by name. When calling LTac code we can give arguments by setting the arguments in our goal. This does mean we have to be careful to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which coq-elpi has a type, and mapping. Thus, for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use coq intro patterns or any other syntax, until support has been added for these in coq-elpi.
 
-% \begin{grammar}
-%     <intropattern> ::= `*'
-%     \alt `**'
-%     \alt <simple\_intropattern>
+\paragraph*{Structure of \mintinline{coq}{iIntros}}
+\mintinline{coq}{iIntros} is based on the multi goal tactic from coq-elpi. Since with multi goal tactics we get a sealed goal as input which we open when necessary, instead of having an already opened goal. We first call a predicate \mintinline{elpi}{parse_args} to parse the arguments and unset any arguments in the goal. Next we call the predicate \mintinline{elpi}{go_iIntros} which will interpret the intro pattern structure created and apply the necessary lemma's and tactics. \mintinline{elpi}{go_iIntros} will defer to other tactics in Elpi to apply the intro patterns.
 
-%     <simple\_intropattern> ::= <naming\_intropattern>
-%     \alt `\_'
-%     \alt `[' <or\_and\_intropattern>
-%     \alt <equality\_intropattern>
+\paragraph*{Parsing intro patterns}
+We parse our intro pattern in two steps. We first tokenize the input string. Furthermore, we then parse the list of generated tokens. Tokenizing uses a simple linear recursive predicate. We do no backtracking in the tokenizer.
 
-%     <naming\_intropattern> ::= <ident>
-%     \alt `?'
-%     \alt `?'<ident>
+We come across the first larger snag of Elpi here, its string handling. Strings in Elpi are \mintinline{ocaml}{cstring}, and not lists of chars. Our first step is thus to split the string into a list of strings of length 1. Luckily, \mintinline{elpi}{rex.split "" I OS} allows us to split our input string \mintinline{Elpi}{IS} on every character giving us our \mintinline{Elpi}{OSS}, list of strings.
 
-%     <or\_and\_intropattern> ::= `]'
-%     \alt <simple\_intropattern> `|' <or\_and\_intropattern>
-%     \alt <simple\_intropattern> <or\_and\_intropattern>
-% \end{grammar}
+Another thing we have to be careful with is the naming of our constants. We first define a type token: \mint{elpi}{kind token type.} And then give different inhabitants of that type.
+\begin{minted}[escapeinside=||]{elpi}
+type tAnon, tFrame, tBar, tBracketL, |$\cdots$| token.
+type tName string -> token.
+       |$\vdots$|
+\end{minted}
+But we can actually write unification variables instead of names after \mintinline{elpi}{type}. This is valid Elpi and allows us to \dots. But when porting coq code to Elpi, if you aren't careful you might end up with some Pascal Case names and no warning or error from Elpi, except for broken syntax highlighting.
+
+Now that we have our tokenized input, we can start parsing it. We use a reductive descent parser as the basis of our parser. The syntax we parse is
+\begin{grammar}
+  <intropattern\_list> ::= $\epsilon$
+  \alt <intropattern> <intropattern\_list>
+
+  <intropattern> ::= <ident>
+  \alt `_' | `?' | `#' | `*' | `**' | `/=' | `//' | `!\%'
+  \alt `!>' | `->' | `<-'
+  \alt `[' <intropattern\_list> `]'
+  \alt `(' <intropattern\_conj\_list> `)'
+  \alt `\%' <ident>
+  \alt `#' <intropattern> \% Wait this one is weird
+  \alt `-#' <intropattern>
+  \alt `>' <intropattern>
+
+  <intropattern\_list> ::= $\epsilon$
+  \alt <intropattern> `|' <intropattern\_list>
+  \alt <intropattern> <intropattern\_list>
+
+  <intropattern\_conj\_list> ::= $\epsilon$
+  \alt <intropattern> `&' <intropattern\_conj\_list>
+\end{grammar}
+With the caveat that a $\langle intropattern\_conj\_list\rangle$ has to have at least length 2.
+
+The nice thing about reductive decent parsers, is that we can keep the structure of the syntax in BNF as the structure of the program. Thus, the parser for $\langle intropattern\_conj\_list\rangle$ becomes.
+\begin{minted}{elpi}
+pred parse_conj_ilist i:list token, o:list token, o:list intro_pat.
+parse_conj_ilist [tParenR | R] [tParenR | R] [IP].
+parse_conj_ilist TS R [IP | L'] :-
+  parse_ip TS [tAmp | RT] IP,
+  parse_conj_ilist RT R L'.
+\end{minted}
+Any parser should be interpreted as taking a list of tokens to parse and giving back a list of tokens that are left over after parsing and a list of intro patterns that got made after parsing. And because we unify our predicates we can pattern match on the output list of tokens, and we fail as soon as possible.
+
+After the parsing we get a list of intro patterns of the following type
+\begin{minted}[escapeinside=||]{elpi}
+kind intro_pat type.
+type iFresh, iDrop, iFrame, |$\cdots$| intro_pat.
+type iIdent ident -> intro_pat.
+type iList list (list intro_pat) -> intro_pat.
+type iPure option string -> intro_pat.
+type iIntuitionistic intro_pat -> intro_pat.
+type iSpatial intro_pat -> intro_pat.
+type iModalElim intro_pat -> intro_pat.
+type iRewrite direction -> intro_pat.
+type iCoqIntro ltac1-tactic -> intro_pat.
+\end{minted}
+\mintinline{elpi}{iList} represents a list of lists of intro patterns. The outer list is the disjunction intro pattern and the inner list the conjunction intro pattern. \mintinline{elpi}{iCoqIntro} is used when we pass a pure intro to \mintinline{coq}{iIntros (...)}. It is thus never parsed for now and only added separately afterwards. However, this would be the place to allow pure intro patterns to be added in the middle of an Iris intro pattern.
+
+\paragraph*{Executing an intro pattern}
+The intro patterns are executed by descending through them recursively. Thus, the intro pattern executor looks like \mint{elpi}{type go_iIntros (list intro_pat) -> tactic.} \mintinline{elpi}{tactic} is an abbreviation for the type \mintinline{elpi}{sealed-goal -> sealed goal}. We have a few interesting cases we will highlight here.
+
+The simplest intro patterns are ones that just call a piece of LTac code and then execute the remaining intro patterns on the new goal. These are cases like `//', `/=' and `\%a'. We show `/=' here as an example, it should execute \mintinline{coq}{simpl} on the goal.
+\begin{minted}{elpi}
+go_iIntros [iSimpl | IPS] G GL :-
+    open (coq.ltac.call "simpl" []) G [G'],
+    go_iIntros IPS G' GL.
+\end{minted}
+
+A lot of intro patterns also require us to apply some Iris lemma. Coq-elpi has a \mintinline{elpi}{refine} built in that allows us to refine a goal using a lemma with holes in it. In the drop and identifier intro patterns we also have to try several lemmas and when none work give an error message. We do this by making use of the backtracking capabilities of Elpi. When a lemma is successfully applied we sometimes have to deal with some side goals that have to be solved. However, we don't want to backtrack any more after finding the correct branch to enter. Thus, we cut the backtracking after applying the lemma to make sure we surface the correct error message. The identifier executor has all these aspects.
+\begin{minted}{elpi}
+go_iIntros [iIdent ID | IPS] G GL :- !,
+  ident->term ID X T,
+  open startProof G [G'],
+  (
+    open (refine {{ @tac_impl_intro _ _ lp:T _ _ _ _ _ _ _ }}) G' [GRes];
+      (
+        open (refine {{ @tac_wand_intro _ _ lp:T _ _ _ _ _ }}) G' [G''], !,
+        open (pm_reduce) G'' [G'''],
+        open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}) G''' [GRes]
+      );
+    (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
+  ),
+  go_iIntros IPS GRes GL.
+\end{minted}
+
 
 \end{document}
