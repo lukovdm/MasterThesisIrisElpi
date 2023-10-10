@@ -2,6 +2,15 @@
 \usepackage{syntax}
 \usepackage{csquotes}
 
+\usemintedstyle{default}
+
 \setlength{\grammarparsep}{20pt plus 1pt minus 1pt} % increase separation between rules
 \setlength{\grammarindent}{12em} % increase separation between LHS/RHS 
 \hbadness=10000 % Disable underfull hbox badness messages
+
+\usepackage{etoolbox}
+
+\makeatletter
+\AtBeginEnvironment{minted}{\dontdofcolorbox}
+\def\dontdofcolorbox{\renewcommand\fcolorbox[4][]{##4}}
+\makeatother

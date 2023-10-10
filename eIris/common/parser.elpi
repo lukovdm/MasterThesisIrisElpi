@@ -19,15 +19,22 @@ type iCoqIntro ltac1-tactic -> intro_pat.
 
 pred parse_ilist i:list token, o:list token, o:list (list intro_pat).
 parse_ilist [tBracketR | TS] [tBracketR | TS] [[]].
-parse_ilist TS R [[IP] | LL'] :-
-  parse_ip TS [tBar | RT] IP,
-  parse_ilist RT R LL'.
-parse_ilist TS R [[IP | L] | LL'] :-
+parse_ilist TS R [IPS | LL'] :-
   parse_ip TS RT IP,
-  parse_ilist RT R [L | LL'].
+  (
+    (
+      RT = [tBar | RT'],
+      parse_ilist RT' R LL',
+      IPS = [IP]
+    );
+    (
+      parse_ilist RT R [L | LL'],
+      IPS = [IP | L]
+    )
+  ).
 
 pred parse_conj_ilist i:list token, o:list token, o:list intro_pat.
-parse_conj_ilist [tParenR | R] [tParenR | R] [IP].
+parse_conj_ilist [tParenR | R] [tParenR | R] [].
 parse_conj_ilist TS R [IP | L'] :-
   parse_ip TS [tAmp | RT] IP,
   parse_conj_ilist RT R L'.
@@ -51,13 +58,13 @@ parse_ip [tParenL | TS] TS' IP :-
   {std.length L'} >= 2,
   foldr {std.drop-last 2 L'} (iList [{std.take-last 2 L'}]) (x\ a\ r\ r = iList [[x, a]]) IP.
 parse_ip [tPure X | TS] TS (iPure X).
-parse_ip [tIntuitionistic | TS] TS (iIntuitionistic X) :-
+parse_ip [tIntuitionistic | TS] TS' (iIntuitionistic X) :-
   parse_ip TS TS' X.
 parse_ip [tSpatial | TS] TS' (iSpatial X) :-
   parse_ip TS TS' X.
 parse_ip [tModal | TS] TS' (iModalElim X) :-
   parse_ip TS TS' X.
-parse_ip [tRewrite D | TS] TS (iRewrite D).
+parse_ip [tArrow D | TS] TS (iRewrite D).
 
 pred parse_ipl i:list token, o:list intro_pat.
 parse_ipl [] [].

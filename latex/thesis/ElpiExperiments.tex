@@ -6,7 +6,7 @@
 \section{Intros}
 In Coq proofs often start with the same few tactics. They start with some $\forall$ introductions, some $\rightarrow$ introductions and some destructs of existential quantifiers, \mintinline{coq}{\/}, \mintinline{coq}{/\} and others. Because these happen so often, a little DSL has been made to quickly write these steps down, and are called intro patterns. These intro patterns are included in many tactics to quickly deal with the result of these tactics, but we will focus on \mintinline{coq}{intros}.
 
-\subsection{Coq \mintinline{coq}{intros}}
+\subsection[Coq intros]{Coq \mintinline{coq}{intros}}
 We look at a subset of the total intro pattern syntax that is used in coq. Our subset is shown here
 \begin{grammar}
   <intropattern> ::= `*'
@@ -101,7 +101,7 @@ Now that we have our tokenized input, we can start parsing it. We use a reductiv
   \alt <intropattern> <intropattern\_list>
 
   <intropattern> ::= <ident>
-  \alt `_' | `?' | `#' | `*' | `**' | `/=' | `//' | `!\%'
+  \alt `_' | `?' | `\$' | `*' | `**' | `/=' | `//' | `!\%'
   \alt `!>' | `->' | `<-'
   \alt `[' <intropattern\_list> `]'
   \alt `(' <intropattern\_conj\_list> `)'
@@ -144,18 +144,18 @@ type iCoqIntro ltac1-tactic -> intro_pat.
 \end{minted}
 \mintinline{elpi}{iList} represents a list of lists of intro patterns. The outer list is the disjunction intro pattern and the inner list the conjunction intro pattern. \mintinline{elpi}{iCoqIntro} is used when we pass a pure intro to \mintinline{coq}{iIntros (...)}. It is thus never parsed for now and only added separately afterwards. However, this would be the place to allow pure intro patterns to be added in the middle of an Iris intro pattern.
 
-\paragraph*{Executing an intro pattern}
-The intro patterns are executed by descending through them recursively. Thus, the intro pattern executor looks like \mint{elpi}{type go_iIntros (list intro_pat) -> tactic.} \mintinline{elpi}{tactic} is an abbreviation for the type \mintinline{elpi}{sealed-goal -> sealed goal}. We have a few interesting cases we will highlight here.
+\paragraph*{Applying an intro pattern}
+The intro patterns are applied by descending through them recursively. Thus, the intro pattern applier looks like \mint{elpi}{type go_iIntros (list intro_pat) -> tactic.} \mintinline{elpi}{tactic} is an abbreviation for the type \mintinline{elpi}{sealed-goal -> sealed goal}. We have a few interesting cases we will highlight here.
 
-The simplest intro patterns are ones that just call a piece of LTac code and then execute the remaining intro patterns on the new goal. These are cases like `//', `/=' and `\%a'. We show `/=' here as an example, it should execute \mintinline{coq}{simpl} on the goal.
+The simplest intro patterns are ones that just call a piece of LTac code and then apply the remaining intro patterns on the new goal. These are cases like `//', `/=' and `\%a'. We show `/=' here as an example, it should apply \mintinline{coq}{simpl} on the goal.
 \begin{minted}{elpi}
 go_iIntros [iSimpl | IPS] G GL :-
     open (coq.ltac.call "simpl" []) G [G'],
     go_iIntros IPS G' GL.
 \end{minted}
 
-A lot of intro patterns also require us to apply some Iris lemma. Coq-elpi has a \mintinline{elpi}{refine} built in that allows us to refine a goal using a lemma with holes in it. In the drop and identifier intro patterns we also have to try several lemmas and when none work give an error message. We do this by making use of the backtracking capabilities of Elpi. When a lemma is successfully applied we sometimes have to deal with some side goals that have to be solved. However, we don't want to backtrack any more after finding the correct branch to enter. Thus, we cut the backtracking after applying the lemma to make sure we surface the correct error message. The identifier executor has all these aspects.
-\begin{minted}{elpi}
+A lot of intro patterns also require us to apply some Iris lemma. We will use the below example to show how a single step is build. Coq-elpi has a \mintinline{elpi}{refine} built in that allows us to refine a goal using a lemma with holes in it, as can be seen in line 5 and 7. In the drop and identifier intro patterns we also have to try several lemmas and when none work give an error message. We do this by making use of the backtracking capabilities of Elpi. We first try refining with implication intro, if that does not produce one goal we try wand intro and if none work we give an error. When a lemma is successfully applied we sometimes have to deal with some side goals that have to be solved. However, we don't want to backtrack any more after finding the correct branch to enter. Thus, we cut the backtracking after applying the lemma to make sure we surface the correct error message as can be seen on line 7.
+\begin{minted}[linenos=true]{elpi}
 go_iIntros [iIdent ID | IPS] G GL :- !,
   ident->term ID X T,
   open startProof G [G'],
@@ -171,5 +171,51 @@ go_iIntros [iIdent ID | IPS] G GL :- !,
   go_iIntros IPS GRes GL.
 \end{minted}
 
+Now we get to the most interesting case. The destruct cases.
+\begin{minted}[linenos=true]{elpi}
+go_iIntros [iList IPS | IPSS] G GL :- !,
+  open startProof G [StartedGoal],
+  open (go_iFresh N) StartedGoal [FreshGoal],
+  go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
+  go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
+  all (go_iIntros IPSS) GL' GL.
+\end{minted}
+To destruct a goal the first step is to get an anonymous identifier and introduce the goal with it as on line 3. Getting a fresh identifier is quite easy using Elpi as we just have to extract the current counter and increase it by one.
+\begin{minted}{elpi}
+type go_iFresh term -> open-tactic.
+go_iFresh N (goal Ctx Trigger 
+                  {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} 
+                  Proof Args) 
+          [seal (goal Ctx Trigger 
+                      {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} 
+                      Proof Args)].
+\end{minted}
+Next we can introduce using our previously defined identifier introduction step. Lastly we call the destruct applier with the identifier of the hypothesis we just introduced.
+
+\mintinline{elpi}{go_iDestruct} has a pretty similar construction as \mintinline{elpi}{go_iIntros}. We identify the case we are interested about, we use the specific applier for that case and handle any side goals or error messages. Lastly, we call \mintinline{elpi}{go_iDestruct} on any nested intro patterns and merge the resulting goal lists.
+
+\subsubsection*{Improvements possible using Elpi}
+We will list some possible improvements that could be done or have been done to by using Elpi. Most improvements found so far are about not needing weird workaround anymore that where uses by the LTac tactics. Elpi allows easier introspection into goals and passing around values found in goals. Also, backtracking depending on steps made looks to be easier. This allows us to remove the workarounds in \mintinline{elpi}{go_iExistDestruct} for remembering the name of the value to destruct. Also, the separating and destruct with a pure left side no longer needs to be resolved through a case in the type classes to destruct a separating and. Instead, we can backtrack when the exists destruct does not work.
+\dots
+
+\subsubsection*{Downsides of Elpi}
+One problem that often occurs when using a meta-programming language is the need to transform between data types in the original and meta-programming language \cite*{}. This adds some overhead to quite a few actions that have to be done.
+
+Also, not all API's are implemented yet in Elpi. For this project the most obvious missing thing is the support for coq intro patterns. It would be very helpful to be able to manipulate coq intro patterns and pass them to other tactics. Furthermore, support for the coq parser would add the possibility for a lot of added functionality.
+
+Another mayor downside is the current lack of documentation. A few happy paths are documented fairly well by a few tutorials. However, there are a lot of library functions and possibilities that exist in Elpi and coq-elpi that have little to no documentation and make you have to read the source code to understand them. This point is somewhat lessened by the excellent support by the creator and other enthusiasts in the Zullip chat. A lot of the more pressing issues are resolved by asking them there. Also, the language is still young which explains a lot of these pain points.
+
+Debugging is still not that simple in Elpi. Especially because of backtracking, it often occurs that a mistake in your program will not surface the error at the location where the error is. Even misspelling a variable often won't give an error and can result in hard to find mistakes. Typing a comma instead of a point will often not generate an error, even though your code is not getting run after the point. These can sometimes lead to quite long hunts for stupid mistakes.
+
+\subsection*{Upsides of Elpi}
+Elpi as a language works quite well and the combination of $\lambda$prolog with constraint handling allows for some very nice code. By using functional programming basics it is easy to create most pure functions and when making full use of the unification and backtracking some very elegant code can be created.
+
+The base tactic programming language is well put together and allows for powerful manipulation of goals. It is possible to take values out of goals manipulate them. Apply tactics dynamically on any goals. This makes it work quite well for writing out more complicated tactics in a fairly readable manner.
+
+The data type system is well put together and allows for easy construction of large complicated data structures.
+
+The code tracer is an excellent tool that allows for much easier introspection into what is actually going on. It helps find many small bugs and also just gives a great feeling for how the language works.
+
+The quotation system allows for fairly easy inclusion of coq terms into Elpi programs. This is very powerful tool allowing for matching of goals to take out values, constructing proof terms for use with \mintinline{elpi}{refine}, and creating coq data types.
 
 \end{document}

@@ -206,9 +206,8 @@ Elpi Accumulate lp:{{
   go_iDestruct ID IP G [G] :-
     coq.say { calc ("eiDestruct: Skipping " ^ {std.any->string IP})}.
 
-  type go_iFresh term -> open-tactic. % Not at all sure this works, in one call it works, but in the next it resets.
-  go_iFresh N (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} Proof Args as G) [SG] :-
-    SG = seal (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} Proof Args).
+  type go_iFresh term -> open-tactic.
+  go_iFresh N (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} Proof Args) [seal (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} Proof Args)].
 
   type go_iIntros (list intro_pat) -> tactic.
   % go_iIntros IPS _ _ :- coq.say "go_iIntros: " IPS, fail.
@@ -295,7 +294,7 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  Elpi Trace Browser.
+  (* Elpi Trace Browser. *)
   (* Elpi Bound Steps 10000. *)
   (* Lemma intros (P : nat -> iProp) :
     ⊢ ∀a b : nat, P a.
@@ -314,9 +313,6 @@ Section Proof.
     iExists a.
     iExact "H1".
   Qed. *)
-
-  Lemma test (P Q : Prop) :
-    P \/ Q.
 
   Lemma intros (P : nat -> iProp) :
     (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
