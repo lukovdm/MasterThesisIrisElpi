@@ -19,7 +19,7 @@ Fixpoint is_list_fix (hd : val) (vs : list val) : iProp :=
 
 Definition is_list_pre (is_list : val -d> list val -d> iProp) : val -d> list val -d> iProp := λ hd vs,
   match vs with
-  | [] => bi_pure (hd = NONEV)
+  | [] => ⌜hd = NONEV⌝
   | v :: vs => ∃ l tl, ⌜hd = SOMEV #l⌝ ∗ l ↦ (v,tl) ∗ ▷ is_list tl vs
   end%I.
 
