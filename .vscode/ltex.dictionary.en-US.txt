@@ -9,3 +9,10 @@ evars
 LTac
 Coq-elpi
 Zullip
+simpl
+iProp
+forall
+eiIntros
+recurse
+Prolog
+substructural

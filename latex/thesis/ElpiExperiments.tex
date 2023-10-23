@@ -2,42 +2,184 @@
 
 \begin{document}
 
-\chapter{Elpi tactic for iIntros}
-\section{Intros}
-In Coq proofs often start with the same few tactics. They start with some $\forall$ introductions, some $\rightarrow$ introductions and some destructs of existential quantifiers, \mintinline{coq}{\/}, \mintinline{coq}{/\} and others. Because these happen so often, a little DSL has been made to quickly write these steps down, and are called intro patterns. These intro patterns are included in many tactics to quickly deal with the result of these tactics, but we will focus on \mintinline{coq}{intros}.
+\chapter{Elpi introduction}
+In this chapter we will show how \elpi together with \ce can be used to create new tactics. We will do this by giving a tutorial on how to create the \coqinline{iIntros} tactic from \iris.
 
-\subsection[Coq intros]{Coq \mintinline{coq}{intros}}
-We look at a subset of the total intro pattern syntax that is used in coq. Our subset is shown here
-\begin{grammar}
-  <intropattern> ::= `*'
-  \alt `**'
-  \alt <simple\_intropattern>
+\section[Iris iIntros]{Iris \coqinline{iIntros}}
+\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Predicates can be seen as propositions over resources, e.g. heaps. Thus, there are a number of extra logical connectives such as \coqinline{P ∗ Q}, which represents that \coqinline{P} and \coqinline{Q} split up the resources into two disjoints in which they hold. Thus, our logic is substructural, namely linear. To be able to reason about this logic in coq a tactics language has been added called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. In the IPM a new context has been added that represents the contexts containing resources. One context represents all disjunct resources and one represents all invariant resources. The tactics are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris context. We will be specifically looking at the \coqinline{iIntros} tactic. First, we will describe how \coqinline{iIntros} works, and then we will describe how \coqinline{iIntros} can be created using \elpi.
 
-  <simple\_intropattern> ::= <naming\_intropattern>
-  \alt `\_'
-  \alt <or\_and\_intropattern>
-  \alt <equality\_intropattern>
+\subsection[iIntros example]{\coqinline{iIntros} example}
+\coqinline{iIntros} consists of a DSL for quickly introducing different logical connectives in \iris. It has also been extended to deal with often seen initial steps in a proof, like \coqinline{simpl}, \coqinline{done} and others. We will show a few examples of how \coqinline{iIntros} can be used to help proof lemma's.
 
-  <naming\_intropattern> ::= <ident>
-  \alt `?'
-  \alt `?'<ident>
+We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources. Thus, where a normal implication introduction adds the left-hand side with an and to the context, the magic wand adds the left-hand side with a separating and to the resource context.
 
-  <or\_and\_intropattern> ::= `[' ( <intropattern>$^\star$ )$_\text{\enquote*{|}}^\star$ `]'
-  \alt `(' <intropattern>$_\text{\enquote*{\&}}^\star$ `)'
+\quest{How to name the different resources}
 
-  <equality\_intropattern> ::= `->'
-  \alt `<-'
-  \alt `[=' <intropattern>$^\star$ `]'
-\end{grammar}
-\dots
+\begin{coqcode}
+  P, R: iProp
+  ============
+  ------------∗
+  P -∗ R -∗ P
+\end{coqcode}
+When using \coqinline{iIntros "HP HR"}, this transforms into
+\begin{coqcode}
+  P, R: iProp
+  ============
+  "HP" : P
+  "HR" : R
+  ------------∗
+  P
+\end{coqcode}
+We have introduced the two separation logic propositions into the \iris context. This does not only work on the magic wand, we can also use this to introduce more complicated statements. Take the following proof state,
+\begin{coqcode}
+  P: nat → iProp
+  ==============================================
+  ----------------------------------------------∗
+  ∀ x : nat, (∃ y : nat, P x ∗ P y) ∨ P 0 -∗ P 1
+\end{coqcode}
+It consists of a forall, an exists, a conjunction and a disjunction. We can again use one application of \coqinline{iIntros} to introduce and eliminate the premise. \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} takes the proof to the following state of two goals
+\begin{coqcode}
+  (1/2)
+  P: nat → iProp
+  x, y: nat
+  ==================
+  "Hx" : P x
+  "Hy" : P y
+  ------------------∗
+  P 1
 
-\subsection[Iris iIntros]{Iris \mintinline{coq}{iIntros}}
-Iris has in its logic several more connectives that behave like \mintinline{coq}{/\} and \mintinline{coq}{\/}, but are not them. This combined with the separate environments that iris adds, result in us not being able to use the coq \mintinline{coq}{intros} tactic. Thus, we have written our own tactic that can deal with the Iris logic. We call this tactic \mintinline{coq}{iIntros}.
+  (2/2)
+  P: nat → iProp
+  x: nat
+  ==================
+  "H0" : P 0
+  ------------------∗
+  P 1
+\end{coqcode}
+We break down the statement \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} intro its components. The first \coqinline{"%x"} introduces a pure \coq variable for the \coqinline{∀ x : nat}. Next \coqinline{"[H | H]"} first introduces the magic wand and then eliminates the or, resulting in two goals. \coqinline{"[%y H]"} eliminates the exists and adds the \coqinline{y} to the \coq context. Lastly, \coqinline{"[Hx Hy]"} eliminates the seperating and in the \iris context by splitting it into two assumptions \coqinline{"Hx"} and \coqinline{"Hy"}.
 
-\dots
+There are more patterns available to introduce complicated goals, these can be found in \cite*{krebbersInteractiveProofsHigherorder2017}.
 
-\subsection{Elpi implementation of iIntros}
-We implement our tactic in the $\lambda$Prolog programming language Elpi \cite{dunchevELPIFastEmbeddable2015}. Elpi implements $\lambda$prolog and adds constraint handling rules to it. To use it as a coq meta programming language we make use of the Elpi Coq connector, coq-elpi \cite{tassiElpiExtensionLanguage2018}.
+\section{Elpi implementation of iIntros}
+We implement our tactic in the $\lambda$Prolog programming language \elpi \cite{dunchevELPIFastEmbeddable2015}. \elpi implements $\lambda$prolog and adds constraint handling rules to it. To use it as a \coq meta programming language we make use of the \elpi \coq connector, \ce \cite{tassiElpiExtensionLanguage2018}. We will use these languages to implement the \elpi variant of \coqinline{iIntros}, called \coqinline{eiIntros}.
+
+\subsection[Structure of eiIntros]{Structure of \coqinline{eiIntros}}
+Our \elpi tactic consists of four parts as seen in \cref{fig:eiintrosstruct}. The first two parts will interpret the DSL used to describe what we want to introduce. Then next two parts will apply the interpreted DSL. Interpreting consists of first tokenizing the input string, then we parse the tokens into a recursive Elpi data structure. We use this structure to recurse over it and apply steps when necessary. Lastly whenever we have to eliminate some hypothesis we call the destructor. Each of these parts will he explained in a section below. In each section we will expand more elements part of \elpi, such that you won't need any more knowledge of \elpi. We will omit several of duplicate components from this overview, but they can be found the source repository.
+\begin{figure}
+  \centering
+  \begin{tikzpicture}
+    \node[basic box = green] (t) {Tokenizer};
+    \node[basic box = green, right of=t] (p) {Parser};
+    \node[basic box = blue, right of=p] (ia) {Introducer};
+    \node[basic box = blue, right of=ia] (da) {Destructor};
+
+    \path[->,thick]
+    (t) edge (p)
+    (p) edge (ia)
+    (ia) edge (da);
+  \end{tikzpicture}
+  \caption{Structure of \coqinline{eiIntros}}
+  \label{fig:eiintrosstruct}
+\end{figure}
+
+\subsubsection{Tokenizer}
+\elpi is a $\lambda$Prolog language. This is a combination of two concepts, the predicate based language of Prolog and lambda application. \elpi also has constraint handling in it, but we will focus on that in \cref{ss:applier}. For the tokenizer we will only need the more basic aspects of \elpi. We will highlight these while describing the tokenizer.
+
+\paragraph*{Data types}
+We have separated the introduction patterns into several distinct tokens. Most tokens just represent a token, but some tokens also contain some data associated with that token. For example the name token also contains the string of the name. The first step of tokenizing is creating a type in which to store the tokens.
+\begin{elpicode}
+  kind token type.
+
+  type tAnon, tFrame, tBar, tBracketL, tBracketR, tAmp,
+       tParenL, tParenR, tBraceL, tBraceR, tSimpl,
+       tDone, tForall, tAll token.
+\end{elpicode}
+We first define a new type called token, then we define several constructors for the token. These constructors don't take any arguments and just represent one or more constant characters. We also add several more constructors.
+\begin{elpicode}
+  type tName string -> token.
+  type tNat int -> token.
+  type tPure option string -> token.
+  type tArrow direction -> token.
+
+  kind direction type.
+  type left, right direction.
+\end{elpicode}
+These constructors take an argument and produce a token. We have some basic types in \elpi, like \elpiinline{string} and \elpiinline{int}. We also have higher order types, like \elpiinline{option A}, and later we will see \elpiinline{list A}.
+\quest{should I add things about \elpi that are nice to explain but not usefull here like the following part}
+Creating types of kind \elpiinline{Type -> Type} can be done using the \elpiinline{kind} directive and passing in a more complicated kind. This is the definition of the \elpiinline{option} type.
+\begin{elpicode}
+  kind option type -> type.
+\end{elpicode}
+
+\paragraph*{Predicates}
+Programs in \elpi consist of predicates. Every predicate can have several rules to describe the relation between its inputs and outputs.
+\begin{elpicode}
+  pred tokenize i:string, o:list token.
+  tokenize S O :- 
+    rex.split "" S SS,
+    tokenize.rec SS O.
+\end{elpicode}
+This is the entry point of our tokenizer. It takes \elpiinline{string} as input and gives a list of \elpiinline{token} as output. Next we have our first rule, \elpiinline{tokenize S O}. Here \elpiinline{S} is bound to the input \elpiinline{string} and \elpiinline{O} is bound to our output \elpiinline{list token}. A rule now consists of a list of new rules that have to be solved, \elpiinline{rex.split "" S SS} and \elpiinline{tokenize.rec SS O}\footnote{Names in \elpi can have special characters in them like \elpiinline{.} and \elpiinline{-}, thus, \elpiinline{tokenize.rec} is a fully separate predicate.}. Thus basic execution of a program in \elpi consists of a list of rules with their own list of subsequent rules to execute and a stack of predicates to solve. Each time we try to find a rule in the program that can solve our topmost predicate and add any new predicates we need to solve to the top of the stack.
+\quest{Should this be here?}
+
+Strings in \elpi are not lists of characters as seen in other languages, and we can't easily reason about the first element of a string. Thus, our first step is to split the string into a list of strings, each of length 1. This list is stored in \elpiinline{SS}. Next, we call our predicate that will build the list of tokens out of our list of characters (strings of length 1).
+
+\paragraph*{Matching and unification}
+Our first rule of the \elpiinline{tokenize.rec} predicate shows how one pattern matches on the input and output variables of a rule.
+\begin{elpicode}
+  pred tokenize.rec i:list string, o:list token.
+  tokenize.rec [] [].
+\end{elpicode}
+This rule has no subsequent rules and is thus immediately solved.
+\quest{We actually already do unification on the output variable here, not just pattern matching, but I don't know how to introduce that.}
+
+When the list is not empty, we first have rules that will try to match the first, or first few characters and add the token associated with that character to the output list. We can then call \elpiinline{tokenize.rec} on the rest of the list and append the output to the end of the output \elpiinline{token list}.
+\begin{elpicode}
+  tokenize.rec [" " | SL] TS :- tokenize.rec SL TS.
+  tokenize.rec ["$" | SL] [tFrame | TS] :- 
+    tokenize.rec SL TS.
+  tokenize.rec ["/", "/", "=" | SL] [tSimpl, tDone | TS] :- 
+    tokenize.rec SL TS.
+  tokenize.rec ["/", "/" | SL] [tDone | TS] :- 
+    tokenize.rec SL TS.
+\end{elpicode}
+Given these rules there are strings that could have multiple rules that could be used to solve them. If we take \elpiinline{["/", "/", "="]}, both the third and fourth rule match the input. In this case, the order of the rules matters. We try the first rule in our list of rules for a predicate.
+
+\paragraph*{Functional programming in \elpi}
+While our language is based on predicates we still often defer to a functional style of programming. The first language feature that is very useful for this goal is spilling. Spilling allows us to write our entry point of the tokenizer without the need of the temporary variable to pass the list of strings around.
+\begin{elpicode}
+  pred tokenize i:string, o:list token.
+  tokenize S O :- tokenize.rec {rex.split "" S} O.
+\end{elpicode}
+We spill the output of a predicate into the input of another predicate by using the \elpiinline{{ }} syntax. We don't specify the last argument of the predicate and only the last argument of a predicate can be spilled.
+\quest{This is a bit of weird digression in the flow of the program, is that okay?}
+
+The second useful feature is how lambda expressions are first class citizens of the language. The \elpiinline{pred} syntax is mostly a wrapper around the constructor definition \elpiinline{type}. The predicate \elpiinline{pred tokenize i:string, o:list token.} can also be written as \elpiinline{type tokenize string -> list token -> prop}, where \elpiinline{prop} is the special type of predicates. This also allows us to write predicates that accept other predicates as arguemnts.
+\begin{elpicode}
+  tokenize.rec SL [tName S | TS] :-
+    take-while-split SL (x\ is-identifier x) S' SL',
+    std.string.concat "" S' S,
+    { calc (size S) } > 0,
+    tokenize.rec SL' TS.
+\end{elpicode}
+To tokenize an identifier, we want to take the initial characters of our string that are allowed to be in an identifier. \elpiinline{take-while-split} takes the list of characters, a predicate that checks if a character can be part of an identifier and gives back the initial string representing the identifier and the rest of the string. Predicate \elpiinline{take-while-split} thus has the following type:
+\begin{elpicode}
+  pred take-while-split i:list A, i:(A -> prop), o:list A, o:list A.
+\end{elpicode}
+And we can fill in the second argument with the lambda expressions, or anonymous rule, \elpiinline{(x\ is-identifier x)}.
+
+\todoo{Talk about \elpiinline{calc} somewhere}
+
+\quest{Should there be some sort of conclusion here?}
+
+\subsection{Parser}
+
+
+\subsection{Applier}\label{ss:applier}
+
+\subsection{Destructor}
+
+\section{Old text}
 
 \paragraph*{Elpi goals}
 Goals in coq-elpi are represented as three main parts. A context of existential variables (evars) together with added rules assigning a type or definition to each variable. A goal, represented as a unification variable applied on all evars, together with a pending constraint typing the goal as the type of the goal. Lastly, a list of arguments applied to a tactic is given as part of every goal. The arguments are part of the goal, since they can reference the evars, and thus can't be taken out of the scope of the existential variables. Thus, a tactic invocation on the left is translated to an Elpi goal on the right.

@@ -14,3 +14,8 @@
 {"rule":"ARROWS","sentence":"^\\Q<equalityintropattern> ::= `->' `<-' `[=' <intropattern>\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q `]' …\\E$"}
 {"rule":"EN_A_VS_AN","sentence":"^\\QSealed goals allow us to program our tactics in separate steps, where each step is an \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
 {"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QThese are cases like `//', `/=' and `%a'.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\Qis a tactics language for separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q Is this the correct paper?.\\E$"}
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qimplements \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Qprolog and adds constraint handling rules to it.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\Qconsists of a separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and a tactics language for separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\Qis a separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and a tactics language for separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\QTo be able to reason about this logic in coq a tactics language has been added called the Iris Proof Mode (IPM) \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}

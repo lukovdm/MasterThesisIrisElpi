@@ -1,6 +1,23 @@
 \usepackage{minted}
 \usepackage{syntax}
 \usepackage{csquotes}
+\usepackage{xspace}
+
+\usepackage{empheq}
+\usepackage{stmaryrd}
+\usepackage{amssymb}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes.geometric,backgrounds,positioning,calc}
+\tikzset{
+    basic box/.style = {
+        shape = rectangle,
+        draw  = #1,
+        fill  = #1!25,
+        rounded corners
+    },
+    every node/.style={node distance=3cm},
+}
 
 \usemintedstyle{default}
 
@@ -8,9 +25,30 @@
 \setlength{\grammarindent}{12em} % increase separation between LHS/RHS 
 \hbadness=10000 % Disable underfull hbox badness messages
 
+% Minted settings
 \usepackage{etoolbox}
 
 \makeatletter
 \AtBeginEnvironment{minted}{\dontdofcolorbox}
 \def\dontdofcolorbox{\renewcommand\fcolorbox[4][]{##4}}
 \makeatother
+
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+
+\newminted{elpi}{autogobble,bgcolor=bg}
+\newminted{coq}{autogobble,bgcolor=bg}
+\newmintinline{elpi}{}
+\newmintinline{coq}{}
+
+% Names of projects
+\newcommand{\elpi}{Elpi\xspace}
+\newcommand{\iris}{Iris\xspace}
+\newcommand{\ce}{Coq-Elpi\xspace}
+\newcommand{\coq}{Coq\xspace}
+
+% Todo notes
+\usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny]{todonotes}
+
+\newcommand{\quest}[1]{\todo[color=blue!40]{Question: #1}}
+\newcommand{\todoo}[1]{\todo[color=red!40]{TODO: #1}}
+\newcommand{\note}[1]{\todo[color=green!40]{Note: #1}}

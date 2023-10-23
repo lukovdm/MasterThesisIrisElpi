@@ -23,20 +23,15 @@ Elpi Query lp:{{
   X 1 = Y.
 }}.
 
-Lemma demo (P : Prop) :
-  P -> P.
-Proof.
-  intros.
-  elpi print_args (P) "asdf" 123.
-
 Section proof. 
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  Lemma and_exist_sep (P R : iProp) :
-    P -∗ R -∗ R ∗ P.
+  Lemma and_exist_sep (P : nat -> iProp) :
+    ∀ x, ((∃ y, P x ∗ P y) ∨ P 0) -∗ P 1.
   Proof.
-    iIntros "HP HR".
+    iStartProof.
+    iIntros (x) "[[%y [Hx Hy]] | H0]". 
     eiSplitL "HR".
       - iFrame.
       - iFrame.

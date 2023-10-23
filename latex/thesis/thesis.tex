@@ -2,8 +2,10 @@
 
 \usepackage[rgb]{xcolor}
 \usepackage{url}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+
+\usepackage{fontspec}
+\setmonofont{FiraCode Nerd Font}
+
 \usepackage{graphicx}
 \usepackage{amsthm}
 \usepackage{listings}
@@ -13,16 +15,13 @@
 \usepackage{subfiles}
 \usepackage[hidelinks]{hyperref}
 
-\usepackage{empheq}
-\usepackage{stmaryrd}
-\usepackage{amssymb}
-
 \usepackage{thesiscommands}
+
+\usepackage[noabbrev]{cleveref}
+
 
 \allowdisplaybreaks
     
-\newcommand{\todo}[1]{\footnote{\color{red} #1}}
-
 \makeatletter %otherwise geometry resets everything
 \Gm@restore@org
 \makeatother
@@ -51,7 +50,7 @@
         \textsc{\Large Radboud University}\\[1cm]
         \hrule
         \vspace{0.4cm}
-        \textbf{\huge Iris or something}\\[0.4cm]
+        \textbf{\huge Iris Induction or something}\\[0.4cm]
         \hrule
         \vspace{2cm}
         \begin{minipage}[t]{0.45\textwidth}
@@ -82,6 +81,7 @@
 \tableofcontents
 
 \subfile{ElpiExperiments}
+\subfile{Induction}
 
 \printbibliography
 

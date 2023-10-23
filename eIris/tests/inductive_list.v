@@ -20,7 +20,7 @@ Fixpoint is_list_fix (hd : val) (vs : list val) : iProp :=
 Definition is_list_pre (is_list : val -d> list val -d> iProp) : val -d> list val -d> iProp := λ hd vs,
   match vs with
   | [] => ⌜hd = NONEV⌝
-  | v :: vs => ∃ l tl, ⌜hd = SOMEV #l⌝ ∗ l ↦ (v,tl) ∗ ▷ is_list tl vs
+  | v :: vs => ∃ l tl, ⌜hd = SOMEV #l⌝ ∗ l ↦□ (v,tl) ∗ ▷ is_list tl vs
   end%I.
 
 Local Instance is_list_pre_contractive : Contractive (is_list_pre).
@@ -179,3 +179,49 @@ Section Proofs.
       iApply is_list_gfp_unfold. simpl.
       iExists l0, _. iFrame. done.
   Qed.
+
+End Proofs.
+
+Section Equivalence.
+  
+
+  Lemma def_lfp_equiv hd xs :
+    is_list_def hd xs ⊣⊢ is_list_lfp_def hd xs.
+  Proof.
+    iSplit.
+    - rewrite is_list_lfp_unfold is_list_def_unfold.
+      iRevert (hd).
+      iInduction xs as [|x xs] "IH"; iIntros (hd) "H"; try done.
+      simpl.
+      iDestruct "H" as "[%l [%tl (HP & Hl & Hil)]]".
+      iExists l, tl.
+      iFrame.
+      iApply is_list_lfp_unfold.
+      iApply "IH".
+      (* How to fix the later, maybe with an iLob earlier? *)
+      admit.
+    - iIntros "H".
+      iInduction xs as [|x xs] "IH" forall (hd) "H".
+      { by rewrite is_list_lfp_unfold is_list_def_unfold. }
+      iEval (rewrite is_list_def_unfold).
+      iEval (rewrite is_list_lfp_unfold) in "H".
+      simpl.
+      iDestruct "H" as "[%l [%tl (HP & Hl & Hil)]]".
+      iExists l, tl.
+      iFrame.
+      iNext.
+      by iApply "IH".
+    
+      Undo 12.
+
+      iLöb as "IH" forall (hd xs) "H".
+      iEval (rewrite is_list_def_unfold).
+      iEval (rewrite is_list_lfp_unfold) in "H".
+      destruct xs as [|x xs].
+      { done. }
+      simpl.
+      iDestruct "H" as "[%l [%tl (HP & Hl & Hil)]]".
+      iExists l, tl.
+      iFrame.
+      iNext.
+      by iApply "IH".
