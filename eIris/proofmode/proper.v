@@ -3,6 +3,8 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 Require Import Program.Tactics.
 
+(* The global argument things might be a bit messy, as I don't exactly know what I am doing there. *)
+
 Section iRelation_Definition.
 
   Definition iRelation {PROP : bi} {A} := A → A → PROP.
