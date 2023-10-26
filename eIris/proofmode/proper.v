@@ -3,8 +3,6 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 Require Import Program.Tactics.
 
-(* The global argument things might be a bit messy, as I don't exactly know what I am doing there. *)
-
 Section iRelation_Definition.
 
   Definition iRelation {PROP : bi} {A} := A → A → PROP.
@@ -33,15 +31,6 @@ Delimit Scope i_signature_scope with i_signature.
 
 Section iProper_Definition.
   Context {PROP : bi}.
-
-  (* Class iSubrelation {A} (R R' : iRelation A) :=
-    is_subrelation : ⊢@{ PROP } ∀ x y, R x y → R' x y.
-  Global Arguments iSubrelation _%I : simpl never. *)
-  
-  (* Instance iSubrelation_refl {A} {R : iRelation A} : @iSubrelation A R R.
-    unfold iSubrelation.
-    iIntros "%x %y $".
-  Defined. *)
 
   Class IProper {A} (R : iRelation A) (m : A) := iProper : ⊢@{ PROP } R m m.
   Global Arguments IProper _%I R%i_signature.
@@ -95,6 +84,16 @@ Section Experiments.
     by iApply "Hxaya".
   Defined.
 
+  Instance or_IProper : @IProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or.
+  Proof.
+    unfold IProper, iRespectful.
+    iIntros (x y) "#Hxy %x' %y' #Hxy' [Hx | Hx']".
+    - iLeft.
+      by iApply "Hxy".
+    - iRight.
+      by iApply "Hxy'".
+    Defined.
+
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 
     `(BiMonoProper PROP A F) : BiMonoPred F.
@@ -102,9 +101,11 @@ Section Experiments.
     - iIntros (Φ Ψ HneΦ HneΨ) "#H %x HF".
       assert (@IProper PROP _ (□> .> bi_wand ==> .> bi_wand) F).
       { apply bi_mono_proper. }
-      unfold IProper, iRespectful, iPointwise_relation, iPersistant_relation in H0.
+      unfold IProper, iRespectful, iPersistant_relation in H0.
       iApply H0; done.
     - apply bi_mono_proper_ne.
-  Qed.
+  Defined.
+
+  Check (IProper (□> .> bi_wand ==> .> bi_wand)).
 
 End Experiments.

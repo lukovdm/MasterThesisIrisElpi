@@ -108,6 +108,29 @@ Elpi Accumulate lp:{{
       open simpl,
     ] G3 GL.
 
+  type go_iIntuitionistic ident -> tactic.
+  go_iIntuitionistic ID G [GRes] :-
+    ident->term ID X T,
+    open startProof G [G'],
+    (
+      (
+        @no-tc! => open (refine {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }}) G' [GI1, GI2, GI3],
+        open (tc_solve) GI1 [], !,
+        (open (tc_solve) GI2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+        open (pm_reduce) GI3 [GI4],
+        open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GI4 [GRes]
+       );
+      (
+        @no-tc! => open (refine {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }}) G' [GW1, GW2, GW3, GW4],
+        open (tc_solve) GW1 [], !,
+        (open (tc_solve) GW2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+        (open (tc_solve) GW3 []; coq.ltac.fail 0 "eiIntuitionistic: not affine and the goal not absorbing"),
+        open (pm_reduce) GW4 [GW5],
+        open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GW5 [GRes]
+       );
+      (!, coq.ltac.fail 0 {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}, fail)
+    ).
+
   type go_iAndDestruct ident -> ident -> ident -> tactic.
   go_iAndDestruct HID H1ID H2ID G GL :-
     ident->term HID ID HIDT,
@@ -235,7 +258,7 @@ Elpi Accumulate lp:{{
       (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
     ),
     go_iIntros IPS GRes GL.
-  go_iIntros [iIdent ID | IPS] G GL :- !,
+  go_iIntros [iIdent ID | IPS] G GL :-
     ident->term ID X T,
     open startProof G [G'],
     (
@@ -248,10 +271,19 @@ Elpi Accumulate lp:{{
       (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
     ),
     go_iIntros IPS GRes GL.
+  go_iIntros [iIntuitionistic (iIdent ID) | IPS] G GL :-
+    open startProof G [G'],
+    go_iIntuitionistic ID G' [GRes],
+    go_iIntros IPS GRes GL.
+  go_iIntros [iIntuitionistic (iList IPS) | IPSS] G GL :-
+    open startProof G [StartedGoal],
+    open (go_iFresh N) StartedGoal [FreshGoal],
+    go_iIntuitionistic (iAnon N) FreshGoal [IntroGoal],
+    go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
+    all (go_iIntros IPSS) GL' GL.
   go_iIntros [iFresh | IPS] G GL :-
     open startProof G [G'],
     open (go_iFresh N) G' [G''],
-    coq.say N,
     go_iIntros IPS G'' GL. 
   go_iIntros [iList IPS | IPSS] G GL :- !,
     open startProof G [StartedGoal],
@@ -295,38 +327,11 @@ Section Proof.
   Notation iProp := (iProp Σ).
 
   (* Elpi Trace Browser. *)
-  (* Elpi Bound Steps 10000. *)
-  (* Lemma intros (P : nat -> iProp) :
-    ⊢ ∀a b : nat, P a.
+  Lemma intros_2 (P : nat -> iProp) :
+    □ (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
-    eiIntros (a b).
-    
-    eiIntros "[%b [[H1 H11] | H3]] [%c H2]".
-    (* clear H. *)
-    Show Proof.
-    intros _.
-    Show Proof.
-    intros asdfasdf.
-    pm_reduce.
-    revert asdfasdf.
-    intros b.
-    iExists a.
-    iExact "H1".
-  Qed. *)
-
-  Lemma intros (P : nat -> iProp) :
-    (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
-  Proof.
-    eiIntros "[%b [[H1 H11] | H3]] [%c H2]".
-    (* clear H. *)
-    Show Proof.
-    intros _.
-    Show Proof.
-    intros asdfasdf.
-    pm_reduce.
-    revert asdfasdf.
-    intros b.
-    iExists a.
-    iExact "H1".
+    eiIntros "#[%b [[H1 H11] | H3]] [%c H2]".
+    - by iExists b.
+    - by iExists c.
   Qed.
 End Proof.
