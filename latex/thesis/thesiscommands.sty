@@ -16,7 +16,6 @@
         fill  = #1!25,
         rounded corners
     },
-    every node/.style={node distance=3cm},
 }
 
 \usemintedstyle{default}
@@ -35,8 +34,8 @@
 
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 
-\newminted{elpi}{autogobble,bgcolor=bg}
-\newminted{coq}{autogobble,bgcolor=bg}
+\newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
+\newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
 \newmintinline{elpi}{}
 \newmintinline{coq}{}
 

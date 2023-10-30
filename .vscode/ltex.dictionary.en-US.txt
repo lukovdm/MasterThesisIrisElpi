@@ -16,3 +16,4 @@ eiIntros
 recurse
 Prolog
 substructural
+recurses

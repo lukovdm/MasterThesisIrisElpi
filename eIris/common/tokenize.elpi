@@ -52,7 +52,7 @@ tokenize.rec SL [tName S | TS] :-
   std.string.concat "" S' S,
   { calc (size S) } > 0, !,
   tokenize.rec SL' TS.
-tokenize.rec [X|XS] _ :- !, coq.error "unrecognized token " X "::" XS.
+tokenize.rec XS _ :- !, coq.ltac.fail 0 "unrecognized tokens " XS.
 
 pred tokenize i:string, o:list token.
 tokenize S O :- tokenize.rec {rex.split "" S} O.
