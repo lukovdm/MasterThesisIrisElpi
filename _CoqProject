@@ -1,5 +1,6 @@
 -R eIris/ eIris
 
+eIris/proofmode/base.v
 eIris/proofmode/split.v
 eIris/proofmode/startProof.v
 eIris/proofmode/intros.v

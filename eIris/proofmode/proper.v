@@ -34,6 +34,7 @@ Section iProper_Definition.
 
   Class IProper {A} (R : iRelation A) (m : A) := iProper : ⊢@{ PROP } R m m.
   Global Arguments IProper _%I R%i_signature.
+  Global Arguments iProper _%I R%i_signature.
   
   Instance iReflexive_iProper {A} (R : iRelation A) `(@iReflexive PROP A R) (x : A) : IProper R x.
     unfold IProper.
@@ -69,7 +70,7 @@ End BiMonoProper.
 
 Section Experiments.
   Context {PROP : bi}.
-  Instance sep_IProper : @IProper PROP _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep.
+  Global Instance sep_IProper : @IProper PROP _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep.
     unfold IProper, iRespectful.
     iIntros (x y) "Hxy %x' %y' Hxy' [Hx Hx']".
     iSplitL "Hxy Hx".
@@ -77,14 +78,14 @@ Section Experiments.
       - by iApply "Hxy'".
   Defined.
 
-  Instance exists_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_exist PROP A).
+  Global Instance exists_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_exist PROP A).
     unfold IProper, iPointwise_relation, iRespectful.
     iIntros (x y) "Hxaya [%y' Hxy]".
     iExists y'.
     by iApply "Hxaya".
   Defined.
 
-  Instance or_IProper : @IProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or.
+  Global Instance or_IProper : @IProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or.
   Proof.
     unfold IProper, iRespectful.
     iIntros (x y) "#Hxy %x' %y' #Hxy' [Hx | Hx']".
@@ -92,7 +93,9 @@ Section Experiments.
       by iApply "Hxy".
     - iRight.
       by iApply "Hxy'".
-    Defined.
+  Defined.
+
+  Check (@iProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand)%i_signature bi_or).
 
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 
@@ -101,7 +104,7 @@ Section Experiments.
     - iIntros (Φ Ψ HneΦ HneΨ) "#H %x HF".
       assert (@IProper PROP _ (□> .> bi_wand ==> .> bi_wand) F).
       { apply bi_mono_proper. }
-      unfold IProper, iRespectful, iPersistant_relation in H0.
+      unfold IProper, iRespectful, iPersistant_relation, iPointwise_relation in H0.
       iApply H0; done.
     - apply bi_mono_proper_ne.
   Defined.

@@ -2,9 +2,10 @@ From elpi Require Import elpi.
 From iris.proofmode Require Export tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 
+From eIris.proofmode Require Import base.
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
-From eIris.proofmode.elpi Extra Dependency "eiStartProof.elpi" as startProof.
+From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
 From iris.heap_lang Require Import proofmode.
  
@@ -12,10 +13,10 @@ Elpi Tactic eiStartProof.
 
 Elpi Accumulate File stdpp.
 Elpi Accumulate File iris_ltac.
-Elpi Accumulate File startProof.
+Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   solve G GL :-
-    startProof G GL.
+    go_iStartProof G GL.
 }}.
 Elpi Typecheck.
 

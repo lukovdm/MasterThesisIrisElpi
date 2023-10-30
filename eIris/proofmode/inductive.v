@@ -1,5 +1,5 @@
 From elpi Require Import elpi.
-From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
+From iris.proofmode Require Import proofmode tactics coq_tactics reduction intro_patterns.
 From iris.prelude Require Import options.
 From iris.bi Require Import fixpoint.
 From iris.algebra Require Import ofe monoid list.
@@ -10,19 +10,15 @@ From stdpp Require Import base finite.
 From eIris.proofmode Require Import proper.
 From eIris.proofmode Require Import intros.
 
+From eIris.proofmode Require Import base.
+From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
+From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
+From eIris.common Extra Dependency "parser.elpi" as parser.
+From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
+From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
+
 Context `{!heapGS Σ}.
 Notation iProp := (iProp Σ).
-
-Elpi Command PrintCommand.
-Elpi Accumulate lp:{{
-
-  % main is, well, the entry point
-  main Arguments :- coq.say "PrintCommand" Arguments.
-
-}}.
-Elpi Typecheck.
-
-Elpi Export PrintCommand.
 
 #[arguments(raw)] Elpi Command EI.ind.
 Elpi Accumulate lp:{{
@@ -60,9 +56,11 @@ Elpi Accumulate lp:{{
   last-rec-to-and.aux A T {{ (⌜lp:A = lp:T⌝)%I }}.
 
   last-rec-to-and F [L | LS] (app [F, T | TS]) TS' :- !,
-    std.fold2 LS TS { last-rec-to-and.aux L T } (l\ t\ a\ r\ sigma TMP\ last-rec-to-and.aux l t TMP, r = {{ (lp:a ∗ lp:TMP)%I }}) TS'.
+    std.fold2 LS TS {{ (⌜lp:L = lp:T⌝)%I }} (l\ t\ a\ r\ sigma TMP\ TMP = {{ (⌜lp:l = lp:t⌝)%I }}, r = {{ (lp:a ∗ lp:TMP)%I }}) TS'.
 
   pred top-wand-to-sepand i:term, o:term.
+  top-wand-to-sepand {{ bi_emp_valid lp:T }} T' :- !,
+    top-wand-to-sepand T T'.
   top-wand-to-sepand {{ bi_exist lp:{{ fun N T F}} }} {{ bi_exist lp:{{ fun N T F' }} }} :- !,
     (pi x\ top-wand-to-sepand (F x) (F' x)).
   top-wand-to-sepand {{ bi_wand lp:L lp:R }} {{ bi_sep lp:L lp:R' }} :- !,
@@ -80,7 +78,7 @@ Elpi Accumulate lp:{{
       (x\ r\ sigma TMP1 TMP2\ 
         constructor->term x TMP1, 
         init-prod-to-bi-exist TMP1 TMP2, 
-        top-wand-to-sepand TMP2 r)
+        top-wand-to-sepand TMP2 r) % You can't spill here otherwise the TMP1 and TMP2 will be bound in the outer scope.
       (ConstrBiTerms f)),
     if-debug ((pi f\ coq.say "------ Constructor Bi Terms" {std.map (ConstrBiTerms f) coq.term->string} (ConstrBiTerms f))),
     (pi f\ std.fold 
@@ -104,7 +102,6 @@ Elpi Accumulate lp:{{
     if-debug (coq.say "------- Body" { coq.term->string Bo } Bo),
     Ty = {{ lp:TypeTerm -> lp:TypeTerm }}, !,
     @keepunivs! => std.assert-ok! (coq.elaborate-skeleton Bo Ty EBo) "Type check body failed".
-
 
   pred type-to-proper i:term, o:term.
   type-to-proper Type EBo :-
@@ -140,31 +137,130 @@ Elpi Typecheck.
 
 Elpi Export EI.ind.
 
+Elpi Tactic IProper_solver.
+Elpi Accumulate File stdpp.
+Elpi Accumulate File iris_ltac.
+Elpi Accumulate File tokenize.
+Elpi Accumulate File parser.
+Elpi Accumulate File eiris_tactics.
+Elpi Accumulate lp:{{
+  shorten coq.ltac.{ open, thenl, all }.
+
+  type go_iPoseLem term -> tactic.
+  go_iPoseLem Lem G GL :-
+    open go_iStartProof G [GoalStarted],
+    open (go_iFresh N) GoalStarted [GoalFresh],
+    @no-tc! => open (refine {{ tac_pose_proof _ lp:N _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}}) GoalFresh [G1, G2],
+    open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
+    all (open tc_solve) TCGL [],
+    thenl [
+      open pm_reduce,
+      open (false-error "iPoseLem: not fresh"),
+    ] G2 GL.
+
+  pred unfold-pred i:string, i:goal, o:list sealed-goal.
+  unfold-pred S (goal _Ctx _Trigger Type _Proof _Args as G) GL :- 
+    coq.locate S (const IP),
+    coq.env.const IP (some Bo) _,
+    ((copy (global (const IP)) Bo :- !) => copy Type Type'),
+    coq.reduction.lazy.bi-norm Type' NewType, % normal form becomes an infinite loop (why?), thus we use beta-iota
+    refine.warn {{ _ : lp:NewType }} G GL.
+
+  pred do-step i:sealed-goal, o:list sealed-goal.
+  do-step G GL :-
+    open (do-step.conn C) G GL.
+    % do-step.aux C G GL.
+
+  pred do-step.conn o:term, i:goal, o:list sealed-goal.
+  do-step.conn C (goal _Ctx _Trigger Type _Proof _Args as G) [seal G] :-
+    bi-top-level-conn Type C,
+    coq.say C.
+
+  pred do-step.aux i:term, i:sealed-goal, o:list sealed-goal.
+  do-step.aux T G GL :- coq.say "do-step.aux" T G GL, fail.
+  do-step.aux _ G GL :-
+    Lem = {{@iProper iProp _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or}},
+    go_iPoseLem Lem G GL.
+
+  pred bi-top-level-conn i:term, o:term.
+  bi-top-level-conn {{ envs_entails _ lp:P }} C :- !, bi-top-level-conn P C.
+  bi-top-level-conn (app [HD | _]) C :- !, bi-top-level-conn HD C.
+  bi-top-level-conn (primitive P) (primitive P) :- !.
+  bi-top-level-conn P _ :- coq.say "Can't find top level connective in" P.
+
+  
+  msolve [SG] GL :- !,
+    thenl! [
+      open (unfold-pred "is_list_proper"),
+      open (unfold-pred "is_list_pre"),
+      open (unfold-pred "IProper"),
+      open (unfold-pred "iPointwise_relation"),
+      open (unfold-pred "iPersistant_relation"),
+      open (unfold-pred "iRespectful"),
+      open (coq.ltac.call "_iIntros0" [ trm {{ IAll }} ])
+    ] SG [G],
+    do-step G GL.
+}}.
+Elpi Typecheck.
+Elpi Export IProper_solver.
+
 Section Tests.
   Implicit Types l : loc.
 
   EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
-    | cons_is_list l v vs tl : (l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs))%I.
+    | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs).
 
   Print is_list_pre.
   Print is_list_proper.
 
   Elpi Trace Browser.
   Local Lemma is_list_pre_proper_mono :
-    IProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre.
+    is_list_proper is_list_pre.
   Proof.
-    rewrite /is_list_pre.
-    unfold IProper, iPointwise_relation, iPersistant_relation, iRespectful.
-    iIntros.
-    iIntros (Φ Ψ) "#H %hd %vs [ [%l [%v [%vs' [%tl (Hl & Hx & Hhd & Hvs)]]]] | [Hhd Hvs] ]".
-    - iLeft.
-      iExists l, v, vs', tl.
-      iFrame.
-      by iApply "H".
-    - iRight.
-      by iFrame.
+    elpi IProper_solver.
+
+    iApply (@iProper iProp _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or).
+    3: { iAssumption. }
+    - unfold iPersistant_relation.
+      iModIntro.
+      iIntros.
+
+      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
+      2: { iAssumption. }
+      unfold iPointwise_relation.
+      iIntros.
+
+      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
+      2: { iAssumption. }
+      unfold iPointwise_relation.
+      iIntros.
+
+      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
+      2: { iAssumption. }
+      unfold iPointwise_relation.
+      iIntros.
+
+      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
+      2: { iAssumption. }
+      unfold iPointwise_relation.
+      iIntros.
+
+      iApply (@iProper iProp _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep).
+      3: { iAssumption. }
+      + iIntros.
+        iAssumption.
+      + iIntros "?".
+        iApply (@iProper iProp _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep).
+        3: { iAssumption. }
+        * iAssumption.
+        * iIntros "?".
+          iAssumption.
+    - unfold iPersistant_relation.
+      iModIntro.
+      iIntros "?".
+      iAssumption.
   Qed.
 
   Local Lemma is_list_pre_mono (is_list1 is_list2 : val -d> list val -d> iProp): 

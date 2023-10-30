@@ -1,3 +1,5 @@
+shorten coq.ltac.{ open, thenl, all }.
+
 type tc_solve open-tactic.
 tc_solve G GL :- coq.ltac.call "tc_solve" [] G GL.
 
@@ -18,7 +20,6 @@ done G GL :- coq.ltac.call "done" [] G GL.
 
 pred refine.warn i:term, i:goal, o:list sealed-goal.
 refine.warn T (goal _ RawEv Ty Ev _) GS :-
-  coq.say "refine.warn: " T Ty, 
   rm-evar RawEv Ev,
   @keepunivs! => coq.elaborate-skeleton T Ty TR D,
   D = ok,
@@ -29,3 +30,7 @@ refine.warn T (goal _ RawEv Ty Ev _) GS :-
 pred thenl! i:list tactic, i:sealed-goal, o:list sealed-goal.
 thenl! [] G [G].
 thenl! [T|Ts] G GS :- T G NG, !, all (thenl Ts) NG GS.
+
+type false-error string -> open-tactic.
+false-error S (goal _ _ {{ False }} _ _) _ :- !, coq.ltac.fail 0 S.
+false-error _ G [seal G].

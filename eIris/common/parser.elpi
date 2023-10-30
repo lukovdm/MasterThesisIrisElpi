@@ -41,31 +41,31 @@ parse_conj_ilist TS R [IP | L'] :-
   parse_conj_ilist RT R L'.
 
 pred parse_ip i:list token, o:list token, o:intro_pat.
-parse_ip [tName "_" | TS] TS iDrop.
-parse_ip [tName X | TS] TS (iIdent (iNamed X)).
-parse_ip [tAnon | TS] TS (iFresh).
-parse_ip [tFrame | TS] TS (iFrame).
-parse_ip [tForall | TS] TS (iForall).
-parse_ip [tAll | TS] TS (iAll).
-parse_ip [tSimpl | TS] TS (iSimpl).
-parse_ip [tDone | TS] TS (iDone).
-parse_ip [tPureIntro | TS] TS (iPureIntro).
-parse_ip [tModalIntro | TS] TS (iModalIntro).
+parse_ip [tName "_" | TS] TS iDrop :- !.
+parse_ip [tName X | TS] TS (iIdent (iNamed X)) :- !.
+parse_ip [tAnon | TS] TS (iFresh) :- !.
+parse_ip [tFrame | TS] TS (iFrame) :- !.
+parse_ip [tForall | TS] TS (iForall) :- !.
+parse_ip [tAll | TS] TS (iAll) :- !.
+parse_ip [tSimpl | TS] TS (iSimpl) :- !.
+parse_ip [tDone | TS] TS (iDone) :- !.
+parse_ip [tPureIntro | TS] TS (iPureIntro) :- !.
+parse_ip [tModalIntro | TS] TS (iModalIntro) :- !.
+parse_ip [tPure X | TS] TS (iPure X) :- !.
+parse_ip [tArrow D | TS] TS (iRewrite D) :- !.
 
-parse_ip [tBracketL | TS] TS' (iList L) :-
+parse_ip [tBracketL | TS] TS' (iList L) :- !,
   parse_ilist TS [tBracketR | TS'] L.
-parse_ip [tParenL | TS] TS' IP :-
+parse_ip [tParenL | TS] TS' IP :- !,
   parse_conj_ilist TS [tParenR | TS'] L',
   {std.length L'} >= 2,
   foldr {std.drop-last 2 L'} (iList [{std.take-last 2 L'}]) (x\ a\ r\ r = iList [[x, a]]) IP.
-parse_ip [tPure X | TS] TS (iPure X).
-parse_ip [tIntuitionistic | TS] TS' (iIntuitionistic X) :-
+parse_ip [tIntuitionistic | TS] TS' (iIntuitionistic X) :- !,
   parse_ip TS TS' X.
-parse_ip [tSpatial | TS] TS' (iSpatial X) :-
+parse_ip [tSpatial | TS] TS' (iSpatial X) :- !,
   parse_ip TS TS' X.
-parse_ip [tModal | TS] TS' (iModalElim X) :-
+parse_ip [tModal | TS] TS' (iModalElim X) :- !,
   parse_ip TS TS' X.
-parse_ip [tArrow D | TS] TS (iRewrite D).
 
 pred parse_ipl i:list token, o:list intro_pat.
 parse_ipl [] [].

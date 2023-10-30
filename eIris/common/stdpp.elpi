@@ -43,3 +43,13 @@ is-digit S :- 1 is size S, C is rhc S, C >= 48, C =< 57.
 
 pred is-identifier i:string.
 is-identifier S :- 1 is size S, C is rhc S, ((C >= 48, C =< 57); (C >= 65, C =< 90); (C >= 97, C =< 122); C = 39; C = 95).
+
+pred if-debug i:prop.
+if-debug P :- get-option "debug" tt, !, coq.say "[" {gettimeofday} "]", P.
+if-debug _ .
+
+pred print-contructors i:list indc-decl.
+print-contructors [].
+print-contructors [constructor Name Arity | CS] :-
+coq.say Name "of type" { coq.term->string { coq.arity->term Arity } },
+print-contructors CS.
