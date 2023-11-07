@@ -199,30 +199,30 @@ Elpi Accumulate lp:{{
     open go_iStartProof G [GoalStarted],
     ident->term ID _IDS IDT,
     @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
-    coq.say "apply pre reflexivity",
-    open show-goal G1 _,
+    % coq.say "apply pre reflexivity",
+    % open show-goal G1 _,
     open pm_reflexivity G1 [],
-    coq.say "apply pre tc_solve",
-    open show-goal G2 _,
+    % coq.say "apply pre tc_solve",
+    % open show-goal G2 _,
     open tc_solve G2 [],
-    coq.say "apply pre reduce",
-    open show-goal G3 _,
+    % coq.say "apply pre reduce",
+    % open show-goal G3 _,
     open pm_reduce G3 GL.
 
   type go_iApplyProper term -> term -> tactic.
   go_iApplyProper R F G GL :-
-    coq.say "Starting go_iApplyProper" R F,
+    % coq.say "Starting go_iApplyProper" R F,
     go_iPoseProper R F ID G [GPosed],
-    coq.say "Posed Lemma" ID,
-    open show-goal GPosed _,
+    % coq.say "Posed Lemma" ID,
+    % open show-goal GPosed _,
     go_iApplyProper.aux ID GPosed GL.
   go_iApplyProper.aux ID G GL :- 
-    coq.say "simpleApplyHyp" ID,
-    open show-goal G _,
+    % coq.say "simpleApplyHyp" ID,
+    % open show-goal G _,
     go_iApplySimpleHyp ID G GL.
   go_iApplyProper.aux ID G GL :-
-    coq.say "specialize " ID,
-    open show-goal G _,
+    % coq.say "specialize " ID,
+    % open show-goal G _,
     go_iSpecializeWand ID G GL',
     go_iApplyProper.aux ID {std.last GL'} GL'',
     std.append {std.drop-last 1 GL'} GL'' GL.
@@ -242,6 +242,7 @@ Elpi Accumulate lp:{{
   pred do-step i:sealed-goal, o:list sealed-goal.
   do-step G GL :-
     open (do-step.conn C LF RF) G _,
+    open show-goal G _,
     do-step.aux C LF RF G GL.
 
   pred do-step.conn o:term, o:term, o:term, i:goal, o:list sealed-goal.
@@ -250,37 +251,51 @@ Elpi Accumulate lp:{{
     relation-on Type LF RF.
 
   pred do-step.aux i:term, i:term, i:term, i:sealed-goal, o:list sealed-goal.
-  do-step.aux {{ @iRespectful }} _ _ G GL :- !,
+  do-step.aux {{ @iRespectful _ }} _ _ G GL :- !,
     coq.say "==>",
     list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
     open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPointwise_relation }} _ _ G GL :- !,
+  do-step.aux {{ @iPointwise_relation _ }} _ _ G GL :- !,
     coq.say ".>",
     list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
     open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPersistent_relation }} _ _ G GL :- !,
+  do-step.aux {{ @iPersistent_relation _ }} _ _ G GL :- !,
     coq.say "□>",
     go_iModIntro G GL.
-  do-step.aux R (app FS) _ G GL :- 
-    std.exists { std.iota {std.length FS} } (n\ std.take n FS F),
-    coq.say "Apply relation" R "with" {coq.term->string (app F)},
-    go_iApplyProper R (app F) G GL.
+  do-step.aux _ F F G GL :-
+    coq.say "Applying assumption" {coq.term->string F},
+    list->listterm [ {{ IFrame }} ] Args,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
+  do-step.aux R (app [F | FS]) _ G GL :- 
+    std.exists { std.iota {std.length FS} } (n\ std.take n FS FS'),
+    coq.say "Apply relation" R "with" (app [F | FS']),
+    go_iApplyProper R (app [F | FS']) G GL.
+  do-step.aux _ (app [global (const F) | _ ]) _ G GL :-
+    coq.say "Unfolding" F,
+    open (unfold-gref (const F)) G GL.
   do-step.aux _ (global (const F)) _ G GL :-
     coq.say "Unfolding" F,
     open (unfold-gref (const F)) G GL.
   do-step.aux T F _ _ _ :- !,
-    coq.say "No case for relation" T "with " {coq.term->string F} "😢 stopping".
+    coq.say "No case for relation" T "with " {coq.term->string F} "😢 stopping", fail.
 
   pred top-relation i:term, o:term.
-  top-relation {{ envs_entails _ lp:P }} C :- !, top-relation P C.
-  top-relation (app [HD | _]) C :- !, top-relation HD C.
-  top-relation (primitive P) (primitive P) :- !.
-  top-relation (global P) (global P) :- !.
-  top-relation P _ :- coq.error "Can't find top level connective in" P.
+  top-relation {{ envs_entails _ lp:{{ app PS }} }} C :- C = app {std.take 2 PS}.
 
   pred relation-on i:term, o:term, o:term.
-  relation-on {{ envs_entails _ lp:{{ (app AS) }} }} L R :- !, 
-    std.take-last 2 AS [L, R].
+  relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :- 
+    std.take-last 2 AS [L', R'],
+    if (L' = app L'', R' = app R'')
+    (
+      take-while-split L'' (x\ closed_term x) L''' _,
+      take-while-split R'' (x\ closed_term x) R''' _,
+      L = app L''',
+      R = app R'''
+    )
+    (
+      L' = L,
+      R' = R
+    ).
 
   msolve [SG] GL :- !,
     thenl! [
@@ -312,7 +327,7 @@ Section Tests.
     is_list_proper is_list_pre.
   Proof.
     elpi IProper_solver.
-(*     
+    
     (* Start proof *)
     unfold is_list_proper, IProper.
 
@@ -331,7 +346,7 @@ Section Tests.
 
     (* Relation *)
     iApply (iProper (_ ==> _ ==> bi_wand) bi_or).
-     *)
+    
     (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop bi_wand bi_or _))) _);
     [iIntoEmpValid; tc_solve
     |tc_solve
@@ -378,7 +393,7 @@ Section Tests.
       try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
 
       + (* Assumption *)
-        iIntros "?".
+        iIntros "$".
         iAssumption.
 
       + (* Relation *)
