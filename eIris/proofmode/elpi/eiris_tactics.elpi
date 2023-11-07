@@ -57,6 +57,19 @@ go_iClear ID G GL :-
     open simpl,
   ] G3 GL.
 
+type go_iPoseLem term -> ident -> tactic.
+go_iPoseLem Lem (iAnon N) G GL :-
+  open go_iStartProof G [GoalStarted],
+  open (go_iFresh N) GoalStarted [GoalFresh],
+  ident->term (iAnon N) _ NT,
+  @no-tc! => open (refine.warn {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}}) GoalFresh [G1, G2],
+  open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
+  all (open tc_solve) TCGL [],
+  thenl [
+    open pm_reduce,
+    open (false-error "iPoseLem: not fresh"),
+  ] G2 GL.
+
 type go_iIntuitionistic ident -> tactic.
 go_iIntuitionistic ID G [GRes] :-
   ident->term ID X T,

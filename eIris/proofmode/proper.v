@@ -36,8 +36,10 @@ Section iProper_Definition.
   Global Arguments IProper {_%I} R%i_signature.
   Global Arguments iProper {_%I} (R%i_signature).
 
-  Class IProperTop {A} {B} (R : @iRelation PROP A) (m : B) := iProperTop : ∃ f, IProper (f R) m. 
-  
+  Class IProperTop {A} {B} (R : @iRelation PROP A) (m : B) f := iProperTop : IProper (f R) m.
+  Global Arguments IProperTop {_ _}%I R%i_signature m f%i_signature.
+  Global Arguments iProperTop {_ _}%I R%i_signature m f%i_signature.
+
   Global Instance iReflexive_iProper {A} (R : iRelation A) `(@iReflexive PROP A R) (x : A) : IProper R x.
     unfold IProper.
     iApply iReflexivity.
@@ -80,9 +82,8 @@ Section Experiments.
       - by iApply "Hxy'".
   Defined.
 
-  Global Instance sep_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_sep PROP).
+  Global Instance sep_IProperTop : IProperTop (@bi_wand PROP) (bi_sep) (fun F => bi_wand ==> bi_wand ==> F)%i_signature.
     unfold IProperTop.
-    exists (fun F => bi_wand ==> bi_wand ==> F)%i_signature.
     tc_solve.
   Defined.
 
@@ -93,9 +94,8 @@ Section Experiments.
     by iApply "Hxaya".
   Defined.
 
-  Global Instance exists_IProperTop {A} : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_exist PROP A).
+  Global Instance exists_IProperTop {A} : IProperTop (bi_wand) (@bi_exist PROP A) (fun F => .> bi_wand ==> F)%i_signature.
     unfold IProperTop.
-    exists (fun F => .> bi_wand ==> F)%i_signature.
     tc_solve.
   Defined.
 
@@ -109,13 +109,10 @@ Section Experiments.
       by iApply "Hxy'".
   Defined.
 
-  Global Instance or_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_or PROP).
+  Global Instance or_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_or PROP) (fun F => □> bi_wand ==> □> bi_wand ==> F)%i_signature.
     unfold IProperTop.
-    exists (fun F => □> bi_wand ==> □> bi_wand ==> F)%i_signature.
     tc_solve.
   Defined.
-
-  Check (iProper (□> bi_wand ==> □> bi_wand ==> bi_wand)%i_signature bi_or).
 
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 
@@ -128,7 +125,5 @@ Section Experiments.
       iApply H0; done.
     - apply bi_mono_proper_ne.
   Defined.
-
-  Check (IProper (□> .> bi_wand ==> .> bi_wand)).
 
 End Experiments.

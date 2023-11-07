@@ -9,6 +9,9 @@ pm_reduce G GL :- coq.ltac.call "pm_reduce" [] G GL.
 type pm_reflexivity open-tactic.
 pm_reflexivity G GL :- coq.ltac.call "pm_reflexivity" [] G GL.
 
+type pm_prettify open-tactic.
+pm_prettify G GL :- coq.ltac.call "pm_prettify" [] G GL.
+
 type simpl open-tactic.
 simpl G GL :- coq.ltac.call "simpl" [] G GL.
 
