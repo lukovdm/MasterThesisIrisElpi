@@ -267,7 +267,7 @@ Elpi Accumulate lp:{{
     list->listterm [ {{ IFrame }} ] Args,
     open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
   do-step.aux R (app [F | FS]) _ G GL :- 
-    std.exists { std.iota {std.length FS} } (n\ std.take n FS FS'),
+    std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
     coq.say "Apply relation" R "with" (app [F | FS']),
     go_iApplyProper R (app [F | FS']) G GL.
   do-step.aux _ (app [global (const F) | _ ]) _ G GL :-
