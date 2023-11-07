@@ -1,5 +1,5 @@
 From elpi Require Import elpi.
-From iris.proofmode Require Import proofmode tactics coq_tactics reduction intro_patterns.
+From iris.proofmode Require Import proofmode tactics coq_tactics reduction intro_patterns class_instances spec_patterns.
 From iris.prelude Require Import options.
 From iris.bi Require Import fixpoint.
 From iris.algebra Require Import ofe monoid list.
@@ -32,8 +32,8 @@ Elpi Accumulate lp:{{
   constructor->term (constructor _ Arity) T :- coq.arity->term Arity T.
 
   pred type-to-fun i:term, o:term.
-  type-to-fun (prod N T F) (fun N FT FB) :- !,
-    type-to-fun T FT, (pi x\ type-to-fun (F x) (FB x)).
+  type-to-fun (prod N T F) (fun N T FB) :- !,
+    (pi x\ type-to-fun (F x) (FB x)).
   type-to-fun X X :- !.
 
   pred init-prod-to-bi-exist i:term, o:term.
@@ -51,12 +51,11 @@ Elpi Accumulate lp:{{
     last-rec-to-and A B L L',
     last-rec-to-and A B R R'.
   last-rec-to-and F [] (app [F]) {{ True }}.
-
-  pred last-rec-to-and.aux i:term, i:term, o:term.
-  last-rec-to-and.aux A T {{ (⌜lp:A = lp:T⌝)%I }}.
-
-  last-rec-to-and F [L | LS] (app [F, T | TS]) TS' :- !,
+  last-rec-to-and F [L | LS] (app [F, T | TS]) TS' :-
+    {std.length LS} = {std.length TS}, !,
     std.fold2 LS TS {{ (⌜lp:L = lp:T⌝)%I }} (l\ t\ a\ r\ sigma TMP\ TMP = {{ (⌜lp:l = lp:t⌝)%I }}, r = {{ (lp:a ∗ lp:TMP)%I }}) TS'.
+  last-rec-to-and _ [_ | _] (app [T | TS]) _ :-
+    coq.error "EI.Ind: " {coq.term->string (app [T | TS])} "has to many or to few arguments".
 
   pred top-wand-to-sepand i:term, o:term.
   top-wand-to-sepand {{ bi_emp_valid lp:T }} T' :- !,
@@ -146,11 +145,21 @@ Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
-  type go_iPoseLem term -> tactic.
-  go_iPoseLem Lem G GL :-
+  type show-goal open-tactic.
+  show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
+    coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
+
+  type bi-norm open-tactic.
+  bi-norm (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
+    coq.reduction.lazy.bi-norm Type Type',
+    @no-tc! => refine.warn {{ _ : lp:Type' }} G GL.
+
+  type go_iPoseLem term -> ident -> tactic.
+  go_iPoseLem Lem (iAnon N) G GL :-
     open go_iStartProof G [GoalStarted],
     open (go_iFresh N) GoalStarted [GoalFresh],
-    @no-tc! => open (refine {{ tac_pose_proof _ lp:N _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}}) GoalFresh [G1, G2],
+    ident->term (iAnon N) _ NT,
+    @no-tc! => open (refine.warn {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}}) GoalFresh [G1, G2],
     open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
     all (open tc_solve) TCGL [],
     thenl [
@@ -158,51 +167,129 @@ Elpi Accumulate lp:{{
       open (false-error "iPoseLem: not fresh"),
     ] G2 GL.
 
-  pred unfold-pred i:string, i:goal, o:list sealed-goal.
-  unfold-pred S (goal _Ctx _Trigger Type _Proof _Args as G) GL :- 
+  type go_iSpecializeWand ident -> tactic.
+  go_iSpecializeWand ID G GL :-
+    open go_iStartProof G [GoalStarted],
+    ident->term ID _IDS IDT,
+    @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
+    coq.say "specialize pre reflexivity",
+    open show-goal G1 _,
+    open pm_reflexivity G1 [],
+    coq.say "specialize pre tc_solve 1",
+    open show-goal G2 _,
+    open tc_solve G2 [],
+    coq.say "specialize pre tc_solve 2",
+    open show-goal G3 _,
+    open tc_solve G3 [],
+    coq.say "specialize pre reduce",
+    open show-goal G4 _,
+    open pm_reduce G4 [G5],
+    open (refine {{ conj _ _ }}) G5 GL.
+
+  type go_iApplySimpleHyp ident -> tactic.
+  go_iApplySimpleHyp ID G GL :-
+    open go_iStartProof G [GoalStarted],
+    ident->term ID _IDS IDT,
+    @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
+    coq.say "apply pre reflexivity",
+    open show-goal G1 _,
+    open pm_reflexivity G1 [],
+    coq.say "apply pre tc_solve",
+    open show-goal G2 _,
+    open tc_solve G2 [],
+    coq.say "apply pre reduce",
+    open show-goal G3 _,
+    open pm_reduce G3 GL.
+
+  type go_iApplySimple term -> tactic.
+  go_iApplySimple Lem G GL :-
+    coq.say "Starting go_iApplySimple" Lem,
+    go_iPoseLem Lem ID G [GPosed],
+    coq.say "Posed Lemma" ID,
+    open show-goal GPosed _,
+    go_iApplySimple.aux ID GPosed GL.
+  go_iApplySimple.aux ID G GL :- 
+    coq.say "simpleApplyHyp" ID,
+    open show-goal G _,
+    go_iApplySimpleHyp ID G GL.
+  go_iApplySimple.aux ID G GL :-
+    coq.say "specialize " ID,
+    open show-goal G _,
+    go_iSpecializeWand ID G GL',
+    go_iApplySimple.aux ID {std.last GL'} GL'',
+    std.append {std.drop-last 1 GL'} GL'' GL.
+
+  pred unfold-id i:string, i:goal, o:list sealed-goal.
+  unfold-id S G GL :- 
     coq.locate S (const IP),
+    unfold-gref (const IP) G GL.
+
+  pred unfold-gref i:gref, i:goal, o:list sealed-goal.
+  unfold-gref (const IP) (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
     coq.env.const IP (some Bo) _,
     ((copy (global (const IP)) Bo :- !) => copy Type Type'),
-    coq.reduction.lazy.bi-norm Type' NewType, % normal form becomes an infinite loop (why?), thus we use beta-iota
-    refine.warn {{ _ : lp:NewType }} G GL.
+    coq.reduction.lazy.bi-norm Type' NewType,
+    refine {{ _ : lp:NewType }} G GL.
 
   pred do-step i:sealed-goal, o:list sealed-goal.
   do-step G GL :-
-    open (do-step.conn C) G GL.
-    % do-step.aux C G GL.
+    open (do-step.conn C F) G _, !,
+    do-step.aux C F G GL.
 
-  pred do-step.conn o:term, i:goal, o:list sealed-goal.
-  do-step.conn C (goal _Ctx _Trigger Type _Proof _Args as G) [seal G] :-
-    bi-top-level-conn Type C,
-    coq.say C.
+  pred do-step.conn o:term, o:term, i:goal, o:list sealed-goal.
+  do-step.conn R F (goal _Ctx _Trigger Type _Proof _Args as G) [seal G] :-
+    top-relation Type R,
+    relation-on Type F.
 
-  pred do-step.aux i:term, i:sealed-goal, o:list sealed-goal.
-  do-step.aux T G GL :- coq.say "do-step.aux" T G GL, fail.
-  do-step.aux _ G GL :-
-    Lem = {{@iProper iProp _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or}},
-    go_iPoseLem Lem G GL.
+  pred do-step.aux i:term, i:term, i:sealed-goal, o:list sealed-goal.
+  do-step.aux {{ @iRespectful }} _ G GL :- !,
+    coq.say "==>",
+    list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
+  do-step.aux {{ @iPointwise_relation }} _ G GL :- !,
+    coq.say ".>",
+    list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
+  do-step.aux R F G GL :- 
+    coq.say "Apply relation" R "with" F,
+    Prop = {{ iProper (_ ==> _ ==> lp:R iProp) (lp:F iProp)}},
+    go_iApplySimple Prop G GL.
+  do-step.aux _ (global (const F)) G GL :-
+    coq.say "Unfolding" F,
+    open (unfold-gref (const F)) G GL.
+  do-step.aux T F _ _ :- !,
+    coq.say "No case for relation" T "with F" F "😢 stopping".
 
-  pred bi-top-level-conn i:term, o:term.
-  bi-top-level-conn {{ envs_entails _ lp:P }} C :- !, bi-top-level-conn P C.
-  bi-top-level-conn (app [HD | _]) C :- !, bi-top-level-conn HD C.
-  bi-top-level-conn (primitive P) (primitive P) :- !.
-  bi-top-level-conn P _ :- coq.say "Can't find top level connective in" P.
+  pred top-relation i:term, o:term.
+  top-relation {{ envs_entails _ lp:P }} C :- !, top-relation P C.
+  top-relation (app [HD | _]) C :- !, top-relation HD C.
+  top-relation (primitive P) (primitive P) :- !.
+  top-relation (global P) (global P) :- !.
+  top-relation P _ :- coq.error "Can't find top level connective in" P.
 
-  
+  pred relation-on i:term, o:term.
+  relation-on {{ envs_entails _ lp:P }} C :- !, relation-on P C.
+  relation-on (app AS) C :- !, relation-on.aux {std.last AS} C.
+  relation-on P _ :- coq.error "Can't find top level relation to find an f in" P.
+
+  relation-on.aux (app [HD | _]) C :- !, relation-on.aux HD C.
+  relation-on.aux (primitive P) (primitive P) :- !.
+  relation-on.aux (global P) (global P) :- !.
+  relation-on.aux P _ :- coq.error "Can't find top level f in the relation in" P.
+
   msolve [SG] GL :- !,
     thenl! [
-      open (unfold-pred "is_list_proper"),
-      open (unfold-pred "is_list_pre"),
-      open (unfold-pred "IProper"),
-      open (unfold-pred "iPointwise_relation"),
-      open (unfold-pred "iPersistant_relation"),
-      open (unfold-pred "iRespectful"),
-      open (coq.ltac.call "_iIntros0" [ trm {{ IAll }} ])
+      open (unfold-id "is_list_proper"),
+      open (unfold-id "IProper"),
+      open (go_iStartProof),
     ] SG [G],
-    do-step G GL.
+    coq.ltac.repeat! do-step G GL.
 }}.
 Elpi Typecheck.
 Elpi Export IProper_solver.
+
+Tactic Notation "iSpecializePat" open_constr(H) constr(pat) :=
+  let pats := spec_pat.parse pat in iSpecializePat_go H pats.
 
 Section Tests.
   Implicit Types l : loc.
@@ -212,75 +299,182 @@ Section Tests.
     | empty_is_list : is_list NONEV []
     | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs).
 
-  Print is_list_pre.
-  Print is_list_proper.
+  (* Print is_list_pre.
+  Print is_list_proper. *)
 
-  Elpi Trace Browser.
+  (* Elpi Trace Browser. *)
   Local Lemma is_list_pre_proper_mono :
     is_list_proper is_list_pre.
   Proof.
-    elpi IProper_solver.
+    (* elpi IProper_solver. *)
+    
+    (* Start proof *)
+    unfold is_list_proper, IProper.
 
-    iApply (@iProper iProp _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or).
-    3: { iAssumption. }
-    - unfold iPersistant_relation.
+    (* Respectfull *)
+    iIntros "% % #?".
+
+    (* Pointwise *)
+    iIntros "%".
+
+    (* Pointwise *)
+    iIntros "%".
+
+    (* Relation *)
+    try iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+    unfold is_list_pre.
+
+    (* Relation *)
+    iApply (iProper (_ ==> _ ==> bi_wand) bi_or).
+    (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iProper (_ ==> _ ==> bi_wand) bi_or)) _);
+    [iIntoEmpValid; tc_solve
+    |pm_reduce].
+    notypeclasses refine (tac_specialize_assert _ (IAnon 2) _ false false [] _ _ _ _ _ _ _ _ _).
+    { pm_reflexivity. }
+    { tc_solve. }
+    { tc_solve. }
+      pm_reduce;
+      notypeclasses refine (conj _ _)];
+    [|
+      notypeclasses refine (tac_apply _ (IAnon 2) _ _ _ _ _ _ _); [pm_reflexivity
+      |tc_solve
+      |pm_reduce]
+    ]. *)
+    
+    - (* Box *)
       iModIntro.
-      iIntros.
 
-      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
-      2: { iAssumption. }
-      unfold iPointwise_relation.
-      iIntros.
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
 
-      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
-      2: { iAssumption. }
-      unfold iPointwise_relation.
-      iIntros.
+      (* Pointwise *)
+      iIntros "%".
 
-      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
-      2: { iAssumption. }
-      unfold iPointwise_relation.
-      iIntros.
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
 
-      iApply (@iProper iProp _ (.> bi_wand ==> bi_wand) (@bi_exist iProp _)).
-      2: { iAssumption. }
-      unfold iPointwise_relation.
-      iIntros.
+      (* Pointwise *)
+      iIntros "%".
 
-      iApply (@iProper iProp _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep).
-      3: { iAssumption. }
-      + iIntros.
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
+
+      + (* Assumption *)
+        iIntros "?".
         iAssumption.
-      + iIntros "?".
-        iApply (@iProper iProp _ (bi_wand ==> bi_wand ==> bi_wand) bi_sep).
-        3: { iAssumption. }
-        * iAssumption.
-        * iIntros "?".
+
+      + (* Relation *)
+        try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
+
+        * (* Assumption *) iAssumption.
+
+        * (* Assumption *)
+          iIntros "?".
           iAssumption.
-    - unfold iPersistant_relation.
+
+    - (* Box *)
       iModIntro.
+
+      (* Assumption *)
       iIntros "?".
       iAssumption.
   Qed.
 
-  Local Lemma is_list_pre_mono (is_list1 is_list2 : val -d> list val -d> iProp): 
-    ⊢ (□ ∀ hd vs, is_list1 hd vs -∗ is_list2 hd vs) → 
-      ∀ hd vs, is_list_pre is_list1 hd vs -∗ is_list_pre is_list2 hd vs.
+  EI.ind 
+  Inductive is_P_list : (val → iProp) → val → iProp :=
+    | empty_is_P_list P : is_P_list P NONEV
+    | cons_is_P_list P l v tl : l ↦ (v,tl) -∗ P v -∗ is_P_list P tl -∗ is_P_list P (SOMEV #l).
+
+  Print is_P_list_pre.
+  Print is_P_list_proper.
+
+  Local Lemma is_P_list_pre_proper_mono :
+    is_P_list_proper is_P_list_pre.
   Proof.
-    iIntros "#H"; iIntros (hd vs) "HF1".
-    rewrite /is_list_pre.
-    destruct vs as [|v' vs'].
-  Admitted.
+    (* elpi IProper_solver. *)
+    (* Start proof *)
+    unfold is_P_list_proper, IProper.
 
-  PrintCommand
-  Definition is_list_pre : (val -d> list val -d> iProp) -d> val -d> list val -d> iProp := λ is_list hd vs,
-    match vs with
-    | [] => ⌜hd = NONEV⌝
-    | v :: vs => ∃ l tl, ⌜hd = SOMEV #l⌝ ∗ l ↦ (v,tl) ∗ ▷ is_list tl vs
-    end%I.
+    (* Respectfull *)
+    iIntros "% % #?".
 
+    (* Pointwise *)
+    iIntros "%".
+
+    (* Pointwise *)
+    iIntros "%".
+
+    (* Relation *)
+    try iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_P_list_pre).
+    unfold is_P_list_pre.
+
+    (* Relation *)
+    iApply (iProper (_ ==> _ ==> bi_wand) bi_or).
+    
+    - (* Box *)
+      iModIntro.
+
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> bi_wand) bi_exist).
+
+      (* Pointwise *)
+      iIntros "%".
+
+      (* Relation *)
+      try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
+
+      + (* Assumption *)
+        iIntros "?".
+        iAssumption.
+
+      + (* Relation *)
+        try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
+
+        * (* Assumption *)iIntros "?". iAssumption.
+
+        * (* Relation *)
+          try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
+          
+          -- iAssumption.
+          --(* Assumption *)
+            iIntros "?".
+            iAssumption.
+
+    - (* Box *)
+      iModIntro.
+
+      (* Assumption *)
+      iIntros "?".
+      iAssumption.
+  Qed.
 End Tests.
-
-(* Proper als alternatief voor BiMonoPred, A New Look at Generalized Rewriting in TypeTheory MATTHIEU SOZEAU *)
-(* wands beter begrijpen en bewijs rechts onder op hoek *)
-(* Pas monopred aan naar andere definitie en kijk wat er kapot gaat *)

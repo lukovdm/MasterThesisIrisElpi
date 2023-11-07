@@ -33,10 +33,12 @@ Section iProper_Definition.
   Context {PROP : bi}.
 
   Class IProper {A} (R : iRelation A) (m : A) := iProper : ⊢@{ PROP } R m m.
-  Global Arguments IProper _%I R%i_signature.
-  Global Arguments iProper _%I R%i_signature.
+  Global Arguments IProper {_%I} R%i_signature.
+  Global Arguments iProper {_%I} (R%i_signature).
+
+  Class IProperTop {A} {B} (R : @iRelation PROP A) (m : B) := iProperTop : ∃ f, IProper (f R) m. 
   
-  Instance iReflexive_iProper {A} (R : iRelation A) `(@iReflexive PROP A R) (x : A) : IProper R x.
+  Global Instance iReflexive_iProper {A} (R : iRelation A) `(@iReflexive PROP A R) (x : A) : IProper R x.
     unfold IProper.
     iApply iReflexivity.
   Defined.
@@ -49,15 +51,15 @@ Section iProper_Definition.
     := λ f g, (∀ a, R (f a) (g a))%I.
   Global Arguments iPointwise_relation {_ _}%I R%i_signature.
 
-  Definition iPersistant_relation {A} (R : iRelation A) : @iRelation PROP A
+  Definition iPersistent_relation {A} (R : iRelation A) : @iRelation PROP A
     := λ x y, (□ (R x y))%I.
-  Global Arguments iPersistant_relation {_}%I R%i_signature.
+  Global Arguments iPersistent_relation {_}%I R%i_signature.
 
 End iProper_Definition.
 
 Notation " R ==> R' " := (iRespectful R%i_signature R'%i_signature) (right associativity, at level 55) : i_signature_scope.
 Notation " .> R " := (iPointwise_relation R%i_signature) (right associativity, at level 51) : i_signature_scope.
-Notation " □> R " := (iPersistant_relation R%i_signature) (right associativity, at level 51) : i_signature_scope.
+Notation " □> R " := (iPersistent_relation R%i_signature) (right associativity, at level 51) : i_signature_scope.
 
 Section BiMonoProper.
   Class BiMonoProper {PROP : bi} {A : ofe} (F : (A → PROP) → (A → PROP)) := {
@@ -78,11 +80,23 @@ Section Experiments.
       - by iApply "Hxy'".
   Defined.
 
+  Global Instance sep_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_sep PROP).
+    unfold IProperTop.
+    exists (fun F => bi_wand ==> bi_wand ==> F)%i_signature.
+    tc_solve.
+  Defined.
+
   Global Instance exists_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_exist PROP A).
     unfold IProper, iPointwise_relation, iRespectful.
     iIntros (x y) "Hxaya [%y' Hxy]".
     iExists y'.
     by iApply "Hxaya".
+  Defined.
+
+  Global Instance exists_IProperTop {A} : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_exist PROP A).
+    unfold IProperTop.
+    exists (fun F => .> bi_wand ==> F)%i_signature.
+    tc_solve.
   Defined.
 
   Global Instance or_IProper : @IProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or.
@@ -95,7 +109,13 @@ Section Experiments.
       by iApply "Hxy'".
   Defined.
 
-  Check (@iProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand)%i_signature bi_or).
+  Global Instance or_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_or PROP).
+    unfold IProperTop.
+    exists (fun F => □> bi_wand ==> □> bi_wand ==> F)%i_signature.
+    tc_solve.
+  Defined.
+
+  Check (iProper (□> bi_wand ==> □> bi_wand ==> bi_wand)%i_signature bi_or).
 
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 
@@ -104,7 +124,7 @@ Section Experiments.
     - iIntros (Φ Ψ HneΦ HneΨ) "#H %x HF".
       assert (@IProper PROP _ (□> .> bi_wand ==> .> bi_wand) F).
       { apply bi_mono_proper. }
-      unfold IProper, iRespectful, iPersistant_relation, iPointwise_relation in H0.
+      unfold IProper in H0.
       iApply H0; done.
     - apply bi_mono_proper_ne.
   Defined.

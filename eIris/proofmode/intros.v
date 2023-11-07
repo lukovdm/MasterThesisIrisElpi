@@ -32,7 +32,7 @@ Elpi Accumulate lp:{{
     parse_ipl T IPS, !,
     coq.ltac.set-goal-arguments [] G (seal G) SG.
 
-  parse_args IPS (goal _ _ _ _ Args as G) [SG] :-
+  parse_args _ (goal _ _ _ _ Args) _ :-
     coq.say Args,
     coq.ltac.fail 0 "Did not recognize arguments" Args.
 
@@ -60,6 +60,13 @@ Tactic Notation "eiIntros" "(" simple_intropattern_list(l) ")" string(x) :=
 Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
+
+  Lemma intros_1 (P : iProp) :
+    □ P -∗ P .
+  Proof.
+    eiIntros "#?".
+    iAssumption.
+  Qed.
 
   (* Elpi Trace Browser. *)
   Lemma intros_2 (P : nat -> iProp) :

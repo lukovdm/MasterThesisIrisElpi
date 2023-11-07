@@ -26,7 +26,8 @@ go_iStartProof (goal _Ctx _Trigger Type _Proof [] as G) GL :-
   refine {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} G GL.
 
 type go_iFresh term -> open-tactic.
-go_iFresh N (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} Proof Args) [seal (goal Ctx Trigger {{ envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q }} Proof Args)].
+go_iFresh N (goal _Ctx _Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} _Proof _Args as G) GL :-
+  refine {{_ : (envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q) }} G GL.
 
 type go_intro string -> open-tactic.
 go_intro ID G GL :-
@@ -60,24 +61,25 @@ type go_iIntuitionistic ident -> tactic.
 go_iIntuitionistic ID G [GRes] :-
   ident->term ID X T,
   open go_iStartProof G [G'],
-  (
-    (
-      @no-tc! => open (refine {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }}) G' [GI1, GI2, GI3],
-      open (tc_solve) GI1 [], !,
-      (open (tc_solve) GI2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
-      open (pm_reduce) GI3 [GI4],
-      open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GI4 [GRes]
-      );
-    (
-      @no-tc! => open (refine {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }}) G' [GW1, GW2, GW3, GW4],
-      open (tc_solve) GW1 [], !,
-      (open (tc_solve) GW2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
-      (open (tc_solve) GW3 []; coq.ltac.fail 0 "eiIntuitionistic: not affine and the goal not absorbing"),
-      open (pm_reduce) GW4 [GW5],
-      open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GW5 [GRes]
-      );
-    (!, coq.ltac.fail 0 {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}, fail)
-  ).
+  @no-tc! => open (refine {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }}) G' [GI1, GI2, GI3],
+  open (tc_solve) GI1 [], 
+  !,
+  (open (tc_solve) GI2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+  open (pm_reduce) GI3 [GI4],
+  open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GI4 [GRes].
+go_iIntuitionistic ID G [GRes] :-
+  ident->term ID X T,
+  open go_iStartProof G [G'],
+  @no-tc! => open (refine {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }}) G' [GW1, GW2, GW3, GW4],
+  open (tc_solve) GW1 [], 
+  !,
+  (open (tc_solve) GW2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+  (open (tc_solve) GW3 []; coq.ltac.fail 0 "eiIntuitionistic: not affine and the goal not absorbing"),
+  open (pm_reduce) GW4 [GW5],
+  open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GW5 [GRes].
+go_iIntuitionistic ID _ _ :- !,
+  ident->term ID X _,
+  coq.ltac.fail 0 {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
 
 type go_iAndDestruct ident -> ident -> ident -> tactic.
 go_iAndDestruct HID H1ID H2ID G GL :-
@@ -120,8 +122,9 @@ go_iExistDestruct ID X HID G GL :- !,
   open (refine {{ @tac_exist_destruct_without_name _ _ _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
   (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExistDestruct:" ID "not found"),
   (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
-  if (X = some XN) true (XN = "x"),
-  open (go_intro XN) G3 [G4],
+  if (X = some XN) 
+    (open (go_intro XN) G3 [G4])
+    (open (coq.ltac.call "intros_anon" []) G3 [G4]),
   open pm_reduce G4 [G5],
   open simpl G5 [G6],
   open (false-error "iExistDestruct: name already in use.") G6 GL.
@@ -174,11 +177,11 @@ go_iDestruct ID (iList [[IP1], [IP2]]) G GL :-
   go_iDestruct ID1 IP1 G1 GL1,
   go_iDestruct ID2 IP2 G2 GL2,
   std.append GL1 GL2 GL.
-go_iDestruct ID IP G [G] :-
-  coq.say { calc ("eiDestruct: Skipping " ^ {std.any->string IP})}.
+go_iDestruct _ IP G [G] :-
+  coq.say "eiDestruct: Skipping " {std.any->string IP}.
 
 type go_iIntros (list intro_pat) -> tactic.
-% go_iIntros IPS _ _ :- coq.say "go_iIntros: " IPS, fail.
+:name "go_iIntros.start"
 go_iIntros [] G [G].
 go_iIntros [iCoqIntro X | IPS] G GL :-
   thenl [
@@ -191,9 +194,6 @@ go_iIntros [iSimpl | IPS] G GL :-
 go_iIntros [iDone | IPS] G GL :-
   (open done G [G']; G' = G),
   go_iIntros IPS G' GL.
-go_iIntros [iPure (some X) | IPS] G GL :-
-  open (go_intro X) G [G'],
-  go_iIntros IPS G' GL.
 go_iIntros [iDrop | IPS] G GL :- !,
   open go_iStartProof G [G'],
   (
@@ -203,6 +203,18 @@ go_iIntros [iDrop | IPS] G GL :- !,
     (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
   ),
   go_iIntros IPS GRes GL.
+go_iIntros [iPure (some X) | IPS] G GL :- !,
+  open go_iStartProof G [StartedG],
+  open (refine {{ tac_forall_intro_nameless _ _ _ _ _ _ }}) StartedG [G'],
+  open (go_intro X) G' [G''],
+  open bi-normalize G'' [G'''],
+  go_iIntros IPS G''' GL.
+go_iIntros [iPure (none) | IPS] G GL :-
+  open go_iStartProof G [StartedG],
+  open (refine {{ tac_forall_intro_nameless _ _ _ _ _ _ }}) StartedG [G'],
+  open (coq.ltac.call "intros_anon" []) G' [G''],
+  open bi-normalize G'' [G'''],
+  go_iIntros IPS G''' GL.
 go_iIntros [iIdent ID | IPS] G GL :-
   ident->term ID X T,
   open go_iStartProof G [G'],
@@ -216,6 +228,11 @@ go_iIntros [iIdent ID | IPS] G GL :-
     (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
   ),
   go_iIntros IPS GRes GL.
+go_iIntros [iIntuitionistic iFresh | IPS] G GL :- !,
+  open go_iStartProof G [StartedGoal],
+  open (go_iFresh N) StartedGoal [FreshGoal],
+  go_iIntuitionistic (iAnon N) FreshGoal [IntroGoal],
+  go_iIntros IPS IntroGoal GL.
 go_iIntros [iIntuitionistic (iIdent ID) | IPS] G GL :-
   open go_iStartProof G [G'],
   go_iIntuitionistic ID G' [GRes],
@@ -226,16 +243,9 @@ go_iIntros [iIntuitionistic (iList IPS) | IPSS] G GL :-
   go_iIntuitionistic (iAnon N) FreshGoal [IntroGoal],
   go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
   all (go_iIntros IPSS) GL' GL.
-go_iIntros [iFresh | IPS] G GL :-
-  open go_iStartProof G [G'],
-  open (go_iFresh N) G' [G''],
-  go_iIntros IPS G'' GL. 
 go_iIntros [iList IPS | IPSS] G GL :- !,
   open go_iStartProof G [StartedGoal],
   open (go_iFresh N) StartedGoal [FreshGoal],
   go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
   go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
   all (go_iIntros IPSS) GL' GL.
-go_iIntros [IP | IPS] G GL :-
-  coq.say { calc ("eiIntro: Skipping " ^ {std.any->string IP})},
-  go_iIntros IPS G GL.

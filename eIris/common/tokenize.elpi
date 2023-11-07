@@ -36,11 +36,12 @@ tokenize.rec ["-", ">" | SL] [tArrow right | TS] :- !, tokenize.rec SL TS.
 tokenize.rec ["<", "-" | SL] [tArrow left | TS] :- !, tokenize.rec SL TS.
 tokenize.rec ["-", "#" | SL] [tSpatial | TS] :- !, tokenize.rec SL TS.
 tokenize.rec ["�", "�", "�" | SL] [tSep | TS] :- !, tokenize.rec SL TS. % TODO:Sep unicode character
-tokenize.rec ["%", " " | SL] [tPure none | TS] :- !, tokenize.rec SL TS.
 tokenize.rec ["%" | SL] [tPure (some S) | TS] :- 
   take-while-split SL (x\ is-identifier x) S' SL',
-  std.string.concat "" S' S, !,
+  std.string.concat "" S' S, 
+  { calc (size S) } > 0, !,
   tokenize.rec SL' TS.
+tokenize.rec ["%" | SL] [tPure none | TS] :- !, tokenize.rec SL TS.
 tokenize.rec SL [tNat N | TS] :-
   take-while-split SL (x\ is-digit x) S' SL',
   std.string.concat "" S' S,

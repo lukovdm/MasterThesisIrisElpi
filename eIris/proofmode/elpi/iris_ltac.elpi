@@ -22,10 +22,20 @@ pred refine.warn i:term, i:goal, o:list sealed-goal.
 refine.warn T (goal _ RawEv Ty Ev _) GS :-
   rm-evar RawEv Ev,
   @keepunivs! => coq.elaborate-skeleton T Ty TR D,
-  D = ok,
+  if (D = ok) true (coq.say "refine crashed" D, D = ok),
   coq.ltac.collect-goals TR GS _,
   RawEv = T,
   Ev = TR.
+
+pred refine.norm i:term, i:goal, o:list sealed-goal.
+refine.norm T (goal _ RawEv Ty Ev _) GS :-
+  rm-evar RawEv Ev,
+  @keepunivs! => coq.elaborate-skeleton T Ty TR D,
+  if (D = ok) true (coq.say "refine crashed" D, D = ok),
+  coq.reduction.lazy.bi-norm TR TR',
+  coq.ltac.collect-goals TR' GS _,
+  RawEv = T,
+  Ev = TR'.
 
 pred thenl! i:list tactic, i:sealed-goal, o:list sealed-goal.
 thenl! [] G [G].
@@ -34,3 +44,8 @@ thenl! [T|Ts] G GS :- T G NG, !, all (thenl Ts) NG GS.
 type false-error string -> open-tactic.
 false-error S (goal _ _ {{ False }} _ _) _ :- !, coq.ltac.fail 0 S.
 false-error _ G [seal G].
+
+pred bi-normalize i:goal, o:list sealed-goal.
+bi-normalize (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
+  coq.reduction.lazy.bi-norm Type Type',
+  refine.warn {{ _ : lp:Type' }} G GL.

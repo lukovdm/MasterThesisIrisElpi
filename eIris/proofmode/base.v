@@ -1,6 +1,8 @@
-From iris.proofmode Require Export tactics coq_tactics reduction.
+From iris.proofmode Require Export base environments classes classes_make modality_instances tactics coq_tactics reduction.
 From iris.prelude Require Import options.
-From iris.bi Require Export bi telescopes.
+From iris.bi Require Export bi telescopes interface derived_laws.
+Import bi.
+Import env_notations.
 
 Section tactics.
 Context {PROP : bi}.
@@ -23,4 +25,63 @@ Proof.
   rewrite envs_simple_replace_singleton_sound' //; simpl. by rewrite wand_elim_r.
 Qed. *)
 Admitted.
+
+Global Lemma tac_forall_intro_nameless {A} Δ (Φ : A → PROP) Q name :
+  FromForall Q Φ name →
+  (∀ a, envs_entails Δ (Φ a)) →
+  envs_entails Δ Q.
+Proof. rewrite envs_entails_unseal /FromForall=> <-. apply iris.bi.interface.bi.forall_intro. Qed.
+
+Global Lemma tac_apply_proper Δ φ P P1 P2 :
+  IntoEmpValid φ P →
+  φ →
+  IntoWand false false P P1 P2 →
+  envs_entails Δ P1 →
+  envs_entails Δ P2.
+Proof.
+  (* intros HIEV Hφ HIW HP1.
+  eapply HIEV in Hφ.
+  setoid_rewrite (into_wand false false P) in Hφ; try done; simpl in *.
+  eapply wand_elim_l' in Hφ.
+  setoid_rewrite emp_sep_1 in HP1.
+  by setoid_rewrite Hφ in HP1.
+Qed. *)
+Admitted.
+
+Local Open Scope lazy_bool_scope.
+
+Lemma tac_specialize_assert_no_am Δ j (q neg : bool) js R P1 P2 P1' Q :
+  envs_lookup j Δ = Some (q, R) →
+  IntoWand q false R P1 P2 →
+  TCEq P1' P1 →
+  match
+    '(Δ1,Δ2) ← envs_split (if neg is true then Right else Left)
+                          js (envs_delete true j q Δ);
+    Δ2' ← envs_app (q &&& env_spatial_is_nil Δ1) (Esnoc Enil j P2) Δ2;
+    Some (Δ1,Δ2') (* does not preserve position of [j] *)
+  with
+  | Some (Δ1,Δ2') =>
+     (* The constructor [conj] of [∧] still stores the contexts [Δ1] and [Δ2'] *)
+     envs_entails Δ1 P1' ∧ envs_entails Δ2' Q
+  | None => False
+  end → envs_entails Δ Q.
+Proof.
+  rewrite envs_entails_unseal. intros ?? Hmod HQ.
+  destruct (_ ≫= _) as [[Δ1 Δ2']|] eqn:?; last done.
+  destruct HQ as [HP1 HQ].
+  destruct (envs_split _ _ _) as [[? Δ2]|] eqn:?; simplify_eq/=;
+    destruct (envs_app _ _ _) eqn:?; simplify_eq/=.
+  rewrite envs_lookup_sound // envs_split_sound //.
+  rewrite (envs_app_singleton_sound Δ2) //; simpl.
+  rewrite -intuitionistically_if_idemp (into_wand q false) /=.
+  destruct (q &&& env_spatial_is_nil Δ1) eqn:Hp; simpl.
+  - move: Hp. rewrite !lazy_andb_true. intros [-> ?]; simpl.
+    destruct Hmod. rewrite env_spatial_is_nil_intuitionistically // HP1.
+    by rewrite assoc intuitionistically_sep_2 wand_elim_l wand_elim_r HQ.
+  - rewrite intuitionistically_if_elim HP1. destruct Hmod.
+    by rewrite assoc wand_elim_l wand_elim_r HQ.
+Qed.
+
 End tactics.
+
+Ltac intros_anon := intros ?.
