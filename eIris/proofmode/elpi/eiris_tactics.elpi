@@ -21,7 +21,9 @@ ident_for_pat.default _ _ (iAnon NT) G GL :-
 type go_iStartProof open-tactic.
 go_iStartProof (goal _Ctx _Trigger {{ let _ := _ in _ }} _Proof [] as _G) _GL :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-go_iStartProof (goal _Ctx _Trigger {{ envs_entails _ _ }} _Proof [] as G) [seal G].
+go_iStartProof (goal _Ctx _Trigger ({{ envs_entails _ _ }} as Type) Proof []) GL :- !,
+  coq.ltac.collect-goals Proof O1 O2, 
+  std.append O1 O2 GL.
 go_iStartProof (goal _Ctx _Trigger Type _Proof [] as G) GL :- 
   refine {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} G GL.
 

@@ -149,9 +149,9 @@ Elpi Accumulate lp:{{
   show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
     coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
 
-  type go_iModIntro tactic.
+  type go_iModIntro open-tactic.
   go_iModIntro G GL :-
-    open go_iStartProof G [GoalStarted],
+    go_iStartProof G [GoalStarted],
     @no-tc! => open (refine {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3, G4, G5, G6],
     open tc_solve G1 [],
     open tc_solve G2 [],
@@ -161,9 +161,9 @@ Elpi Accumulate lp:{{
     open (coq.ltac.call "iSolveSideCondition" []) G5 [],
     open pm_prettify G6 GL.
 
-  type go_iPoseProper term -> term -> ident -> tactic.
+  type go_iPoseProper term -> term -> ident -> open-tactic.
   go_iPoseProper R F (iAnon N) G GL :-
-    open go_iStartProof G [GoalStarted],
+    go_iStartProof G [GoalStarted],
     open (go_iFresh N) GoalStarted [GoalFresh],
     ident->term (iAnon N) _ NT,
     @no-tc! => open (refine.warn {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}}) GoalFresh [G1, G2, G3],
@@ -175,57 +175,42 @@ Elpi Accumulate lp:{{
       open (false-error "iPoseLem: not fresh"),
     ] G3 GL.
 
-  type go_iSpecializeWand ident -> tactic.
+  type go_iSpecializeWand ident -> open-tactic.
   go_iSpecializeWand ID G GL :-
-    open go_iStartProof G [GoalStarted],
+    go_iStartProof G [GoalStarted],
     ident->term ID _IDS IDT,
     @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
-    % coq.say "specialize pre reflexivity",
-    % open show-goal G1 _,
     open pm_reflexivity G1 [],
-    % coq.say "specialize pre tc_solve 1",
-    % open show-goal G2 _,
     open tc_solve G2 [],
-    % coq.say "specialize pre tc_solve 2",
-    % open show-goal G3 _,
     open tc_solve G3 [],
-    % coq.say "specialize pre reduce",
-    % open show-goal G4 _,
     open pm_reduce G4 [G5],
     open (refine {{ conj _ _ }}) G5 GL.
 
-  type go_iApplySimpleHyp ident -> tactic.
+  type go_iApplySimpleHyp ident -> open-tactic.
   go_iApplySimpleHyp ID G GL :-
-    open go_iStartProof G [GoalStarted],
+    go_iStartProof G [GoalStarted],
     ident->term ID _IDS IDT,
     @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
-    % coq.say "apply pre reflexivity",
-    % open show-goal G1 _,
     open pm_reflexivity G1 [],
-    % coq.say "apply pre tc_solve",
-    % open show-goal G2 _,
     open tc_solve G2 [],
-    % coq.say "apply pre reduce",
-    % open show-goal G3 _,
     open pm_reduce G3 GL.
 
-  type go_iApplyProper term -> term -> tactic.
+  type go_iApplyProper term -> term -> open-tactic.
   go_iApplyProper R F G GL :-
     coq.say "Starting go_iApplyProper",
     go_iPoseProper R F ID G [GPosed],
     ID = iAnon IDS,
     coq.say "Posed Lemma" {coq.term->string IDS},
-    % open show-goal GPosed _,
-    go_iApplyProper.aux ID GPosed GL.
+    open (go_iApplyProper.aux ID) GPosed GL.
   go_iApplyProper.aux ID G GL :- 
     coq.say "simpleApplyHyp",
-    open show-goal G _,
+    show-goal G _,
     go_iApplySimpleHyp ID G GL.
   go_iApplyProper.aux ID G GL :-
     coq.say "specialize",
-    open show-goal G _,
+    show-goal G _,
     go_iSpecializeWand ID G GL',
-    go_iApplyProper.aux ID {std.last GL'} GL'',
+    open (go_iApplyProper.aux ID) {std.last GL'} GL'',
     std.append {std.drop-last 1 GL'} GL'' GL.
 
   pred unfold-id i:string, i:goal, o:list sealed-goal.
@@ -240,44 +225,50 @@ Elpi Accumulate lp:{{
     coq.reduction.lazy.bi-norm Type' NewType,
     refine {{ _ : lp:NewType }} G GL.
 
-  pred do-step i:sealed-goal, o:list sealed-goal.
-  do-step G GL :-
-    open (do-step.conn C LF RF) G _,
-    open show-goal G _,
-    do-step.aux C LF RF G GL.
+  pred all-try i:tactic, i:list sealed-goal, o:list sealed-goal.
+  all-try T [G|Gs] O :- T G O1, !, all-try T Gs O2, std.append O1 O2 O.
+  all-try T [_|Gs] O :- !, all-try T Gs O.
+  all-try _ [] [].
 
-  pred do-step.conn o:term, o:term, o:term, i:goal, o:list sealed-goal.
-  do-step.conn R LF RF (goal _Ctx _Trigger Type _Proof _Args as G) [seal G] :-
+  pred do-steps i:goal, o:list sealed-goal.
+  do-steps G GL :-
+    do-step.search C LF RF G,
+    show-goal G _,
+    do-step.go C LF RF G GL', !,
+    all-try (open do-steps) GL' GL.
+
+  pred do-step.search o:term, o:term, o:term, i:goal.
+  do-step.search R LF RF (goal _Ctx _Trigger Type _Proof _Args) :-
     top-relation Type R, !,
     relation-on Type LF RF.
 
-  pred do-step.aux i:term, i:term, i:term, i:sealed-goal, o:list sealed-goal.
-  do-step.aux {{ @iRespectful _ }} _ _ G GL :- !,
+  pred do-step.go i:term, i:term, i:term, i:goal, o:list sealed-goal.
+  do-step.go {{ @iRespectful _ }} _ _ G GL :- !,
     coq.say "==>",
     list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPointwise_relation _ }} _ _ G GL :- !,
+    coq.ltac.call "_iIntros0" [ trm Args ] G GL.
+  do-step.go {{ @iPointwise_relation _ }} _ _ G GL :- !,
     coq.say ".>",
     list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPersistent_relation _ }} _ _ G GL :- !,
+    coq.ltac.call "_iIntros0" [ trm Args ] G GL.
+  do-step.go {{ @iPersistent_relation _ }} _ _ G GL :- !,
     coq.say "□>",
     go_iModIntro G GL.
-  do-step.aux _ F F G [] :-
+  do-step.go _ F F G [] :-
     coq.say "Applying assumption" {coq.term->string F},
     list->listterm [ {{ IDone }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
-  do-step.aux R (app [F | FS]) _ G GL :- 
+    coq.ltac.call "_iIntros0" [ trm Args ] G [].
+  do-step.go R (app [F | FS]) _ G GL :- 
     std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
     coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
     go_iApplyProper R (app [F | FS']) G GL.
-  do-step.aux _ (app [global (const F) | _ ]) _ G GL :-
+  do-step.go _ (app [global (const F) | _ ]) _ G GL :-
     coq.say "Unfolding" F,
-    open (unfold-gref (const F)) G GL.
-  do-step.aux _ (global (const F)) _ G GL :-
+    unfold-gref (const F) G GL.
+  do-step.go _ (global (const F)) _ G GL :-
     coq.say "Unfolding" F,
-    open (unfold-gref (const F)) G GL.
-  do-step.aux T F _ _ _ :- !,
+    unfold-gref (const F) G GL.
+  do-step.go T F _ _ _ :- !,
     coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping", fail.
 
   pred top-relation i:term, o:term.
@@ -304,7 +295,7 @@ Elpi Accumulate lp:{{
       open (unfold-id "IProper"),
       open (go_iStartProof),
     ] SG [G],
-    coq.ltac.repeat! do-step G GL.
+    open do-steps G GL.
 }}.
 Elpi Typecheck.
 Elpi Export IProper_solver.
