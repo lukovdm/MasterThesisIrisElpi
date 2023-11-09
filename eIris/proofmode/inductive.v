@@ -17,9 +17,6 @@ From eIris.common Extra Dependency "parser.elpi" as parser.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
-Context `{!heapGS Σ}.
-Notation iProp := (iProp Σ).
-
 #[arguments(raw)] Elpi Command EI.ind.
 Elpi Accumulate lp:{{
   pred print-contructors i:list indc-decl.
@@ -30,6 +27,11 @@ Elpi Accumulate lp:{{
 
   pred constructor->term i:indc-decl, o:term.
   constructor->term (constructor _ Arity) T :- coq.arity->term Arity T.
+
+  pred find-PROP i:term, o:term.
+  find-PROP (prod _ _ F) O :- !,
+    (pi x\ find-PROP (F x) O).
+  find-PROP O O :- !.
 
   pred type-to-fun i:term, o:term.
   type-to-fun (prod N T F) (fun N T FB) :- !,
@@ -89,8 +91,9 @@ Elpi Accumulate lp:{{
 
   pred constr-body i:term, i:(term -> list indc-decl), o:term, o:term.
   constr-body TypeTerm Constructors EBo Ty :-
+    find-PROP TypeTerm PROP,
     constr-body-disj Constructors ConstrBo,
-    (pi b\ (type-to-fun ({{ uPred (iResUR Σ) }}) b :- !) => type-to-fun TypeTerm (FunTerm b)), % TODO: A proper PROP should be added not the hacky heap-lang one
+    (pi b\ (type-to-fun PROP b :- !) => type-to-fun TypeTerm (FunTerm b)), % TODO: A proper PROP should be added not the hacky heap-lang one
     (pi b\
       % Save the variables of functions in a list
       (pi N T T1 F F1 A \ fold-map (fun N T F) A (fun N T1 F1) A :- !,
@@ -104,10 +107,11 @@ Elpi Accumulate lp:{{
 
   pred type-to-proper i:term, o:term.
   type-to-proper Type EBo :-
+    find-PROP Type PROP,
     coq.say Type,
     (pi N T F A T1 F1 A1 \ fold-map (prod N T F) A (prod N T1 F1) (some {{ (.> lp:A1)%i_signature }}) :-
           fold-map T A T1 _, !, (pi x\ fold-map (F x) A (F1 x) (some A1))) =>
-      (pi A \ fold-map {{ uPred (iResUR Σ) }} A {{ uPred (iResUR Σ) }} (some {{ bi_wand }}) :- !) =>
+      (pi A \ fold-map PROP A PROP (some {{ bi_wand }}) :- !) =>
         fold-map Type none Type (some R),
       
     @keepunivs! => std.assert-ok! (coq.elaborate-skeleton {{ IProper (□> lp:R ==> lp:R) }} {{ (lp:Type -> lp:Type) -> Prop }} EBo) "Type check proper failed".
@@ -242,8 +246,8 @@ Elpi Accumulate lp:{{
 
   pred do-step i:sealed-goal, o:list sealed-goal.
   do-step G GL :-
-    open (do-step.conn C LF RF) G _,
     open show-goal G _,
+    open (do-step.conn C LF RF) G _,
     do-step.aux C LF RF G GL.
 
   pred do-step.conn o:term, o:term, o:term, i:goal, o:list sealed-goal.
@@ -267,6 +271,10 @@ Elpi Accumulate lp:{{
     coq.say "Applying assumption" {coq.term->string F},
     list->listterm [ {{ IDone }} ] Args,
     open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
+  do-step.aux _ F F G [] :-
+    coq.say "Applying assumption" {coq.term->string F},
+    list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
   do-step.aux R (app [F | FS]) _ G GL :- 
     std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
     coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
@@ -286,17 +294,14 @@ Elpi Accumulate lp:{{
   pred relation-on i:term, o:term, o:term.
   relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :- 
     std.take-last 2 AS [L', R'],
-    if (L' = app L'', R' = app R'')
-    (
-      take-while-split L'' (x\ closed_term x) L''' _,
-      take-while-split R'' (x\ closed_term x) R''' _,
-      L = app L''',
-      R = app R'''
-    )
-    (
-      L' = L,
-      R' = R
-    ).
+    relation-on.aux L' L,
+    relation-on.aux R' R.
+  relation-on.aux (app Ts) (app Os) :- !,
+    take-while-split Ts (x\ closed_term x) Os' _,
+    if ({std.length Os'} > 0) (Os = Os') (Os = [{{ @False }}]).
+  relation-on.aux (fun N T B) (fun N T B') :- !,
+    pi x\ relation-on.aux (B x) (B' x).
+  relation-on.aux X X.
 
   msolve [SG] GL :- !,
     thenl! [
@@ -313,6 +318,8 @@ Tactic Notation "iSpecializePat" open_constr(H) constr(pat) :=
   let pats := spec_pat.parse pat in iSpecializePat_go H pats.
 
 Section Tests.
+  Context `{!heapGS Σ}.
+  Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
   EI.ind 
@@ -323,7 +330,7 @@ Section Tests.
   (* Print is_list_pre.
   Print is_list_proper. *)
 
-  Elpi Trace Browser.
+  (* Elpi Trace Browser. *)
   Local Lemma is_list_pre_proper_mono :
     is_list_proper is_list_pre.
   Proof.
