@@ -99,7 +99,7 @@ Section Experiments.
     tc_solve.
   Defined.
 
-  Global Instance or_IProper : @IProper PROP _ (□> bi_wand ==> □> bi_wand ==> bi_wand) bi_or.
+  Global Instance or_IProper : IProper (□> bi_wand ==> □> bi_wand ==> bi_wand) (@bi_or PROP).
   Proof.
     unfold IProper, iRespectful.
     iIntros (x y) "#Hxy %x' %y' #Hxy' [Hx | Hx']".

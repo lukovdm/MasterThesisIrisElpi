@@ -180,17 +180,17 @@ Elpi Accumulate lp:{{
     open go_iStartProof G [GoalStarted],
     ident->term ID _IDS IDT,
     @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
-    coq.say "specialize pre reflexivity",
-    open show-goal G1 _,
+    % coq.say "specialize pre reflexivity",
+    % open show-goal G1 _,
     open pm_reflexivity G1 [],
-    coq.say "specialize pre tc_solve 1",
-    open show-goal G2 _,
+    % coq.say "specialize pre tc_solve 1",
+    % open show-goal G2 _,
     open tc_solve G2 [],
-    coq.say "specialize pre tc_solve 2",
-    open show-goal G3 _,
+    % coq.say "specialize pre tc_solve 2",
+    % open show-goal G3 _,
     open tc_solve G3 [],
-    coq.say "specialize pre reduce",
-    open show-goal G4 _,
+    % coq.say "specialize pre reduce",
+    % open show-goal G4 _,
     open pm_reduce G4 [G5],
     open (refine {{ conj _ _ }}) G5 GL.
 
@@ -211,18 +211,19 @@ Elpi Accumulate lp:{{
 
   type go_iApplyProper term -> term -> tactic.
   go_iApplyProper R F G GL :-
-    % coq.say "Starting go_iApplyProper" R F,
+    coq.say "Starting go_iApplyProper",
     go_iPoseProper R F ID G [GPosed],
-    % coq.say "Posed Lemma" ID,
+    ID = iAnon IDS,
+    coq.say "Posed Lemma" {coq.term->string IDS},
     % open show-goal GPosed _,
     go_iApplyProper.aux ID GPosed GL.
   go_iApplyProper.aux ID G GL :- 
-    % coq.say "simpleApplyHyp" ID,
-    % open show-goal G _,
+    coq.say "simpleApplyHyp",
+    open show-goal G _,
     go_iApplySimpleHyp ID G GL.
   go_iApplyProper.aux ID G GL :-
-    % coq.say "specialize " ID,
-    % open show-goal G _,
+    coq.say "specialize",
+    open show-goal G _,
     go_iSpecializeWand ID G GL',
     go_iApplyProper.aux ID {std.last GL'} GL'',
     std.append {std.drop-last 1 GL'} GL'' GL.
@@ -262,13 +263,13 @@ Elpi Accumulate lp:{{
   do-step.aux {{ @iPersistent_relation _ }} _ _ G GL :- !,
     coq.say "□>",
     go_iModIntro G GL.
-  do-step.aux _ F F G GL :-
+  do-step.aux _ F F G [] :-
     coq.say "Applying assumption" {coq.term->string F},
-    list->listterm [ {{ IFrame }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
+    list->listterm [ {{ IDone }} ] Args,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
   do-step.aux R (app [F | FS]) _ G GL :- 
     std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
-    coq.say "Apply relation" R "with" (app [F | FS']),
+    coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
     go_iApplyProper R (app [F | FS']) G GL.
   do-step.aux _ (app [global (const F) | _ ]) _ G GL :-
     coq.say "Unfolding" F,
@@ -277,7 +278,7 @@ Elpi Accumulate lp:{{
     coq.say "Unfolding" F,
     open (unfold-gref (const F)) G GL.
   do-step.aux T F _ _ _ :- !,
-    coq.say "No case for relation" T "with " {coq.term->string F} "😢 stopping", fail.
+    coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping", fail.
 
   pred top-relation i:term, o:term.
   top-relation {{ envs_entails _ lp:{{ app PS }} }} C :- C = app {std.take 2 PS}.
@@ -329,7 +330,7 @@ Section Tests.
     elpi IProper_solver.
     
     (* Start proof *)
-    unfold is_list_proper, IProper.
+    (* unfold is_list_proper, IProper.
 
     (* Respectfull *)
     iIntros "% % #?".
@@ -345,7 +346,7 @@ Section Tests.
     unfold is_list_pre.
 
     (* Relation *)
-    iApply (iProper (_ ==> _ ==> bi_wand) bi_or).
+    iApply (iProper (_ ==> _ ==> bi_wand) bi_or). *)
     
     (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop bi_wand bi_or _))) _);
     [iIntoEmpValid; tc_solve
@@ -362,10 +363,26 @@ Section Tests.
       |pm_reduce]
     ]. *)
     
-    - (* Box *)
-      iModIntro.
+    -  (* Box *)
+      (* iModIntro. *)
 
       (* Relation *)
+      (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop bi_wand bi_exist _))) _);
+      [iIntoEmpValid; tc_solve
+      |tc_solve
+      |idtac].
+      pm_reduce. *)
+      (* notypeclasses refine (tac_specialize_assert _ (IAnon 2) _ false false [] _ _ _ _ _ _ _ _ _).
+      { pm_reflexivity. }
+      { tc_solve. }
+      { tc_solve. }
+      pm_reduce; notypeclasses refine (conj _ _);
+      [| *)
+        (* notypeclasses refine (tac_apply _ (IAnon 2) _ _ _ _ _ _ _); [pm_reflexivity
+        |tc_solve
+        |pm_reduce]. *)
+       (* ]. *)
+
       try iApply (iProper (_ ==> bi_wand) bi_exist).
 
       (* Pointwise *)
@@ -394,7 +411,6 @@ Section Tests.
 
       + (* Assumption *)
         iIntros "$".
-        iAssumption.
 
       + (* Relation *)
         try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
@@ -403,14 +419,13 @@ Section Tests.
 
         * (* Assumption *)
           iIntros "?".
-          iAssumption.
+          iAssumption. *)
 
     - (* Box *)
       iModIntro.
 
       (* Assumption *)
-      iIntros "?".
-      iAssumption.
+      iIntros "//".
   Qed.
 
   EI.ind 

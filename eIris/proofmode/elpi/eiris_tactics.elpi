@@ -27,7 +27,8 @@ go_iStartProof (goal _Ctx _Trigger Type _Proof [] as G) GL :-
 
 type go_iFresh term -> open-tactic.
 go_iFresh N (goal _Ctx _Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} _Proof _Args as G) GL :-
-  refine {{_ : (envs_entails (Envs lp:DP lp:DS (Pos.succ lp:N)) lp:Q) }} G GL.
+  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS,
+  refine {{_ : (envs_entails (Envs lp:DP lp:DS lp:NS) lp:Q) }} G GL.
 
 type go_intro string -> open-tactic.
 go_intro ID G GL :-
