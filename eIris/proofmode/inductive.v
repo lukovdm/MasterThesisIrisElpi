@@ -1,7 +1,7 @@
 From elpi Require Import elpi.
-From iris.proofmode Require Import proofmode tactics coq_tactics reduction intro_patterns class_instances spec_patterns.
+From iris.proofmode Require Import base environments proofmode tactics coq_tactics reduction intro_patterns class_instances spec_patterns.
 From iris.prelude Require Import options.
-From iris.bi Require Import fixpoint.
+From iris.bi Require Import  bi telescopes fixpoint.
 From iris.algebra Require Import ofe monoid list.
 From iris.heap_lang Require Import proofmode.
 From iris.heap_lang Require Import notation.
@@ -149,173 +149,210 @@ Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
-  type show-goal open-tactic.
-  show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
-    coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
+  kind hole type.
+  type hole term -> term -> hole. % A pair of of Type, Proof
 
-  type go_iModIntro tactic.
-  go_iModIntro G GL :-
-    open go_iStartProof G [GoalStarted],
-    @no-tc! => open (refine {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3, G4, G5, G6],
+  kind ihole type.
+  type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
+
+  pred increase-ctx-count i:term, o:term.
+  increase-ctx-count N NS :-
+    coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
+
+  pred pm-reduce i:term, o:term.
+  pm-reduce T O :-
+    Consts = [
+      % base
+      {{ @base.negb }}, {{ @base.beq }}, {{ @base.Pos_succ }}, {{ @base.ascii_beq }}, {{ @base.string_beq }}, {{ @base.positive_beq }}, {{ @base.ident_beq }},
+      % environments
+      {{ @env_lookup }}, {{ @env_lookup_delete }}, {{ @env_delete }}, {{ @env_app }}, {{ @env_replace }}, {{ @env_dom }}, {{ @env_intuitionistic }}, 
+      {{ @env_spatial }}, {{ @env_counter }}, {{ @env_spatial_is_nil }}, {{ @envs_dom }}, {{ @envs_lookup }}, {{ @envs_lookup_delete }}, 
+      {{ @envs_delete }}, {{ @envs_snoc }}, {{ @envs_app }}, {{ @envs_simple_replace }}, {{ @envs_replace }}, {{ @envs_split }}, 
+      {{ @envs_clear_spatial }}, {{ @envs_clear_intuitionistic }}, {{ @envs_incr_counter }}, {{ @envs_split_go }}, 
+      {{ @envs_split }}, {{ @env_to_prop_go }}, {{ @env_to_prop }}, {{ @env_to_prop_and_go }}, {{ @env_to_prop_and }},
+      % PM list and option functions
+      {{ @pm_app }}, {{ @pm_option_bind }}, {{ @pm_from_option }}, {{ @pm_option_fun }}
+    ],
+    std.map Consts (x\r\ sigma TMP\ x = global (const TMP), r = coq.redflags.const TMP) Deltas,
+    @redflags! Deltas => coq.reduction.cbv.norm T O.
+
+  pred do-iStartProof i:hole, o:ihole.
+  do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
+    coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
+  do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
+    coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
+    Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
+    coq.typecheck NProof NType ok,
+    NType = {{ envs_entails (Envs _ _ lp:N) _}}.
+
+  pred do-iModIntro i:hole, o:hole.
+  do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
+    @no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok,
+    Proof = {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ lp:TC1 lp:TC2 lp:TC3 lp:PM4 lp:SC5 lp:ModProof }},
+    coq.ltac.collect-goals TC1 [G1] _,
     open tc_solve G1 [],
+    coq.ltac.collect-goals TC2 [G2] _,
     open tc_solve G2 [],
+    coq.ltac.collect-goals TC3 [G3] _,
     open tc_solve G3 [],
+    coq.ltac.collect-goals PM4 [G4] _,
     open pm_reduce G4 [G4'],
     open tc_solve G4' [],
+    coq.ltac.collect-goals SC5 [G5] _,
     open (coq.ltac.call "iSolveSideCondition" []) G5 [],
-    open pm_prettify G6 GL.
+    coq.typecheck ModProof ModType ok.
 
-  type go_iPoseProper term -> term -> ident -> tactic.
-  go_iPoseProper R F (iAnon N) G GL :-
-    open go_iStartProof G [GoalStarted],
-    open (go_iFresh N) GoalStarted [GoalFresh],
+  pred do-iPoseProper i:ihole, i:term, i:term, o:ident, o:ihole.
+  do-iPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+    increase-ctx-count N NS,
     ident->term (iAnon N) _ NT,
-    @no-tc! => open (refine.warn {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}}) GoalFresh [G1, G2, G3],
+    @no-tc! => coq.elaborate-skeleton 
+                  {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}} 
+                  Type Proof ok,
+    Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop _ _ _))) lp:PosedProof }},
+    coq.ltac.collect-goals IEVProof [G1] _,
     open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
     all (open tc_solve) TCGL [],
-    open tc_solve G2 [],
-    thenl [
-      open pm_reduce,
-      open (false-error "iPoseLem: not fresh"),
-    ] G3 GL.
+    % open tc_solve G2 [],
+    coq.typecheck PosedProof NormType ok,
+    pm-reduce NormType PosedType.
 
-  type go_iSpecializeWand ident -> tactic.
-  go_iSpecializeWand ID G GL :-
-    open go_iStartProof G [GoalStarted],
-    ident->term ID _IDS IDT,
-    @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
-    % coq.say "specialize pre reflexivity",
-    % open show-goal G1 _,
-    open pm_reflexivity G1 [],
-    % coq.say "specialize pre tc_solve 1",
-    % open show-goal G2 _,
-    open tc_solve G2 [],
-    % coq.say "specialize pre tc_solve 2",
-    % open show-goal G3 _,
-    open tc_solve G3 [],
-    % coq.say "specialize pre reduce",
-    % open show-goal G4 _,
-    open pm_reduce G4 [G5],
-    open (refine {{ conj _ _ }}) G5 GL.
+  % type go_iSpecializeWand ident -> tactic.
+  % go_iSpecializeWand ID G GL :-
+  %   open go_iStartProof G [GoalStarted],
+  %   ident->term ID _IDS IDT,
+  %   @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
+  %   % coq.say "specialize pre reflexivity",
+  %   % open show-goal G1 _,
+  %   open pm_reflexivity G1 [],
+  %   % coq.say "specialize pre tc_solve 1",
+  %   % open show-goal G2 _,
+  %   open tc_solve G2 [],
+  %   % coq.say "specialize pre tc_solve 2",
+  %   % open show-goal G3 _,
+  %   open tc_solve G3 [],
+  %   % coq.say "specialize pre reduce",
+  %   % open show-goal G4 _,
+  %   open pm_reduce G4 [G5],
+  %   open (refine {{ conj _ _ }}) G5 GL.
 
-  type go_iApplySimpleHyp ident -> tactic.
-  go_iApplySimpleHyp ID G GL :-
-    open go_iStartProof G [GoalStarted],
-    ident->term ID _IDS IDT,
-    @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
-    % coq.say "apply pre reflexivity",
-    % open show-goal G1 _,
-    open pm_reflexivity G1 [],
-    % coq.say "apply pre tc_solve",
-    % open show-goal G2 _,
-    open tc_solve G2 [],
-    % coq.say "apply pre reduce",
-    % open show-goal G3 _,
-    open pm_reduce G3 GL.
+  % type go_iApplySimpleHyp ident -> tactic.
+  % go_iApplySimpleHyp ID G GL :-
+  %   open go_iStartProof G [GoalStarted],
+  %   ident->term ID _IDS IDT,
+  %   @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
+  %   % coq.say "apply pre reflexivity",
+  %   % open show-goal G1 _,
+  %   open pm_reflexivity G1 [],
+  %   % coq.say "apply pre tc_solve",
+  %   % open show-goal G2 _,
+  %   open tc_solve G2 [],
+  %   % coq.say "apply pre reduce",
+  %   % open show-goal G3 _,
+  %   open pm_reduce G3 GL.
 
-  type go_iApplyProper term -> term -> tactic.
-  go_iApplyProper R F G GL :-
-    coq.say "Starting go_iApplyProper",
-    go_iPoseProper R F ID G [GPosed],
+  pred do-iApplyProper i:ihole, i:term, i:term, o:list ihole.
+  do-iApplyProper IH R F IHS :-
+    coq.say "do-iApplyProper",
+    do-iPoseProper IH R F ID IHPosed,
     ID = iAnon IDS,
     coq.say "Posed Lemma" {coq.term->string IDS},
-    % open show-goal GPosed _,
-    go_iApplyProper.aux ID GPosed GL.
-  go_iApplyProper.aux ID G GL :- 
-    coq.say "simpleApplyHyp",
-    open show-goal G _,
-    go_iApplySimpleHyp ID G GL.
-  go_iApplyProper.aux ID G GL :-
-    coq.say "specialize",
-    open show-goal G _,
-    go_iSpecializeWand ID G GL',
-    go_iApplyProper.aux ID {std.last GL'} GL'',
-    std.append {std.drop-last 1 GL'} GL'' GL.
+    IHS = [IHPosed].
+    % go_iApplyProper.aux ID GPosed GL.
+  % go_iApplyProper.aux ID G GL :- 
+  %   coq.say "simpleApplyHyp",
+  %   go_iApplySimpleHyp ID G GL.
+  % go_iApplyProper.aux ID G GL :-
+  %   coq.say "specialize",
+  %   go_iSpecializeWand ID G GL',
+  %   go_iApplyProper.aux ID {std.last GL'} GL'',
+  %   std.append {std.drop-last 1 GL'} GL'' GL.
 
-  pred unfold-id i:string, i:goal, o:list sealed-goal.
-  unfold-id S G GL :- 
+  pred unfold-id i:string, i:term, o:term.
+  unfold-id S I O :- 
     coq.locate S (const IP),
-    unfold-gref (const IP) G GL.
+    unfold-gref (const IP) I O.
 
-  pred unfold-gref i:gref, i:goal, o:list sealed-goal.
-  unfold-gref (const IP) (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
+  pred unfold-gref i:gref, i:term, o:term.
+  unfold-gref (const IP) I O :-
     coq.env.const IP (some Bo) _,
-    ((copy (global (const IP)) Bo :- !) => copy Type Type'),
-    coq.reduction.lazy.bi-norm Type' NewType,
-    refine {{ _ : lp:NewType }} G GL.
+    ((copy (global (const IP)) Bo :- !) => copy I I'),
+    coq.reduction.lazy.bi-norm I' O.
 
-  pred do-step i:sealed-goal, o:list sealed-goal.
-  do-step G GL :-
-    open show-goal G _,
-    open (do-step.conn C LF RF) G _,
-    do-step.aux C LF RF G GL.
+  pred do-steps i:ihole.
+  do-steps (ihole _ (hole Type _) as IH) :-
+    coq.say "\n================= Goal =================" {coq.term->string Type} "",
+    do-steps.conn Type R LF RF,
+    do-steps.do IH R LF RF.
 
-  pred do-step.conn o:term, o:term, o:term, i:goal, o:list sealed-goal.
-  do-step.conn R LF RF (goal _Ctx _Trigger Type _Proof _Args as G) [seal G] :-
+  pred do-steps.open i:term, i:goal, o:list sealed-goal.
+  do-steps.open N (goal _ _ Type Proof _) _ :-
+    do-steps (ihole N (hole Type Proof)).
+
+  pred do-steps.conn i:term, o:term, o:term, o:term.
+  do-steps.conn Type R LF RF:-
     top-relation Type R, !,
     relation-on Type LF RF.
-
-  pred do-step.aux i:term, i:term, i:term, i:sealed-goal, o:list sealed-goal.
-  do-step.aux {{ @iRespectful _ }} _ _ G GL :- !,
-    coq.say "==>",
-    list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPointwise_relation _ }} _ _ G GL :- !,
-    coq.say ".>",
-    list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G GL.
-  do-step.aux {{ @iPersistent_relation _ }} _ _ G GL :- !,
-    coq.say "□>",
-    go_iModIntro G GL.
-  do-step.aux _ F F G [] :-
-    coq.say "Applying assumption" {coq.term->string F},
-    list->listterm [ {{ IDone }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
-  do-step.aux _ F F G [] :-
-    coq.say "Applying assumption" {coq.term->string F},
-    list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
-  do-step.aux R (app [F | FS]) _ G GL :- 
-    std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
-    coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
-    go_iApplyProper R (app [F | FS']) G GL.
-  do-step.aux _ (app [global (const F) | _ ]) _ G GL :-
-    coq.say "Unfolding" F,
-    open (unfold-gref (const F)) G GL.
-  do-step.aux _ (global (const F)) _ G GL :-
-    coq.say "Unfolding" F,
-    open (unfold-gref (const F)) G GL.
-  do-step.aux T F _ _ _ :- !,
-    coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping", fail.
 
   pred top-relation i:term, o:term.
   top-relation {{ envs_entails _ lp:{{ app PS }} }} C :- C = app {std.take 2 PS}.
 
   pred relation-on i:term, o:term, o:term.
   relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :- 
-    std.take-last 2 AS [L', R'],
-    relation-on.aux L' L,
-    relation-on.aux R' R.
-  relation-on.aux (app Ts) (app Os) :- !,
-    take-while-split Ts (x\ closed_term x) Os' _,
-    if ({std.length Os'} > 0) (Os = Os') (Os = [{{ @False }}]).
-  relation-on.aux (fun N T B) (fun N T B') :- !,
-    pi x\ relation-on.aux (B x) (B' x).
-  relation-on.aux X X.
+    std.take-last 2 AS [L, R].
 
-  msolve [SG] GL :- !,
-    thenl! [
-      open (unfold-id "is_list_proper"),
-      open (unfold-id "IProper"),
-      open (go_iStartProof),
-    ] SG [G],
-    coq.ltac.repeat! do-step G GL.
+  pred do-steps.do i:ihole, i:term, i:term, i:term.
+  do-steps.do (ihole N (hole _ Proof)) {{ @iRespectful _ }} _ _ :- !,
+    coq.say "==>",
+    list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
+    coq.ltac.collect-goals Proof [G] _,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [GIntro],
+    open (do-steps.open N) GIntro _.
+  do-steps.do (ihole N (hole _ Proof)) {{ @iPointwise_relation _ }} _ _ :- !,
+    coq.say ".>",
+    list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
+    coq.ltac.collect-goals Proof [G] _,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [GIntro],
+    open (do-steps.open N) GIntro _.
+  do-steps.do (ihole N H) {{ @iPersistent_relation _ }} _ _ :- !,
+    coq.say "□>",
+    do-iModIntro H ModH,
+    do-steps (ihole N ModH).
+  do-steps.do (ihole _ (hole _ Proof)) _ F F :-
+    coq.say "Applying assumption" {coq.term->string F},
+    list->listterm [ {{ IDone }} ] Args,
+    coq.ltac.collect-goals Proof [G] _,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
+  do-steps.do (ihole _ (hole _ Proof)) _ F F :-
+    coq.say "Applying assumption" {coq.term->string F},
+    list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
+    coq.ltac.collect-goals Proof [G] _,
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
+  do-steps.do IH R (app [F | FS]) _ :- 
+    std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
+    coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
+    do-iApplyProper IH R (app [F | FS']) HS,
+    std.map HS (x\r\ do-steps x) _.
+  do-steps.do (ihole N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
+    coq.say "Unfolding" F,
+    unfold-gref (const F) Type UnfoldedType,
+    do-steps (ihole N (hole UnfoldedType Proof)).
+  do-steps.do (ihole N (hole Type Proof)) _ (global (const F)) _ :-
+    coq.say "Unfolding" F,
+    unfold-gref (const F) Type UnfoldedType,
+    do-steps (ihole N (hole UnfoldedType Proof)).
+  do-steps.do _ T F _ :- !,
+    coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping".
+
+  solve (goal _Ctx _Trigger Type Proof []) _ :- 
+    unfold-id "is_list_proper" Type UnfoldedType,
+    unfold-id "IProper" UnfoldedType UnfoldedType',
+    coq.typecheck Proof UnfoldedType' ok,
+    do-iStartProof (hole UnfoldedType' Proof) IH,
+    do-steps IH.
 }}.
 Elpi Typecheck.
 Elpi Export IProper_solver.
-
-Tactic Notation "iSpecializePat" open_constr(H) constr(pat) :=
-  let pats := spec_pat.parse pat in iSpecializePat_go H pats.
 
 Section Tests.
   Context `{!heapGS Σ}.
@@ -330,109 +367,12 @@ Section Tests.
   (* Print is_list_pre.
   Print is_list_proper. *)
 
-  (* Elpi Trace Browser. *)
+  Elpi Trace Browser.
   Local Lemma is_list_pre_proper_mono :
     is_list_proper is_list_pre.
   Proof.
     elpi IProper_solver.
-    
-    (* Start proof *)
-    (* unfold is_list_proper, IProper.
-
-    (* Respectfull *)
-    iIntros "% % #?".
-
-    (* Pointwise *)
-    iIntros "%".
-
-    (* Pointwise *)
-    iIntros "%".
-
-    (* Relation *)
-    try iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
-    unfold is_list_pre.
-
-    (* Relation *)
-    iApply (iProper (_ ==> _ ==> bi_wand) bi_or). *)
-    
-    (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop bi_wand bi_or _))) _);
-    [iIntoEmpValid; tc_solve
-    |tc_solve
-    |pm_reduce].
-    notypeclasses refine (tac_specialize_assert _ (IAnon 2) _ false false [] _ _ _ _ _ _ _ _ _).
-    { pm_reflexivity. }
-    { tc_solve. }
-    { tc_solve. }
-    pm_reduce; notypeclasses refine (conj _ _);
-    [|
-      notypeclasses refine (tac_apply _ (IAnon 2) _ _ _ _ _ _ _); [pm_reflexivity
-      |tc_solve
-      |pm_reduce]
-    ]. *)
-    
-    -  (* Box *)
-      (* iModIntro. *)
-
-      (* Relation *)
-      (* notypeclasses refine (tac_pose_proof _ (IAnon 2) _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop bi_wand bi_exist _))) _);
-      [iIntoEmpValid; tc_solve
-      |tc_solve
-      |idtac].
-      pm_reduce. *)
-      (* notypeclasses refine (tac_specialize_assert _ (IAnon 2) _ false false [] _ _ _ _ _ _ _ _ _).
-      { pm_reflexivity. }
-      { tc_solve. }
-      { tc_solve. }
-      pm_reduce; notypeclasses refine (conj _ _);
-      [| *)
-        (* notypeclasses refine (tac_apply _ (IAnon 2) _ _ _ _ _ _ _); [pm_reflexivity
-        |tc_solve
-        |pm_reduce]. *)
-       (* ]. *)
-
-      try iApply (iProper (_ ==> bi_wand) bi_exist).
-
-      (* Pointwise *)
-      iIntros "%".
-
-      (* Relation *)
-      try iApply (iProper (_ ==> bi_wand) bi_exist).
-
-      (* Pointwise *)
-      iIntros "%".
-
-      (* Relation *)
-      try iApply (iProper (_ ==> bi_wand) bi_exist).
-
-      (* Pointwise *)
-      iIntros "%".
-
-      (* Relation *)
-      try iApply (iProper (_ ==> bi_wand) bi_exist).
-
-      (* Pointwise *)
-      iIntros "%".
-
-      (* Relation *)
-      try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
-
-      + (* Assumption *)
-        iIntros "$".
-
-      + (* Relation *)
-        try iApply (iProper (_ ==> _ ==> bi_wand) bi_sep).
-
-        * (* Assumption *) iAssumption.
-
-        * (* Assumption *)
-          iIntros "?".
-          iAssumption. *)
-
-    - (* Box *)
-      iModIntro.
-
-      (* Assumption *)
-      iIntros "//".
+    Show Proof.
   Qed.
 
   EI.ind 
@@ -446,6 +386,7 @@ Section Tests.
   Local Lemma is_P_list_pre_proper_mono :
     is_P_list_proper is_P_list_pre.
   Proof.
+    elpi IProper_solver.
     (* elpi IProper_solver. *)
     (* Start proof *)
     unfold is_P_list_proper, IProper.

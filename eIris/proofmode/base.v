@@ -93,28 +93,6 @@ Proof.
   done.
 Qed.
 
-(* 
-Lemma tac_pose_proper A B Δ j R m IP P Q :
-  @IProperTop PROP A B R m IP →
-  @IProper PROP B (f R) m →
-  match envs_app true (Esnoc Enil j IP) Δ with
-  | None => False
-  | Some Δ' => envs_entails Δ' Q
-  end →
-  envs_entails Δ Q.
-Proof.
-  destruct (envs_app _ _ _) as [Δ'|] eqn:?; last done.
-  rewrite envs_entails_unseal => HP HIP <-.
-  assert (⊢ IP).
-  { 
-    unfold IProperTop in HP.
-    destruct HP as [f HP].
-    apply HP.
-  }
-  rewrite envs_app_singleton_sound //=.
-  by rewrite -HP /= intuitionistically_emp emp_wand.
-Qed. *)
-
 End tactics.
 
 Ltac intros_anon := intros ?.
