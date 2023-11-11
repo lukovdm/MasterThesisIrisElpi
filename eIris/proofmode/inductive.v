@@ -155,9 +155,32 @@ Elpi Accumulate lp:{{
   kind ihole type.
   type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
 
+  pred ihole->string i:ihole, o:string.
+  ihole->string (ihole N (hole T P)) S :-
+    S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " : \n" ^ {coq.term->string T}.
+
   pred increase-ctx-count i:term, o:term.
   increase-ctx-count N NS :-
     coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
+
+  pred get-ctx-count i:term, o:term.
+  get-ctx-count {{ envs_entails (Envs _ _ lp:N) _ }} N.
+  get-ctx-count T _ :-
+    coq.error "get-ctx-count: type not of shape envs entails: " T.
+
+  pred set-ctx-count i:term, i:term, o:term.
+  set-ctx-count 
+    {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
+    NS
+    {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }}.
+  set-ctx-count T N _ :-
+    coq.error "set-ctx-count: type not of shape envs entails: " N T.
+
+  pred addN i:term, i:open-tactic, i:goal, o:list sealed-goal.
+  addN N T (goal Ctx Trigger Type Proof Args) GL :-
+    pm-reduce Type Type',
+    set-ctx-count Type' N NType,
+    T (goal Ctx Trigger NType Proof Args) GL.
 
   pred pm-reduce i:term, o:term.
   pm-reduce T O :-
@@ -174,7 +197,8 @@ Elpi Accumulate lp:{{
       {{ @pm_app }}, {{ @pm_option_bind }}, {{ @pm_from_option }}, {{ @pm_option_fun }}
     ],
     std.map Consts (x\r\ sigma TMP\ x = global (const TMP), r = coq.redflags.const TMP) Deltas,
-    @redflags! Deltas => coq.reduction.cbv.norm T O.
+    coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
+    @redflags! RF => coq.reduction.cbv.norm T O.
 
   pred do-iStartProof i:hole, o:ihole.
   do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
@@ -209,64 +233,62 @@ Elpi Accumulate lp:{{
     @no-tc! => coq.elaborate-skeleton 
                   {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}} 
                   Type Proof ok,
-    Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop _ _ _))) lp:PosedProof }},
+    Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof (iproper_top_to_iproper _ _ _ _ _ (lp:IPTProof : IProperTop _ _ _))) lp:PosedProof }},
     coq.ltac.collect-goals IEVProof [G1] _,
     open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
     all (open tc_solve) TCGL [],
-    % open tc_solve G2 [],
+    coq.ltac.collect-goals IPTProof [G2] _,
+    open tc_solve G2 [],
     coq.typecheck PosedProof NormType ok,
     pm-reduce NormType PosedType.
 
-  % type go_iSpecializeWand ident -> tactic.
-  % go_iSpecializeWand ID G GL :-
-  %   open go_iStartProof G [GoalStarted],
-  %   ident->term ID _IDS IDT,
-  %   @no-tc! => open (refine.norm {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}}) GoalStarted [G1, G2, G3, G4],
-  %   % coq.say "specialize pre reflexivity",
-  %   % open show-goal G1 _,
-  %   open pm_reflexivity G1 [],
-  %   % coq.say "specialize pre tc_solve 1",
-  %   % open show-goal G2 _,
-  %   open tc_solve G2 [],
-  %   % coq.say "specialize pre tc_solve 2",
-  %   % open show-goal G3 _,
-  %   open tc_solve G3 [],
-  %   % coq.say "specialize pre reduce",
-  %   % open show-goal G4 _,
-  %   open pm_reduce G4 [G5],
-  %   open (refine {{ conj _ _ }}) G5 GL.
+  pred go_iSpecializeWand i:ihole, i:ident, o:ihole, o:ihole.
+  go_iSpecializeWand (ihole N (hole Type Proof)) ID 
+    (ihole N (hole LType LProof)) (ihole N (hole RType RProof)) :-
+      ident->term ID _IDS IDT,
+      @no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
+                  Type Proof ok,
+      Proof = {{ tac_specialize_assert_no_am _ _ _ _ _ _ _ _ _ _ lp:RefP lp:TC1P lp:TC2P lp:ConjP}},
+      coq.ltac.collect-goals RefP [G1] _,
+      open pm_reflexivity G1 [],
+      coq.ltac.collect-goals TC1P [G2] _,
+      open tc_solve G2 [],
+      coq.ltac.collect-goals TC2P [G3] _,
+      open tc_solve G3 [],
+      coq.typecheck ConjP RedType ok,
+      pm-reduce RedType ConjType,
+      coq.elaborate-skeleton {{ conj _ _ }} ConjType ConjP ok,
+      ConjP = {{ conj lp:LProof lp:RProof }},
+      coq.typecheck LProof LType' ok,
+      pm-reduce LType' LType,
+      coq.typecheck RProof RType' ok,
+      pm-reduce RType' RType.
 
-  % type go_iApplySimpleHyp ident -> tactic.
-  % go_iApplySimpleHyp ID G GL :-
-  %   open go_iStartProof G [GoalStarted],
-  %   ident->term ID _IDS IDT,
-  %   @no-tc! => open (refine.warn {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }}) GoalStarted [G1, G2, G3],
-  %   % coq.say "apply pre reflexivity",
-  %   % open show-goal G1 _,
-  %   open pm_reflexivity G1 [],
-  %   % coq.say "apply pre tc_solve",
-  %   % open show-goal G2 _,
-  %   open tc_solve G2 [],
-  %   % coq.say "apply pre reduce",
-  %   % open show-goal G3 _,
-  %   open pm_reduce G3 GL.
+  pred do-iApplySimpleHyp i:ihole, i:ident, o:ihole.
+  do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)) :-
+    ident->term ID _IDS IDT,
+    @no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof ok,
+    Proof = {{ tac_apply _ _ _ _ _ _ lp:RefProof lp:TCProof lp:ApProof }},
+    coq.ltac.collect-goals RefProof [G1] _,
+    open pm_reflexivity G1 [],
+    coq.ltac.collect-goals TCProof [G2] _,
+    open tc_solve G2 [],
+    coq.typecheck ApProof RedType ok,
+    pm-reduce RedType ApType.
 
   pred do-iApplyProper i:ihole, i:term, i:term, o:list ihole.
   do-iApplyProper IH R F IHS :-
     coq.say "do-iApplyProper",
     do-iPoseProper IH R F ID IHPosed,
-    ID = iAnon IDS,
-    coq.say "Posed Lemma" {coq.term->string IDS},
-    IHS = [IHPosed].
-    % go_iApplyProper.aux ID GPosed GL.
-  % go_iApplyProper.aux ID G GL :- 
-  %   coq.say "simpleApplyHyp",
-  %   go_iApplySimpleHyp ID G GL.
-  % go_iApplyProper.aux ID G GL :-
-  %   coq.say "specialize",
-  %   go_iSpecializeWand ID G GL',
-  %   go_iApplyProper.aux ID {std.last GL'} GL'',
-  %   std.append {std.drop-last 1 GL'} GL'' GL.
+    coq.say "Posed Lemma" {ihole->string IHPosed},
+    do-iApplyProper.aux IHPosed ID IHS.
+  do-iApplyProper.aux IH ID [IH'] :- 
+    coq.say "simpleApplyHyp",
+    do-iApplySimpleHyp IH ID IH'.
+  do-iApplyProper.aux IH ID [IHL | IHS] :-
+    coq.say "specialize",
+    go_iSpecializeWand IH ID IHL IHR,
+    do-iApplyProper.aux IHR ID IHS.
 
   pred unfold-id i:string, i:term, o:term.
   unfold-id S I O :- 
@@ -281,13 +303,15 @@ Elpi Accumulate lp:{{
 
   pred do-steps i:ihole.
   do-steps (ihole _ (hole Type _) as IH) :-
-    coq.say "\n================= Goal =================" {coq.term->string Type} "",
+    coq.say "\n================= Goal =================" {ihole->string IH} "",
     do-steps.conn Type R LF RF,
     do-steps.do IH R LF RF.
 
-  pred do-steps.open i:term, i:goal, o:list sealed-goal.
-  do-steps.open N (goal _ _ Type Proof _) _ :-
-    do-steps (ihole N (hole Type Proof)).
+  pred do-steps.open i:goal, o:list sealed-goal.
+  do-steps.open (goal _ _ Type Proof _) _ :-
+    pm-reduce Type Type',
+    get-ctx-count Type' N,
+    do-steps (ihole N (hole Type' Proof)).
 
   pred do-steps.conn i:term, o:term, o:term, o:term.
   do-steps.conn Type R LF RF:-
@@ -306,40 +330,40 @@ Elpi Accumulate lp:{{
     coq.say "==>",
     list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
     coq.ltac.collect-goals Proof [G] _,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [GIntro],
-    open (do-steps.open N) GIntro _.
+    open (addN N (coq.ltac.call "_iIntros0" [ trm Args ])) G [GIntro], !,
+    open do-steps.open GIntro _.
   do-steps.do (ihole N (hole _ Proof)) {{ @iPointwise_relation _ }} _ _ :- !,
     coq.say ".>",
     list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
     coq.ltac.collect-goals Proof [G] _,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [GIntro],
-    open (do-steps.open N) GIntro _.
+    open (addN N (coq.ltac.call "_iIntros0" [ trm Args ])) G [GIntro], !,
+    open do-steps.open GIntro _.
   do-steps.do (ihole N H) {{ @iPersistent_relation _ }} _ _ :- !,
     coq.say "□>",
-    do-iModIntro H ModH,
+    do-iModIntro H ModH, !,
     do-steps (ihole N ModH).
-  do-steps.do (ihole _ (hole _ Proof)) _ F F :-
+  do-steps.do (ihole N (hole _ Proof)) _ _ _ :-
     coq.say "Applying assumption" {coq.term->string F},
     list->listterm [ {{ IDone }} ] Args,
     coq.ltac.collect-goals Proof [G] _,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
-  do-steps.do (ihole _ (hole _ Proof)) _ F F :-
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G []. %Should have an addN but crashes for some reason
+  do-steps.do (ihole N (hole _ Proof)) _ F F :-
     coq.say "Applying assumption" {coq.term->string F},
     list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
     coq.ltac.collect-goals Proof [G] _,
-    open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].
+    open (coq.ltac.call "_iIntros0" [ trm Args ]) G []. %Should have an addN but crashes for some reason
   do-steps.do IH R (app [F | FS]) _ :- 
     std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
     coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])},
-    do-iApplyProper IH R (app [F | FS']) HS,
+    do-iApplyProper IH R (app [F | FS']) HS, !,
     std.map HS (x\r\ do-steps x) _.
   do-steps.do (ihole N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
     coq.say "Unfolding" F,
-    unfold-gref (const F) Type UnfoldedType,
+    unfold-gref (const F) Type UnfoldedType, !,
     do-steps (ihole N (hole UnfoldedType Proof)).
   do-steps.do (ihole N (hole Type Proof)) _ (global (const F)) _ :-
     coq.say "Unfolding" F,
-    unfold-gref (const F) Type UnfoldedType,
+    unfold-gref (const F) Type UnfoldedType, !,
     do-steps (ihole N (hole UnfoldedType Proof)).
   do-steps.do _ T F _ :- !,
     coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping".
@@ -367,7 +391,7 @@ Section Tests.
   (* Print is_list_pre.
   Print is_list_proper. *)
 
-  Elpi Trace Browser.
+  (* Elpi Trace Browser. *)
   Local Lemma is_list_pre_proper_mono :
     is_list_proper is_list_pre.
   Proof.
