@@ -6,30 +6,30 @@ pred int->bools i:int, o:list bool.
 pred int->bools.unpadded i:int, o:list bool.
 int->bools.unpadded 0 [] :- !.
 int->bools.unpadded INT BITS :-
-    if ({ calc (INT mod 2) } == 1) (BIT is tt) (BIT is ff),
-    BITS = [BIT | { int->bools.unpadded { calc (INT div 2) } }].
+  if ({ calc (INT mod 2) } == 1) (BIT is tt) (BIT is ff),
+  BITS = [BIT | { int->bools.unpadded { calc (INT div 2) } }].
 int->bools INT BITS :-
-    int->bools.unpadded INT BITSSHORT,
-    std.length BITSSHORT SIZE,
-    std.map { std.iota { calc  (8 - SIZE) } } (x\ r\ r = ff) PADDING,
-    std.append BITSSHORT PADDING BITS.
+  int->bools.unpadded INT BITSSHORT,
+  std.length BITSSHORT SIZE,
+  std.map { std.iota { calc  (8 - SIZE) } } (x\ r\ r = ff) PADDING,
+  std.append BITSSHORT PADDING BITS.
 
 pred string->ascii i:string, o:list (list bool).
 string->ascii.aux INDEX STRING BS :- 
-    INT is rhc (substring STRING INDEX 1),
-    int->bools INT BS.
+  INT is rhc (substring STRING INDEX 1),
+  int->bools INT BS.
 string->ascii S BSS :-
-    LENGTH is size S,
-    std.map {std.iota LENGTH} (x\ r\ string->ascii.aux x S r) BSS.
+  LENGTH is size S,
+  std.map {std.iota LENGTH} (x\ r\ string->ascii.aux x S r) BSS.
 
 pred string->stringterm i:string, o:term.
 pred string->stringterm.aux i:list bool, i:term, o:term.
 string->stringterm.aux X ACC RES :-
-    std.map X (x\ r\ if (x == tt) (r = {{ true }}) (r = {{ false }})) BITSTERM,
-    RES = app [{{ String }}, app [{{ Ascii }} | BITSTERM], ACC].
+  std.map X (x\ r\ if (x == tt) (r = {{ true }}) (r = {{ false }})) BITSTERM,
+  RES = app [{{ String }}, app [{{ Ascii }} | BITSTERM], ACC].
 string->stringterm STRING T :-
-    string->ascii STRING BSS,
-    foldr BSS {{ EmptyString }} string->stringterm.aux T.
+  string->ascii STRING BSS,
+  foldr BSS {{ EmptyString }} string->stringterm.aux T.
 
 pred list->listterm i:list term, o:term.
 list->listterm TS T :- foldr TS {{ [] }} (x\ a\ r\ r = {{ cons lp:x lp:a }}) T.
@@ -45,11 +45,15 @@ pred is-identifier i:string.
 is-identifier S :- 1 is size S, C is rhc S, ((C >= 48, C =< 57); (C >= 65, C =< 90); (C >= 97, C =< 122); C = 39; C = 95).
 
 pred if-debug i:prop.
-if-debug P :- get-option "debug" tt, !, coq.say "[" {gettimeofday} "]", P.
+if-debug P :- get-option "debug" tt, get-option "start" Start, !, 
+  T is {gettimeofday} - Start, 
+  coq.say "[" T "s]", 
+  P.
+if-debug P :- get-option "debug" tt, !, P.
 if-debug _ .
 
 pred print-contructors i:list indc-decl.
 print-contructors [].
 print-contructors [constructor Name Arity | CS] :-
-coq.say Name "of type" { coq.term->string { coq.arity->term Arity } },
-print-contructors CS.
+  coq.say Name "of type" { coq.term->string { coq.arity->term Arity } },
+  print-contructors CS.

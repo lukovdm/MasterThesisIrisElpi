@@ -53,6 +53,10 @@ Section iProper_Definition.
     := λ f g, (∀ a, R (f a) (g a))%I.
   Global Arguments iPointwise_relation {_ _}%I R%i_signature.
 
+  Inductive n_ip_relation : ∀ A, nat -> @iRelation PROP A -> Type :=
+    | z_ip_relation {A} (R : iRelation A) : @n_ip_relation A 0 R
+    | s_ip_relation {A B} (n : nat) (R : iRelation B) : n_ip_relation B (n - 1) R -> n_ip_relation (A -> B) n (@iPointwise_relation A B R).
+  
   Definition iPersistent_relation {A} (R : iRelation A) : @iRelation PROP A
     := λ x y, (□ (R x y))%I.
   Global Arguments iPersistent_relation {_}%I R%i_signature.
