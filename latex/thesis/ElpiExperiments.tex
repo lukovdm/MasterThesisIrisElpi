@@ -6,12 +6,12 @@
 In this chapter we will show how \elpi together with \ce can be used to create new tactics. We will do this by giving a tutorial on how to create the \coqinline{iIntros} tactic from \iris.
 
 \section[Iris iIntros]{Iris \coqinline{iIntros}}
-\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Predicates can be seen as propositions over resources, e.g. heaps. Thus, there are a number of extra logical connectives such as \coqinline{P ∗ Q}, which represents that \coqinline{P} and \coqinline{Q} split up the resources into two disjoints in which they hold. Thus, our logic is substructural, namely linear. To be able to reason about this logic in \coq a tactics language has been added called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. In the IPM a new context has been added that represents the contexts containing resources. One context represents all disjoint resources and one represents all persistent resources. The tactics are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris context. We will be specifically looking at the \coqinline{iIntros} tactic. First, we will describe how \coqinline{iIntros} works, and then we will describe how \coqinline{iIntros} can be created using \elpi.
+\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Predicates can be seen as propositions over resources, \eg heaps. Thus, there are a number of extra logical connectives such as \coqinline{P ∗ Q}, which represents that \coqinline{P} and \coqinline{Q} split up the resources into two disjoints in which they respectively hold. Moreover, hypothesis in our logic can often be used only once when proving something, they represent recourses that we consume when used. To be able to reason about this logic in \coq a tactics language has been added called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. In the IPM a new context has been added that represents the contexts containing resources. One context represents all disjoint resources and one represents all persistent resources. The tactics are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris context. We will be specifically looking at the \coqinline{iIntros} tactic. First, we will describe how \coqinline{iIntros} works, and then we will describe how \coqinline{iIntros} can be created using \elpi.
 
 \subsection[iIntros example]{\coqinline{iIntros} example}
-\coqinline{iIntros} consists of a domain specific language (DSL) for quickly introducing different logical connectives in \iris. It has also been extended to deal with often seen initial steps in a proof, like \coqinline{simpl}, \coqinline{done} and others. We will show a few examples of how \coqinline{iIntros} can be used to help prove lemmas.
+\coqinline{iIntros} is based on the \coq \coqinline{intros} tactic. The \coq \coqinline{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqinline{iIntros} tactic, only it was expanded, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, to also perform other common initial proof steps such as \coqinline{simpl}, \coqinline{done} and others. We will show a few examples of how \coqinline{iIntros} can be used to help prove lemmas.
 
-We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources. Thus, where a normal implication introduction adds the left-hand side with an and to the context, the magic wand adds the left-hand side with a separating and to the disjoint resource context.
+We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources. Thus, where a normal implication introduction adds the left-hand side to the coq context, the magic wand adds the left-hand side to the disjoint resource context.
 
 \begin{coqcode}
   P, R: iProp
@@ -80,18 +80,18 @@ Our \elpi implementation \coqinline{eiIntros} consists of four parts as seen in 
       auto
     ]
     \node[] (s) {};
-    \node[basic box = green, right=of s] (t) {Tokenizer};
-    \node[basic box = green, right=of t] (p) {Parser};
-    \node[basic box = blue, right=of p, text width=2.3cm] (id) {Introducer \& Destructor};
-    \node[above=of id] (g) {};
-    \node[right=of id] (e) {};
+    \node[basic box = green, below=of s] (t) {Tokenizer};
+    \node[basic box = green, below=of t] (p) {Parser};
+    \node[basic box = blue, below=of p] (id) {Introducer \& Destructor};
+    \node[left=of id] (g) {};
+    \node[below=of id] (e) {};
 
     \path[->,thick]
-    (s) edge node[above]{\elpiinline{string}} (t)
-    (t) edge node[above=.4]{\elpiinline{list token}} (p)
-    (p) edge node[above=.4]{\elpiinline{list intro_pat}} (id)
-    (g) edge node[right]{\elpiinline{goal}} (id)
-    (id) edge node[above,xshift=1.1cm]{\elpiinline{proof, list goal}} (e);
+    (s) edge node[right]{\elpiinline{string}} (t)
+    (t) edge node[right]{\elpiinline{list token}} (p)
+    (p) edge node[right]{\elpiinline{list intro_pat}} (id)
+    (g) edge node[above]{\elpiinline{goal}} (id)
+    (id) edge node[right]{\elpiinline{proof, list goal}} (e);
   \end{tikzpicture}
   \caption{Structure of \coqinline{eiIntros} with the input and output types on the edges.}
   \label{fig:eiintrosstruct}
@@ -289,7 +289,7 @@ Sealed goals allow us to program our tactics in separate steps, where each step 
 \paragraph*{Calling LTac}
 There are built-in API's in coq-elpi to call LTac code by name. When calling LTac code we can give arguments by setting the arguments in our goal. This does mean we have to be careful to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which coq-elpi has a type, and mapping. Thus, for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use coq intro patterns or any other syntax, until support has been added for these in coq-elpi.
 
-\paragraph*{Structure of \mintinline{coq}{iIntros}}
+\paragraph*[Structure of iIntros]{Structure of \mintinline{coq}{iIntros}}
 \mintinline{coq}{iIntros} is based on the multi goal tactic from coq-elpi. Since with multi goal tactics we get a sealed goal as input which we open when necessary, instead of having an already opened goal. We first call a predicate \mintinline{elpi}{parse_args} to parse the arguments and unset any arguments in the goal. Next we call the predicate \mintinline{elpi}{go_iIntros} which will interpret the intro pattern structure created and apply the necessary lemma's and tactics. \mintinline{elpi}{go_iIntros} will defer to other tactics in Elpi to apply the intro patterns.
 
 \paragraph*{Parsing intro patterns}
