@@ -22,24 +22,20 @@ Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
-  type parse_args (list intro_pat) -> open-tactic.
-  parse_args [iCoqIntro Intro | IPS] (goal _ _ _ _ [tac Intro, str Args] as G) [SG] :- !,
+  pred parse_args i:list argument, o:list intro_pat.
+  parse_args [tac Intro, str Args] [iCoqIntro Intro | IPS] :- !,
+    parse_args [str Args] IPS.
+  parse_args [str Args] IPS :- !,
     tokenize Args T, !,
-    parse_ipl T IPS, !,
-    coq.ltac.set-goal-arguments [] G (seal G) SG.
-  parse_args IPS (goal _ _ _ _ [str Args] as G) [SG] :- !,
-    tokenize Args T, !,
-    parse_ipl T IPS, !,
-    coq.ltac.set-goal-arguments [] G (seal G) SG.
-
-  parse_args _ (goal _ _ _ _ Args) _ :-
-    coq.say Args,
+    parse_ipl T IPS, !.
+  parse_args Args _ :-
     coq.ltac.fail 0 "Did not recognize arguments" Args.
 
-  msolve [SG] GL :-
-    open (parse_args IPS) SG [SG'],
+  solve (goal Ctx Trigger Type Proof Args) GL :-
+    parse_args Args IPS,
     !,
-    go_iIntros IPS SG' GL.
+    do-iStartProof (hole Type Proof) IH,
+    go_iIntros IPS IH.
     
 }}.
 Elpi Typecheck.

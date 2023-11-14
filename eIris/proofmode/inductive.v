@@ -8,7 +8,6 @@ From iris.heap_lang Require Import notation.
 From stdpp Require Import base finite.
 
 From eIris.proofmode Require Import proper.
-From eIris.proofmode Require Import intros.
 
 From eIris.proofmode Require Import base.
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.

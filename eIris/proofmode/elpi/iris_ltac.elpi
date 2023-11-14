@@ -52,3 +52,36 @@ pred bi-normalize i:goal, o:list sealed-goal.
 bi-normalize (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
   coq.reduction.lazy.bi-norm Type Type',
   refine.warn {{ _ : lp:Type' }} G GL.
+
+kind hole type.
+type hole term -> term -> hole. % A pair of of Type, Proof
+
+kind ihole type.
+type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
+
+pred ihole->string i:ihole, o:string.
+ihole->string (ihole N (hole T P)) S :-
+  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " : \n" ^ {coq.term->string T}.
+
+pred increase-ctx-count i:term, o:term.
+increase-ctx-count N NS :-
+  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
+
+pred get-ctx-count i:term, o:term.
+get-ctx-count {{ envs_entails (Envs _ _ lp:N) _ }} N.
+get-ctx-count T _ :-
+  coq.error "get-ctx-count: type not of shape envs entails: " T.
+
+pred set-ctx-count i:term, i:term, o:term.
+set-ctx-count 
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
+  NS
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }}.
+set-ctx-count T N _ :-
+  coq.error "set-ctx-count: type not of shape envs entails: " N T.
+
+pred addN i:term, i:open-tactic, i:goal, o:list sealed-goal.
+addN N T (goal Ctx Trigger Type Proof Args) GL :-
+  pm-reduce Type Type',
+  set-ctx-count Type' N NType,
+  T (goal Ctx Trigger NType Proof Args) GL.
