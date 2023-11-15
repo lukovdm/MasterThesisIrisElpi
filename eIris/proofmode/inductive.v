@@ -7,7 +7,7 @@ From iris.heap_lang Require Import proofmode.
 From iris.heap_lang Require Import notation.
 From stdpp Require Import base finite.
 
-From eIris.proofmode Require Import proper.
+From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Import intros.
 
 From eIris.proofmode Require Import base.
@@ -65,7 +65,11 @@ Elpi Accumulate lp:{{
     top-wand-to-sepand T T'.
   top-wand-to-sepand {{ bi_exist lp:{{ fun N T F}} }} {{ bi_exist lp:{{ fun N T F' }} }} :- !,
     (pi x\ top-wand-to-sepand (F x) (F' x)).
+  top-wand-to-sepand {{ bi_forall lp:{{ fun N T F}} }} {{ bi_forall lp:{{ fun N T F' }} }} :- !,
+    (pi x\ top-wand-to-sepand (F x) (F' x)).
   top-wand-to-sepand {{ bi_wand lp:L lp:R }} {{ bi_sep lp:L lp:R' }} :- !,
+    top-wand-to-sepand R R'.
+  top-wand-to-sepand {{ bi_sep lp:L lp:R }} {{ bi_sep lp:L lp:R' }} :- !,
     top-wand-to-sepand R R'.
   top-wand-to-sepand X X :- !.
 
@@ -125,7 +129,7 @@ Elpi Accumulate lp:{{
     if-debug (coq.say "------ With type" { coq.term->string TypeTerm }),
 
     constr-body TypeTerm Constructors EBo Ty,
-
+    if-debug (coq.say "------ typed body" { coq.term->string EBo }),
     coq.env.add-const {calc (Name ^ "_pre")} EBo Ty ff C,
     if-debug (coq.say "const" C),
 
@@ -133,15 +137,21 @@ Elpi Accumulate lp:{{
     coq.env.add-const {calc (Name ^ "_proper")} Relation _ ff R,
     if-debug (coq.say "Relation" R),
 
-    proper-proof Relation (global (const C)) ProofTerm,
-    coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm (app [Relation, (global (const C))]) ff M,
-    if-debug (coq.say "Mono" M).
+    (
+      get-option "noproper" tt;
+      (
+      proper-proof Relation (global (const C)) ProofTerm,
+      coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm (app [Relation, (global (const C))]) ff M,
+      if-debug (coq.say "Mono" M)
+      )
+    ).
 
   % main is, well, the entry point
   main [indt-decl I] :- 
     attributes A,
     coq.parse-attributes A [
       att "debug" bool,
+      att "noproper" bool,
     ] Opts,
     gettimeofday Start,
     [get-option "start" Start | Opts] => create-iInductive I.
@@ -173,7 +183,6 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  #[debug]
   EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
@@ -199,6 +208,12 @@ Section Tests.
   Print is_P_list_pre.
   Print is_P_list_proper.
   Check is_P_list_pre_mono.
+
+(* EI.ind 
+  Inductive is_P_list {A} (P : val → A → iProp): val → list A → iProp :=
+    | empty_is_P_list : is_P_list P NONEV []
+    | cons_is_P_list l v tl x xs : l ↦ (v,tl) -∗ P v x -∗ is_P_list P tl xs -∗ is_P_list P (SOMEV #l) (x :: xs).
+ *)
 
   (* Local Lemma is_P_list_pre_proper_mono :
     is_P_list_proper is_P_list_pre.

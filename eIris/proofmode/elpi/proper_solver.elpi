@@ -51,6 +51,8 @@ pm-reduce T O :-
   coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
   @redflags! RF => coq.reduction.cbv.norm T O.
 
+  %Use elpi database for this
+
 pred do-iStartProof i:hole, o:ihole.
 do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".

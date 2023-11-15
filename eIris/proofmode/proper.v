@@ -1,3 +1,5 @@
+From stdpp Require Import coPset.
+
 From iris.bi Require Export bi fixpoint.
 From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
@@ -7,6 +9,10 @@ Section iRelation_Definition.
 
   Definition iRelation {PROP : bi} {A} := A → A → PROP.
   Global Arguments iRelation {_} _%I : simpl never.
+
+  Definition iFlip {PROP : bi} {A B} : (A → B → PROP) → B → A → PROP := 
+    λ F y x, F x y.
+  Global Arguments iFlip {_} {_ _}.
 
 End iRelation_Definition.
 
@@ -103,6 +109,19 @@ Section Experiments.
     tc_solve.
   Defined.
 
+  Global Instance forall_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_forall PROP A).
+    unfold IProper, iPointwise_relation, iRespectful.
+    iIntros (p q) "Hxaya Hxy %z".
+    iApply "Hxaya".
+    change p with (fun x => p x).
+    done.
+  Defined.
+
+  Global Instance forall_IProperTop {A} : IProperTop (bi_wand) (@bi_forall PROP A) (fun F => .> bi_wand ==> F)%i_signature.
+    unfold IProperTop.
+    tc_solve.
+  Defined.
+
   Global Instance or_IProper : IProper (□> bi_wand ==> □> bi_wand ==> bi_wand) (@bi_or PROP).
   Proof.
     unfold IProper, iRespectful.
@@ -117,6 +136,25 @@ Section Experiments.
     unfold IProperTop.
     tc_solve.
   Defined.
+
+  Global Instance wand_IProper : IProper (iFlip bi_wand ==> bi_wand ==> bi_wand) (@bi_wand PROP).
+    unfold IProper, iRespectful, iFlip.
+    iIntros (P Q) "HQP %R %S HRS HPR HQ".
+    iApply "HRS". 
+    iApply "HPR". 
+    by iApply "HQP".
+  Defined.
+
+  Global Instance wand_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_wand PROP) (fun F => iFlip bi_wand ==> bi_wand ==> F)%i_signature.
+    unfold IProperTop.
+    tc_solve.
+  Defined.
+
+  Global Instance fupd_IProper `(BiFUpd PROP) (A B : coPset) : IProper ((λ P Q, ⌜P ⊢ Q⌝)%I ==> bi_wand) (@fupd PROP bi_fupd_fupd A B).
+    unfold IProper, iRespectful.
+    iIntros "%P %Q HPQ HABP".
+    iApply (fupd_mono $! "HPQ").
+    - 
 
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 
