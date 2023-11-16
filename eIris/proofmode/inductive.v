@@ -26,6 +26,9 @@ Elpi Accumulate File parser.
 Elpi Accumulate File eiris_tactics.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
+  kind param type.
+  type par id -> implicit_kind -> term -> term -> param.
+
   pred constructor->term i:indc-decl, o:term.
   constructor->term (constructor _ Arity) T :- coq.arity->term Arity T.
 
@@ -73,6 +76,20 @@ Elpi Accumulate lp:{{
     top-wand-to-sepand R R'.
   top-wand-to-sepand X X :- !.
 
+  pred replace-params-bo i:list param, i:term, o:term.
+  replace-params-bo [] T T.
+  replace-params-bo [(par ID _IK Type C) | Params] Term (fun N Type FTerm) :-
+    coq.id->name ID N,
+    replace-params-bo Params Term Term',
+    (pi x\ (copy C x :- !) => copy Term' (FTerm x)).
+
+  pred replace-params-ty i:list param, i:term, o:term.
+  replace-params-ty [] T T.
+  replace-params-ty [(par ID _IK PType C) | Params] Type (prod N PType FType) :-
+    coq.id->name ID N,
+    replace-params-ty Params Type Type',
+    (pi x\ (copy C x :- !) => copy Type' (FType x)).
+
   pred constr-body-disj i:(term -> list indc-decl), o:(term -> term).
   constr-body-disj Constructors ConstrBo :-
     if-debug ((pi x\ print-contructors (Constructors x))),
@@ -90,8 +107,8 @@ Elpi Accumulate lp:{{
       (ConstrBo f)),
     if-debug (coq.say "------ Constructor body disjunction" {coq.term->string (ConstrBo {{ True }})}).
 
-  pred constr-body i:term, i:(term -> list indc-decl), o:term, o:term.
-  constr-body TypeTerm Constructors EBo Ty :-
+  pred constr-body i:list param, i:term, i:(term -> list indc-decl), o:term, o:term.
+  constr-body Params TypeTerm Constructors EBo Ty :-
     find-PROP TypeTerm PROP,
     constr-body-disj Constructors ConstrBo,
     (pi b\ (type-to-fun PROP b :- !) => type-to-fun TypeTerm (FunTerm b)), % TODO: A proper PROP should be added not the hacky heap-lang one
@@ -102,9 +119,11 @@ Elpi Accumulate lp:{{
       % When we hit our placeholder for the function body we replace it with the function body with the last application replaced by equalities for the arguments
       (pi L L' F B \ fold-map b L B L :- !, std.rev L [F | L'], last-rec-to-and F L' (ConstrBo F) B) => 
           fold-map {{fun F : lp:TypeTerm => lp:{{ FunTerm b }} }} [] Bo _),
-    if-debug (coq.say "------- Body" { coq.term->string Bo }),
-    Ty = {{ lp:TypeTerm -> lp:TypeTerm }}, !,
-    @keepunivs! => std.assert-ok! (coq.elaborate-skeleton Bo Ty EBo) "Type check body failed".
+    replace-params-bo Params Bo PBo,
+    if-debug (coq.say "------- Body" { coq.term->string PBo }),
+    replace-params-ty Params {{ lp:TypeTerm -> lp:TypeTerm }} Ty, !,
+    if-debug (coq.say "------- Type" { coq.term->string Ty }),
+    @keepunivs! => std.assert-ok! (coq.elaborate-skeleton PBo Ty EBo) "Type check body failed".
 
   pred type-to-proper i:term, o:term.
   type-to-proper Type EBo :-
@@ -122,29 +141,34 @@ Elpi Accumulate lp:{{
     coq.typecheck Proof Type ok,
     do-solve-proper (hole Type Proof).
 
-  pred create-iInductive i:indt-decl.
-  create-iInductive (inductive Name _In-Or-Co Arity Constructors) :-
+  pred create-iInductive i:list param, i:indt-decl.
+  create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) :-
+    std.rev Params' Params,
+    coq.say Params,
     if-debug (coq.say "------ Creating inductive" Name),
     coq.arity->term Arity TypeTerm,
     if-debug (coq.say "------ With type" { coq.term->string TypeTerm }),
 
-    constr-body TypeTerm Constructors EBo Ty,
+    constr-body Params TypeTerm Constructors EBo Ty,
     if-debug (coq.say "------ typed body" { coq.term->string EBo }),
     coq.env.add-const {calc (Name ^ "_pre")} EBo Ty ff C,
     if-debug (coq.say "const" C),
 
-    type-to-proper TypeTerm Relation,
-    coq.env.add-const {calc (Name ^ "_proper")} Relation _ ff R,
-    if-debug (coq.say "Relation" R),
+    if (get-option "noproper" tt) (true)
+      (
+        type-to-proper TypeTerm Relation,
+        coq.env.add-const {calc (Name ^ "_proper")} Relation _ ff R,
+        if-debug (coq.say "Relation" R)
+      ),
 
-    (
-      get-option "noproper" tt;
+    if (get-option "nosolver" tt) (true)
       (
       proper-proof Relation (global (const C)) ProofTerm,
       coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm (app [Relation, (global (const C))]) ff M,
       if-debug (coq.say "Mono" M)
-      )
-    ).
+      ).
+  create-iInductive Params (parameter ID IK T IND) :-
+    pi p\ create-iInductive [(par ID IK T p) | Params] (IND p).
 
   % main is, well, the entry point
   main [indt-decl I] :- 
@@ -152,9 +176,10 @@ Elpi Accumulate lp:{{
     coq.parse-attributes A [
       att "debug" bool,
       att "noproper" bool,
+      att "nosolver" bool,
     ] Opts,
     gettimeofday Start,
-    [get-option "start" Start | Opts] => create-iInductive I.
+    [get-option "start" Start | Opts] => create-iInductive [] I.
 }}.
 Elpi Typecheck.
 
@@ -183,7 +208,7 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind 
+  (* EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
     | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs).
@@ -208,13 +233,25 @@ Section Tests.
   Print is_P_list_pre.
   Print is_P_list_proper.
   Check is_P_list_pre_mono.
+  *)
 
-(* EI.ind 
-  Inductive is_P_list {A} (P : val → A → iProp): val → list A → iProp :=
+  (* Definition foo {A} (P : val → A → iProp) : (val → list A → iProp) → val → list A → iProp :=
+    (λ F v ls, (⌜v = NONEV⌝ ∗ ⌜ls = []⌝) ∨ (∃ l v tl x xs, l ↦ (v,tl) ∗ P v x ∗ F tl xs ∗ ⌜v = (SOMEV #l)⌝ ∗ ⌜ls = (x :: xs)⌝))%I.
+
+  Elpi Query lp:{{
+    coq.locate "foo" (const IP),
+    coq.env.const IP (some Bo) Ty,
+    coq.say Bo Ty
+  }}.  *)
+
+  Elpi Trace Browser.
+  #[debug,noproper,nosolver]
+  EI.ind 
+  Inductive is_P_list {A} (P : val → A → iProp) : val → list A → iProp :=
     | empty_is_P_list : is_P_list P NONEV []
     | cons_is_P_list l v tl x xs : l ↦ (v,tl) -∗ P v x -∗ is_P_list P tl xs -∗ is_P_list P (SOMEV #l) (x :: xs).
- *)
 
+  Check is_P_list_pre.
   (* Local Lemma is_P_list_pre_proper_mono :
     is_P_list_proper is_P_list_pre.
   Proof.
