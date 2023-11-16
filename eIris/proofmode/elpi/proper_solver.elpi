@@ -56,6 +56,7 @@ pm-reduce T O :-
 pred do-iStartProof i:hole, o:ihole.
 do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
+do-iStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (ihole N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
 do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
   coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
   Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
@@ -129,6 +130,26 @@ do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)
   coq.typecheck ApProof RedType ok,
   pm-reduce RedType ApType.
 
+pred do-iApplySimpleExact i:ihole, i:ident.
+do-iApplySimpleExact (ihole _ (hole Type Proof)) ID :-
+  ident->term ID _IDS IDT,
+  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
+  if-debug (coq.say "exact elaborated"),
+  coq.ltac.collect-goals RefProof [G1] _,
+  open pm_reflexivity G1 [],
+  if-debug (coq.say "exact reflex"),
+  coq.ltac.collect-goals TCProof [G2] _,
+  if-debug (open show-goal G2 _),
+  open tc_solve G2 [],
+  if-debug (coq.say "exact tc"),
+  coq.ltac.collect-goals RTCProof [G3] _,
+  if-debug (open show-goal G3 _),
+  open (pm_reduce) G3 [G3'],
+  if-debug (open show-goal G3' _),
+  open tc_solve G3' [],
+  if-debug (coq.say "exact tc2").
+
 pred do-iApplyProper i:ihole, i:term, i:term, o:list ihole.
 do-iApplyProper IH R F IHS :-
   if-debug (coq.say "do-iApplyProper"),
@@ -138,9 +159,13 @@ do-iApplyProper IH R F IHS :-
 do-iApplyProper.aux IH ID [IH'] :- 
   if-debug (coq.say "simpleApplyHyp"),
   do-iApplySimpleHyp IH ID IH'.
+do-iApplyProper.aux IH ID [] :- 
+  if-debug (coq.say "simpleApplyExact"),
+  do-iApplySimpleExact IH ID.
 do-iApplyProper.aux IH ID [IHL | IHS] :-
   if-debug (coq.say "specialize"),
   go_iSpecializeWand IH ID IHL IHR,
+  if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
   do-iApplyProper.aux IHR ID IHS.
 
 pred unfold-id i:string, i:term, o:term.

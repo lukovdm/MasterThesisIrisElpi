@@ -6,13 +6,15 @@ From iris.program_logic Require Export weakestpre.
 From iris.prelude Require Import options.
 Import uPred.
 
-From eIris.proofmode Require Import inductive.
+From iris.proofmode Require Import base environments proofmode tactics coq_tactics reduction intro_patterns class_instances spec_patterns.
+
+
+From eIris.proofmode Require Import base inductive.
 
 Section TWP.
 
   Context `{!irisGS_gen hlc Λ Σ}.
 
-  #[noproper]
   EI.ind
   Inductive twp2 : stuckness -> coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
     | twp2_some E v e1 Φ s : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp2 s E e1 Φ
@@ -26,12 +28,60 @@ Section TWP.
                         [∗ list] ef ∈ efs, twp2 s ⊤ ef fork_post) -∗ ⌜to_val e1 = None⌝ 
                           -∗ twp2 s E e1 Φ.
 
+  Local Ltac iApplyHypExact H :=
+    eapply tac_assumption with H _ _; (* (i:=H) *)
+      [pm_reflexivity
+      |tc_solve
+      |pm_reduce; tc_solve ||
+        fail 1 "iApply: remaining hypotheses not affine and the goal not absorbing"].
+  
+  Local Tactic Notation "iSpecializePat" open_constr(H) constr(pat) :=
+    let pats := spec_pat.parse pat in iSpecializePat_go H pats.
+
+  Local Ltac iApplyHypLoop H :=
+    idtac "hyploop";
+    first
+      [eapply tac_apply with H _ _ _;
+        [pm_reflexivity
+        |tc_solve
+        |pm_reduce]
+      |idtac "start spec"; iSpecializePat H "[]"; last iApplyHypLoop H].
+  
+  Tactic Notation "iApplyHyp" constr(H) :=
+    first
+      [iApplyHypExact H
+      |iApplyHypLoop H
+      |lazymatch iTypeOf H with
+        | Some (_,?Q) => fail 1 "iApply: cannot apply" Q
+        end].
+
   (* Elpi Trace Browser. *)
   Local Lemma twp2_pre_proper_mono :
   twp2_proper twp2_pre.
   Proof.
     unfold twp2_proper.
     elpi IProper_solver debug.
+    (* pm_reduce.
+    iPoseProof (iProper (□> .> .> bi_wand ==> .> bi_wand) (@big_opL (iProp Σ) bi_sep bi_sep_monoid (expr Λ))) as "H".
+    iSpecialize ("H" with "[]").
+    2: {
+      eapply tac_assumption with "H" _ _.
+      {pm_reflexivity. }
+      {tc_solve. }
+      {pm_reduce. tc_solve. }
+    }
+    Undo 4.
+    notypeclasses refine (tac_specialize_assert_no_am _ (INamed "H") _ false [] _ _ _ _ _ _ _ _ _).
+    {pm_reflexivity. }
+    {tc_solve. }
+    {tc_solve. }
+    pm_reduce.
+    refine (conj _ _).
+    2: {
+      notypeclasses refine (tac_apply _ (INamed "H") _ _ _ _ _ _ _).
+      {pm_reflexivity. }
+      {tc_solve. }
+    } *)
   Qed.
 
   Definition twp_pre `{!irisGS_gen hlc Λ Σ} (s : stuckness)

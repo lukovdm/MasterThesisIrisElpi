@@ -150,11 +150,41 @@ Section Experiments.
     tc_solve.
   Defined.
 
-  Global Instance fupd_IProper `(BiFUpd PROP) (A B : coPset) : IProper ((λ P Q, ⌜P ⊢ Q⌝)%I ==> bi_wand) (@fupd PROP bi_fupd_fupd A B).
+  Global Instance fupd_IProper `(BiFUpd PROP) (A B : coPset) : IProper (bi_wand ==> bi_wand) (@fupd PROP bi_fupd_fupd A B).
     unfold IProper, iRespectful.
     iIntros "%P %Q HPQ HABP".
-    iApply (fupd_mono $! "HPQ").
-    - 
+    by iApply "HPQ".
+  Defined.
+
+  Global Instance fudp_IProperTop `(BiFUpd PROP) (A B : coPset) : @IProperTop PROP _ _ (@bi_wand PROP) (@fupd PROP bi_fupd_fupd A B) (fun F => bi_wand ==> F)%i_signature.
+    unfold IProperTop.
+    tc_solve.
+  Defined.
+
+  Global Instance big_opL_IProper {A} : IProper (□> .> .> bi_wand ==> .> bi_wand) (@big_opL PROP bi_sep _ A).
+    unfold IProper, iRespectful, iPointwise_relation.
+    Set Printing All.
+    iIntros (P Q) "#HPQ %a".
+    iRevert (P Q) "HPQ".
+    iInduction a as [ |y ys] "IH"; iIntros (P Q) "#HPQ Hbo".
+    - iSimpl in "Hbo".
+      by iSimpl.
+    - iSimpl in "Hbo".
+      iDestruct "Hbo" as "[HP Hbo]".
+      iSimpl.
+      iSplitL "HP".
+      + by iApply "HPQ".
+      + iApply "IH".
+        2: {done. }
+        iModIntro.
+        iIntros (a a').
+        iApply "HPQ".
+  Defined.
+
+  Global Instance big_opL_IProperTop {A} : @IProperTop PROP _ _ (@bi_wand PROP) (@big_opL PROP bi_sep _ A) (fun F => □> .> .> bi_wand ==> .> F)%i_signature.
+    unfold IProperTop.
+    tc_solve.
+  Defined.
 
   Instance IProper_BiMonoPred {A : ofe} 
     (F : (A → PROP) → (A → PROP)) 

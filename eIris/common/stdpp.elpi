@@ -57,3 +57,12 @@ print-contructors [].
 print-contructors [constructor Name Arity | CS] :-
   coq.say Name "of type" { coq.term->string { coq.arity->term Arity } },
   print-contructors CS.
+
+pred map-goal i:(term -> term -> prop), i:goal, o:list sealed-goal.
+map-goal P (goal _ _ Type _ _ as G) GL :-
+  P Type Type',
+  refine {{ _ : lp:Type' }} G GL.
+
+type show-goal open-tactic.
+show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
+  coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
