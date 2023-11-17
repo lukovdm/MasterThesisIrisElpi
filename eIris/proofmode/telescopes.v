@@ -101,156 +101,176 @@ Qed.
 Fixpoint teleC_app {TT : teleC} {U} : (TT -tc> U) -> TT → U :=
   match TT as TT return (TT -tc> U) -> TT → U with
   | TeleCO => λ F _, F
-  | TeleCC C t => λ (F : TeleCC C t -tc> U), 
-  | TeleCS r => λ (F : TeleCS r -tc> U) '(TeleCArgCons x b),
-      teleC_app (F x) b
+  | TeleCC C t => λ (F : TeleCC C t -tc> U) '(pair x t), teleC_app (F x) t 
+  | TeleCS r => λ (F : TeleCS r -tc> U) '(TeleCArgCons x b), teleC_app (F x) b
   end.
 (* The bidirectionality hint [&] simplifies defining tele_app-based notation
 such as the atomic updates and atomic triples in Iris. *)
-Global Arguments tele_app {!_ _} & _ !_ /.
+Global Arguments teleC_app {!_ _} & _ !_ /.
 
 (* This is a local coercion because otherwise, the "λ.." notation stops working. *)
-Local Coercion tele_app : tele_fun >-> Funclass.
+Local Coercion teleC_app : teleC_fun >-> Funclass.
 
-(** Inversion lemma for [tele_arg] *)
-Lemma tele_arg_inv {TT : tele} (a : tele_arg TT) :
-  match TT as TT return tele_arg TT → Prop with
-  | TeleO => λ a, a = TargO
-  | TeleS f => λ a, ∃ x a', a = TargS x a'
+(** Inversion lemma for [teleC_arg] *)
+Lemma teleC_arg_inv {TT : teleC} (a : teleC_arg TT) :
+  match TT as TT return teleC_arg TT → Prop with
+  | TeleCO => λ a, a = TargCO
+  | TeleCC C t => λ a, ∃ x a', a = TargCC x a'
+  | TeleCS f => λ a, ∃ x a', a = TargCS x a'
   end a.
 Proof. destruct TT; destruct a; eauto. Qed.
-Lemma tele_arg_O_inv (a : TeleO) : a = TargO.
-Proof. exact (tele_arg_inv a). Qed.
-Lemma tele_arg_S_inv {X} {f : X → tele} (a : TeleS f) :
-  ∃ x a', a = TargS x a'.
-Proof. exact (tele_arg_inv a). Qed.
+Lemma teleC_arg_O_inv (a : TeleCO) : a = TargCO.
+Proof. exact (teleC_arg_inv a). Qed.
+Lemma teleC_arg_C_inv {C} {t : teleC} (a : TeleCC C t) :
+  ∃ x a', a = TargCC x a'.
+Proof. exact (teleC_arg_inv a). Qed.
+Lemma teleC_arg_S_inv {X} {f : X → teleC} (a : TeleCS f) :
+  ∃ x a', a = TargCS x a'.
+Proof. exact (teleC_arg_inv a). Qed.
 
 (** Map below a tele_fun *)
-Fixpoint tele_map {T U} {TT : tele} : (T → U) → (TT -t> T) → TT -t> U :=
-  match TT as TT return (T → U) → (TT -t> T) → TT -t> U with
-  | TeleO => λ F : T → U, F
-  | @TeleS X b => λ (F : T → U) (f : TeleS b -t> T) (x : X),
-                  tele_map F (f x)
+Fixpoint teleC_map {T U} {TT : teleC} : (T → U) → (TT -tc> T) → TT -tc> U :=
+  match TT as TT return (T → U) → (TT -tc> T) → TT -tc> U with
+  | TeleCO => λ F : T → U, F
+  | @TeleCC C t => λ (F : T → U) (f : TeleCC C t -tc> T) (c : C),
+                  teleC_map F (f c)
+  | @TeleCS X b => λ (F : T → U) (f : TeleCS b -tc> T) (x : X),
+                  teleC_map F (f x)
   end.
-Global Arguments tele_map {_ _ !_} _ _ /.
+Global Arguments teleC_map {_ _ !_} _ _ /.
 
-Lemma tele_map_app {T U} {TT : tele} (F : T → U) (t : TT -t> T) (x : TT) :
-  (tele_map F t) x = F (t x).
+Lemma teleC_map_app {T U} {TT : teleC} (F : T → U) (t : TT -tc> T) (x : TT) :
+  (teleC_map F t) x = F (t x).
 Proof.
-  induction TT as [|X f IH]; simpl in *.
-  - rewrite (tele_arg_O_inv x). done.
-  - destruct (tele_arg_S_inv x) as [x' [a' ->]]. simpl.
+  induction TT as [|C te IH|X f IH]; simpl in *.
+  - rewrite (teleC_arg_O_inv x). done.
+  - destruct (teleC_arg_C_inv x) as [x' [a' ->]]. simpl.
+    rewrite <-IH. done.
+  - destruct (teleC_arg_S_inv x) as [x' [a' ->]]. simpl.
     rewrite <-IH. done.
 Qed.
 
-Global Instance tele_fmap {TT : tele} : FMap (tele_fun TT) := λ T U, tele_map.
+Global Instance teleC_fmap {TT : teleC} : FMap (teleC_fun TT) := λ T U, teleC_map.
 
-Lemma tele_fmap_app {T U} {TT : tele} (F : T → U) (t : TT -t> T) (x : TT) :
+Lemma teleC_fmap_app {T U} {TT : teleC} (F : T → U) (t : TT -tc> T) (x : TT) :
   (F <$> t) x = F (t x).
-Proof. apply tele_map_app. Qed.
+Proof. apply teleC_map_app. Qed.
 
-(** Operate below [tele_fun]s with argument telescope [TT]. *)
-Fixpoint tele_bind {U} {TT : tele} : (TT → U) → TT -t> U :=
-  match TT as TT return (TT → U) → TT -t> U with
-  | TeleO => λ F, F tt
-  | @TeleS X b => λ (F : TeleS b → U) (x : X), (* b x -t> U *)
-      tele_bind (λ a, F (TargS x a))
+(** Operate below [teleC_fun]s with argument teleCscope [TT]. *)
+Fixpoint teleC_bind {U} {TT : teleC} : (TT → U) → TT -tc> U :=
+  match TT as TT return (TT → U) → TT -tc> U with
+  | TeleCO => λ F, F tt
+  | TeleCC C t => λ (F : TeleCC C t → U) (c : C),
+      teleC_bind (λ a, F (TargCC c a))
+  | @TeleCS X b => λ (F : TeleCS b → U) (x : X), (* b x -tc> U *)
+      teleC_bind (λ a, F (TargCS x a))
   end.
-Global Arguments tele_bind {_ !_} _ /.
+Global Arguments teleC_bind {_ !_} _ /.
 
-(* Show that tele_app ∘ tele_bind is the identity. *)
-Lemma tele_app_bind {U} {TT : tele} (f : TT → U) x :
-  (tele_bind f) x = f x.
+(* Show that teleC_app ∘ teleC_bind is the identity. *)
+Lemma teleC_app_bind {U} {TT : teleC} (f : TT → U) x :
+  (teleC_bind f) x = f x.
 Proof.
-  induction TT as [|X b IH]; simpl in *.
-  - rewrite (tele_arg_O_inv x). done.
-  - destruct (tele_arg_S_inv x) as [x' [a' ->]]. simpl.
+  induction TT as [|C t IH|X b IH]; simpl in *.
+  - rewrite (teleC_arg_O_inv x). done.
+  - destruct (teleC_arg_C_inv x) as [x' [a' ->]]. simpl.
+    rewrite IH. done.
+  - destruct (teleC_arg_S_inv x) as [x' [a' ->]]. simpl.
     rewrite IH. done.
 Qed.
 
-(** We can define the identity function and composition of the [-t>] function
+(** We can define the identity function and composition of the [-tc>] function
 space. *)
-Definition tele_fun_id {TT : tele} : TT -t> TT := tele_bind id.
+Definition teleC_fun_id {TT : teleC} : TT -tc> TT := teleC_bind id.
 
-Lemma tele_fun_id_eq {TT : tele} (x : TT) :
-  tele_fun_id x = x.
-Proof. unfold tele_fun_id. rewrite tele_app_bind. done. Qed.
+Lemma teleC_fun_id_eq {TT : teleC} (x : TT) :
+  teleC_fun_id x = x.
+Proof. unfold teleC_fun_id. rewrite teleC_app_bind. done. Qed.
 
-Definition tele_fun_compose {TT1 TT2 TT3 : tele} :
-  (TT2 -t> TT3) → (TT1 -t> TT2) → (TT1 -t> TT3) :=
-  λ t1 t2, tele_bind (compose (tele_app t1) (tele_app t2)).
+Definition teleC_fun_compose {TT1 TT2 TT3 : teleC} :
+  (TT2 -tc> TT3) → (TT1 -tc> TT2) → (TT1 -tc> TT3) :=
+  λ t1 t2, teleC_bind (compose (teleC_app t1) (teleC_app t2)).
 
-Lemma tele_fun_compose_eq {TT1 TT2 TT3 : tele} (f : TT2 -t> TT3) (g : TT1 -t> TT2) x :
-  tele_fun_compose f g $ x = (f ∘ g) x.
-Proof. unfold tele_fun_compose. rewrite tele_app_bind. done. Qed.
+Lemma teleC_fun_compose_eq {TT1 TT2 TT3 : teleC} (f : TT2 -tc> TT3) (g : TT1 -tc> TT2) x :
+  teleC_fun_compose f g $ x = (f ∘ g) x.
+Proof. unfold teleC_fun_compose. rewrite teleC_app_bind. done. Qed.
 
 (** Notation *)
-Notation "'[tele' x .. z ]" :=
-  (TeleS (fun x => .. (TeleS (fun z => TeleO)) ..))
-  (x binder, z binder, format "[tele  '[hv' x  ..  z ']' ]").
-Notation "'[tele' ]" := (TeleO)
-  (format "[tele ]").
+Notation "'[teleC' x .. z ]" :=
+  (TeleCS (fun x => .. (TeleCS (fun z => TeleCO)) ..))
+  (x binder, z binder, format "[teleC  '[hv' x  ..  z ']' ]").
+Notation "'[teleC' ]" := (TeleCO)
+  (format "[teleC ]").
 
-Notation "'[tele_arg' x ; .. ; z ]" :=
-  (TargS x ( .. (TargS z TargO) ..))
-  (format "[tele_arg  '[hv' x ;  .. ;  z ']' ]").
-Notation "'[tele_arg' ]" := (TargO)
-  (format "[tele_arg ]").
+Notation "'[teleC_arg' x ; .. ; z ]" :=
+  (TargCS x ( .. (TargCS z TargCO) ..))
+  (format "[teleC_arg  '[hv' x ;  .. ;  z ']' ]").
+Notation "'[teleC_arg' ]" := (TargCO)
+  (format "[teleC_arg ]").
 
 (** Notation-compatible telescope mapping *)
 (* This adds (tele_app ∘ tele_bind), which is an identity function, around every
    binder so that, after simplifying, this matches the way we typically write
    notations involving telescopes. *)
 Notation "'λ..' x .. y , e" :=
-  (tele_app (tele_bind (λ x, .. (tele_app (tele_bind (λ y, e))) .. )))
+  (teleC_app (teleC_bind (λ x, .. (teleC_app (teleC_bind (λ y, e))) .. )))
   (at level 200, x binder, y binder, right associativity,
    format "'[  ' 'λ..'  x  ..  y ']' ,  e") : stdpp_scope.
 
 (** Telescopic quantifiers *)
-Definition tforall {TT : tele} (Ψ : TT → Prop) : Prop :=
-  tele_fold (λ (T : Type) (b : T → Prop), ∀ x : T, b x) (λ x, x) (tele_bind Ψ).
-Global Arguments tforall {!_} _ /.
-Definition texist {TT : tele} (Ψ : TT → Prop) : Prop :=
-  tele_fold ex (λ x, x) (tele_bind Ψ).
-Global Arguments texist {!_} _ /.
+Definition tcforall {TT : teleC} (Ψ : TT → Prop) : Prop :=
+  teleC_fold (λ (T : Type) (b : T → Prop), ∀ x : T, b x) (λ x, x) (teleC_bind Ψ).
+Global Arguments tcforall {!_} _ /.
+Definition tcexist {TT : teleC} (Ψ : TT → Prop) : Prop :=
+  teleC_fold ex (λ x, x) (teleC_bind Ψ).
+Global Arguments tcexist {!_} _ /.
 
-Notation "'∀..' x .. y , P" := (tforall (λ x, .. (tforall (λ y, P)) .. ))
+Notation "'∀..' x .. y , P" := (tcforall (λ x, .. (tcforall (λ y, P)) .. ))
   (at level 200, x binder, y binder, right associativity,
   format "∀..  x  ..  y ,  P") : stdpp_scope.
-Notation "'∃..' x .. y , P" := (texist (λ x, .. (texist (λ y, P)) .. ))
+Notation "'∃..' x .. y , P" := (tcexist (λ x, .. (tcexist (λ y, P)) .. ))
   (at level 200, x binder, y binder, right associativity,
   format "∃..  x  ..  y ,  P") : stdpp_scope.
 
-Lemma tforall_forall {TT : tele} (Ψ : TT → Prop) :
-  tforall Ψ ↔ (∀ x, Ψ x).
+Lemma tcforall_forall {TT : teleC} (Ψ : TT → Prop) :
+  tcforall Ψ ↔ (∀ x, Ψ x).
 Proof.
-  symmetry. unfold tforall. induction TT as [|X ft IH].
+  symmetry. unfold tcforall. induction TT as [|C t IH|X ft IH].
   - simpl. split.
     + done.
-    + intros ? p. rewrite (tele_arg_O_inv p). done.
+    + intros ? p. rewrite (teleC_arg_O_inv p). done.
   - simpl. split; intros Hx a.
     + rewrite <-IH. done.
-    + destruct (tele_arg_S_inv a) as [x [pf ->]].
+    + destruct (teleC_arg_C_inv a) as [x [pf ->]].
+      revert pf. setoid_rewrite IH. done.
+  - simpl. split; intros Hx a.
+    + rewrite <-IH. done.
+    + destruct (teleC_arg_S_inv a) as [x [pf ->]].
       revert pf. setoid_rewrite IH. done.
 Qed.
 
-Lemma texist_exist {TT : tele} (Ψ : TT → Prop) :
-  texist Ψ ↔ ex Ψ.
+Lemma tcexist_exist {TT : teleC} (Ψ : TT → Prop) :
+  tcexist Ψ ↔ ex Ψ.
 Proof.
-  symmetry. induction TT as [|X ft IH].
+  symmetry. induction TT as [|C t IH|X ft IH].
   - simpl. split.
-    + intros [p Hp]. rewrite (tele_arg_O_inv p) in Hp. done.
-    + intros. by exists TargO.
+    + intros [p Hp]. rewrite (teleC_arg_O_inv p) in Hp. done.
+    + intros. by exists TargCO.
   - simpl. split; intros [p Hp]; revert Hp.
-    + destruct (tele_arg_S_inv p) as [x [pf ->]]. intros ?.
-      exists x. rewrite <-(IH x (λ a, Ψ (TargS x a))). eauto.
-    + rewrite <-(IH p (λ a, Ψ (TargS p a))).
+    + destruct (teleC_arg_C_inv p) as [x [pf ->]]. intros ?.
+      exists x. rewrite <-(IH (λ a, Ψ (TargCC x a))). eauto.
+    + rewrite <-(IH (λ a, Ψ (TargCC p a))).
+      intros [??]. eauto.
+  - simpl. split; intros [p Hp]; revert Hp.
+    + destruct (teleC_arg_S_inv p) as [x [pf ->]]. intros ?.
+      exists x. rewrite <-(IH x (λ a, Ψ (TargCS x a))). eauto.
+    + rewrite <-(IH p (λ a, Ψ (TargCS p a))).
       intros [??]. eauto.
 Qed.
 
 (* Teach typeclass resolution how to make progress on these binders *)
-Global Typeclasses Opaque tforall texist.
-Global Hint Extern 1 (tforall _) =>
-  progress cbn [tforall tele_fold tele_bind tele_app] : typeclass_instances.
-Global Hint Extern 1 (texist _) =>
-  progress cbn [texist tele_fold tele_bind tele_app] : typeclass_instances.
+Global Typeclasses Opaque tcforall tcexist.
+Global Hint Extern 1 (tcforall _) =>
+  progress cbn [tcforall teleC_fold teleC_bind teleC_app] : typeclass_instances.
+Global Hint Extern 1 (tcexist _) =>
+  progress cbn [tcexist teleC_fold teleC_bind teleC_app] : typeclass_instances.

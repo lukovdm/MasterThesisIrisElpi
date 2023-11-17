@@ -2,6 +2,7 @@
 
 eIris/proofmode/base.v
 eIris/proofmode/reduction.v
+eIris/proofmode/telescopes.v
 eIris/proofmode/split.v
 eIris/proofmode/startProof.v
 eIris/proofmode/intros.v
