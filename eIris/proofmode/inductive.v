@@ -197,6 +197,8 @@ Elpi Accumulate File iris_ltac.
 Elpi Accumulate File tokenize.
 Elpi Accumulate File parser.
 Elpi Accumulate File eiris_tactics.
+Elpi Accumulate Db reduction.db.
+Elpi Accumulate File reduction.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
   solve (goal _Ctx _Trigger Type Proof []) _ :- 
