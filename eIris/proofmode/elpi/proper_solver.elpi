@@ -251,9 +251,20 @@ do-steps.do (ihole _ (hole _ Proof)) _ _ _ :-
 do-steps.do _ T F _ :- !,
   if-debug (coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping").
 
+pred do-intros i:hole, i:(hole -> prop).
+do-intros (hole (prod N T F) Proof) S :- !,
+  if-debug (coq.say "introducing" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    do-intros (hole (F x) (IntroFProof x)) S.
+do-intros H F :- F H.
+
 pred do-solve-proper i:hole.
 do-solve-proper (hole Type Proof) :-
   unfold-id "IProper" Type UnfoldedType',
   coq.typecheck Proof UnfoldedType' ok,
-  do-iStartProof (hole UnfoldedType' Proof) IH,
-  do-steps IH.
+  do-intros (hole UnfoldedType' Proof) (h\ sigma IH\
+    do-iStartProof h IH,
+    do-steps IH
+  ).

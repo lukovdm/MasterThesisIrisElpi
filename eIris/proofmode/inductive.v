@@ -125,21 +125,22 @@ Elpi Accumulate lp:{{
     if-debug (coq.say "------- Type" { coq.term->string Ty }),
     @keepunivs! => std.assert-ok! (coq.elaborate-skeleton PBo Ty EBo) "Type check body failed".
 
-  pred type-to-proper i:term, o:term.
-  type-to-proper Type EBo :-
+  pred build-proper i:list param, i:term, i:term, o:term.
+  build-proper Params F Type EBo :-
     find-PROP Type PROP,
     (pi N T F A T1 F1 A1 \ fold-map (prod N T F) A (prod N T1 F1) (some {{ (.> lp:A1)%i_signature }}) :-
           fold-map T A T1 _, !, (pi x\ fold-map (F x) A (F1 x) (some A1))) =>
       (pi A \ fold-map PROP A PROP (some {{ bi_wand }}) :- !) =>
         fold-map Type none Type (some R),
-      
-    @keepunivs! => std.assert-ok! (coq.elaborate-skeleton {{ IProper (□> lp:R ==> lp:R) }} {{ (lp:Type -> lp:Type) -> Prop }} EBo) "Type check proper failed".
+    std.map Params (x\r\ x = (par _ _ _ r)) Ps,
+    Fapp = app [F | Ps],
+    replace-params-ty Params {{ IProper (□> lp:R ==> lp:R) lp:Fapp }} Proper,
+    @keepunivs! => std.assert-ok! (coq.elaborate-skeleton Proper {{ Prop }} EBo) "Type check proper failed".
 
-  pred proper-proof i:term, i:term, o:term.
-  proper-proof Relation F Proof :-
-    Type = {{ lp:Relation lp:F }},
-    coq.typecheck Proof Type ok,
-    do-solve-proper (hole Type Proof).
+  pred proper-proof i:term, o:term.
+  proper-proof Proper Proof :-
+    coq.typecheck Proof Proper ok,
+    do-solve-proper (hole Proper Proof).
 
   pred create-iInductive i:list param, i:indt-decl.
   create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) :-
@@ -156,15 +157,14 @@ Elpi Accumulate lp:{{
 
     if (get-option "noproper" tt) (true)
       (
-        type-to-proper TypeTerm Relation,
-        coq.env.add-const {calc (Name ^ "_proper")} Relation _ ff R,
-        if-debug (coq.say "Relation" R)
+        build-proper Params (global (const C)) TypeTerm Proper,
+        if-debug (coq.say "Relation" {coq.term->string Proper})
       ),
 
     if (get-option "nosolver" tt) (true)
       (
-      proper-proof Relation (global (const C)) ProofTerm,
-      coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm (app [Relation, (global (const C))]) ff M,
+      proper-proof Proper ProofTerm,
+      coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm Proper ff M,
       if-debug (coq.say "Mono" M)
       ).
   create-iInductive Params (parameter ID IK T IND) :-
@@ -179,7 +179,10 @@ Elpi Accumulate lp:{{
       att "nosolver" bool,
     ] Opts,
     gettimeofday Start,
-    [get-option "start" Start | Opts] => create-iInductive [] I.
+    [get-option "start" Start | Opts] => (
+      if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
+      create-iInductive [] I
+      ).
 }}.
 Elpi Typecheck.
 
@@ -208,22 +211,13 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  (* EI.ind 
+  EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
     | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs).
 
   Print is_list_pre.
-  Print is_list_proper.
   Check is_list_pre_mono.
-
-  (* Elpi Trace Browser. *)
-  (* Local Lemma is_list_pre_proper_mono :
-    is_list_proper is_list_pre.
-  Proof.
-    unfold is_list_proper.
-    elpi IProper_solver.
-  Qed. *)
 
   EI.ind 
   Inductive is_P_list : (val → iProp) → val → iProp :=
@@ -231,31 +225,13 @@ Section Tests.
     | cons_is_P_list P l v tl : l ↦ (v,tl) -∗ P v -∗ is_P_list P tl -∗ is_P_list P (SOMEV #l).
 
   Print is_P_list_pre.
-  Print is_P_list_proper.
   Check is_P_list_pre_mono.
-  *)
 
-  (* Definition foo {A} (P : val → A → iProp) : (val → list A → iProp) → val → list A → iProp :=
-    (λ F v ls, (⌜v = NONEV⌝ ∗ ⌜ls = []⌝) ∨ (∃ l v tl x xs, l ↦ (v,tl) ∗ P v x ∗ F tl xs ∗ ⌜v = (SOMEV #l)⌝ ∗ ⌜ls = (x :: xs)⌝))%I.
-
-  Elpi Query lp:{{
-    coq.locate "foo" (const IP),
-    coq.env.const IP (some Bo) Ty,
-    coq.say Bo Ty
-  }}.  *)
-
-  Elpi Trace Browser.
-  #[debug,noproper,nosolver]
   EI.ind 
-  Inductive is_P_list {A} (P : val → A → iProp) : val → list A → iProp :=
-    | empty_is_P_list : is_P_list P NONEV []
-    | cons_is_P_list l v tl x xs : l ↦ (v,tl) -∗ P v x -∗ is_P_list P tl xs -∗ is_P_list P (SOMEV #l) (x :: xs).
+  Inductive is_P2_list {A} (P : val → A → iProp) : val → list A → iProp :=
+    | empty_is_P2_list : is_P2_list P NONEV []
+    | cons_is_P2_list l v tl x xs : l ↦ (v,tl) -∗ P v x -∗ is_P2_list P tl xs -∗ is_P2_list P (SOMEV #l) (x :: xs).
 
-  Check is_P_list_pre.
-  (* Local Lemma is_P_list_pre_proper_mono :
-    is_P_list_proper is_P_list_pre.
-  Proof.
-    unfold is_P_list_proper.
-    elpi IProper_solver.
-  Qed. *)
+  Print is_P2_list_pre.
+  Check is_P2_list_pre_mono.
 End Tests.
