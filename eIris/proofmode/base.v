@@ -34,22 +34,6 @@ Global Lemma tac_forall_intro_nameless {A} Δ (Φ : A → PROP) Q name :
   envs_entails Δ Q.
 Proof. rewrite envs_entails_unseal /FromForall=> <-. apply iris.bi.interface.bi.forall_intro. Qed.
 
-Global Lemma tac_apply_proper Δ φ P P1 P2 :
-  IntoEmpValid φ P →
-  φ →
-  IntoWand false false P P1 P2 →
-  envs_entails Δ P1 →
-  envs_entails Δ P2.
-Proof.
-  (* intros HIEV Hφ HIW HP1.
-  eapply HIEV in Hφ.
-  setoid_rewrite (into_wand false false P) in Hφ; try done; simpl in *.
-  eapply wand_elim_l' in Hφ.
-  setoid_rewrite emp_sep_1 in HP1.
-  by setoid_rewrite Hφ in HP1.
-Qed. *)
-Admitted.
-
 Local Open Scope lazy_bool_scope.
 
 Lemma tac_specialize_assert_no_am Δ j (q neg : bool) js R P1 P2 P1' Q :

@@ -8,10 +8,11 @@ From iris.heap_lang Require Import notation.
 From stdpp Require Import base finite.
 
 From eIris.proofmode Require Export proper.
-From eIris.proofmode Require Import intros.
+From eIris.proofmode Require Import reduction.
 
 From eIris.proofmode Require Import base.
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
+From eIris.proofmode.elpi Extra Dependency "reduction.elpi" as reduction.
 From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
 From eIris.common Extra Dependency "parser.elpi" as parser.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
@@ -24,6 +25,8 @@ Elpi Accumulate File iris_ltac.
 Elpi Accumulate File tokenize.
 Elpi Accumulate File parser.
 Elpi Accumulate File eiris_tactics.
+Elpi Accumulate Db reduction.db.
+Elpi Accumulate File reduction.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
   kind param type.

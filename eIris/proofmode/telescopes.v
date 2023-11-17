@@ -13,10 +13,12 @@ Local Set Polymorphic Inductive Cumulativity.
 Local Unset Universe Minimization ToSet.
 
 (** Telescopes *)
-Inductive teleC : Type :=
+Inductive teleC@{u} : Type@{max(Set,u+1)} :=
   | TeleCO : teleC
-  | TeleCC (C : Type) (t : teleC) : teleC
-  | TeleCS {X} (binder : X → teleC) : teleC.
+  | TeleCC (C : Type@{u}) (t : teleC) : teleC
+  | TeleCS {X : Type@{u}} (binder : X → teleC) : teleC.
+
+Check TeleCC.
 
 Global Arguments TeleCS {_} _.
 
@@ -58,41 +60,50 @@ Global Arguments TeleCArgCons {_ _} _ _.
 Fixpoint teleC_arg@{u} (t : teleC@{u}) : Type@{u} :=
   match t with
   | TeleCO => unit
-  (* | TeleCC C t => C *)
+  | TeleCC C t => C * (teleC_arg t)
   | TeleCS f => teleC_arg_cons (λ x, teleC_arg (f x))
   end.
 Global Arguments teleC_arg _ : simpl never.
 
-(* Coq has no idea that [unit] and [tele_arg_cons] have anything to do with
+Compute teleC_arg (TeleCC ofe (TeleCS (fun (x : nat) => TeleCS (fun _ : vec bool x => TeleCO)))).
+
+(* Coq has no idea that [unit] and [teleC_arg_cons] have anything to do with
    telescopes. This only becomes a problem when concrete telescope arguments
    (of concrete telescopes) need to be typechecked. To work around this, we
    annotate the notations below with extra information to guide unification.
  *)
 
 (* The cast in the notation below is necessary to make Coq understand that
-   [TargO] can be unified with [tele_arg TeleO]. *)
-Notation TargO := (tt : tele_arg TeleO) (only parsing).
-(* The casts and annotations are necessary for Coq to typecheck nested [TargS]
-   as well as the final [TargO] in a chain of [TargS]. *)
-Notation TargS a b :=
-  ((@TeleArgCons _ (λ x, tele_arg (_ x)) a b) : (tele_arg (TeleS _))) (only parsing).
-Coercion tele_arg : tele >-> Sortclass.
+   [TargCO] can be unified with [teleC_arg TeleCO]. *)
+Notation TargCO := (tt : teleC_arg TeleCO) (only parsing).
+(* The casts and annotations are necessary for Coq to typecheck nested [TargCS] [TargCC]
+   as well as the final [TargCO] in a chain of [TargCS] [TargCC]. *)
+Notation TargCC a b :=
+  ((a, b) : (teleC_arg (TeleCC _ _))) (only parsing).
+(* The casts and annotations are necessary for Coq to typecheck nested [TargCS] [TargCC]
+   as well as the final [TargCO] in a chain of [TargCS] [TargCC]. *)
+Notation TargCS a b :=
+  ((@TeleCArgCons _ (λ x, teleC_arg (_ x)) a b) : (teleC_arg (TeleCS _))) (only parsing).
+Coercion teleC_arg : teleC >-> Sortclass.
 
-Lemma tele_arg_ind (P : ∀ TT, tele_arg TT → Prop) :
-  P TeleO TargO →
-  (∀ T (b : T → tele) x xs, P (b x) xs → P (TeleS b) (TargS x xs)) →
-  ∀ TT (xs : tele_arg TT), P TT xs.
+Lemma teleC_arg_ind (P : ∀ TT, teleC_arg TT → Prop) :
+  P TeleCO TargCO →
+  (∀ C (t : teleC) x xs, P t xs → P (TeleCC C t) (TargCC x xs)) →
+  (∀ T (b : T → teleC) x xs, P (b x) xs → P (TeleCS b) (TargCS x xs)) →
+  ∀ TT (xs : teleC_arg TT), P TT xs.
 Proof.
-  intros H0 HS TT. induction TT as [|T b IH]; simpl.
+  intros H0 HC HS TT. induction TT as [ |C t IH|T b IH]; simpl.
   - by intros [].
+  - intros [x xs]. by apply HC.
   - intros [x xs]. by apply HS.
 Qed.
 
-Fixpoint tele_app {TT : tele} {U} : (TT -t> U) -> TT → U :=
-  match TT as TT return (TT -t> U) -> TT → U with
-  | TeleO => λ F _, F
-  | TeleS r => λ (F : TeleS r -t> U) '(TeleArgCons x b),
-      tele_app (F x) b
+Fixpoint teleC_app {TT : teleC} {U} : (TT -tc> U) -> TT → U :=
+  match TT as TT return (TT -tc> U) -> TT → U with
+  | TeleCO => λ F _, F
+  | TeleCC C t => λ (F : TeleCC C t -tc> U), 
+  | TeleCS r => λ (F : TeleCS r -tc> U) '(TeleCArgCons x b),
+      teleC_app (F x) b
   end.
 (* The bidirectionality hint [&] simplifies defining tele_app-based notation
 such as the atomic updates and atomic triples in Iris. *)

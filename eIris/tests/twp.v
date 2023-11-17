@@ -16,9 +16,9 @@ Section TWP.
   Context `{!irisGS_gen hlc Λ Σ}.
 
   EI.ind
-  Inductive twp2 : stuckness -> coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
-    | twp2_some E v e1 Φ s : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp2 s E e1 Φ
-    | twp2_none E e1 Φ s : (∀ σ1 ns κs nt,
+  Inductive twp2 (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
+    | twp2_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp2 s E e1 Φ
+    | twp2_none E e1 Φ : (∀ σ1 ns κs nt,
                     state_interp σ1 ns κs nt ={E,∅}=∗
                       ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
                       ∀ κ e2 σ2 efs, ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
