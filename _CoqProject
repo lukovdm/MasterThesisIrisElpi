@@ -7,5 +7,6 @@ eIris/proofmode/split.v
 eIris/proofmode/startProof.v
 eIris/proofmode/intros.v
 eIris/proofmode/proper.v
+eIris/proofmode/monoProper.v
 eIris/proofmode/inductive.v
 

@@ -13,9 +13,9 @@ Local Set Polymorphic Inductive Cumulativity.
 Local Unset Universe Minimization ToSet.
 
 (** Telescopes *)
-Inductive teleC@{u} : Type@{max(Set,u+1)} :=
+Inductive teleC@{u} : Type@{max(Set, u+1)} :=
   | TeleCO : teleC
-  | TeleCC (C : Type@{u}) (t : teleC) : teleC
+  | TeleCC (X : Type@{u}) (t : teleC) : teleC
   | TeleCS {X : Type@{u}} (binder : X → teleC) : teleC.
 
 Check TeleCC.
