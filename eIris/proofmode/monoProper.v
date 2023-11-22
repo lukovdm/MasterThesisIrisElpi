@@ -104,7 +104,7 @@ Section Args_Cons_OFE.
 End Args_Cons_OFE.
 Global Arguments teleC_arg_consO {_} _.
 
-Section teleC_arg_OFE.
+(* Section teleC_arg_OFE.
   Context {TT : teleC}.
   
   Local Instance teleC_dist : Dist teleC := λ n x1 x2,
@@ -139,4 +139,4 @@ Section BiMonoProper.
       iApply H0; done.
     - apply bi_mono_proper_ne.
   Defined.
-End BiMonoProper.
+End BiMonoProper. *)

@@ -1,5 +1,13 @@
+accumulate eIris/common/stdpp.
+accumulate eIris/common/parser.
+accumulate eIris/common/tokenize.
+accumulate eIris/proofmode/elpi/iris_ltac.
+accumulate eIris/proofmode/elpi/reduction.
+
 shorten coq.ltac.{ open, thenl, all }.
 
+
+% Manage identifiers as coq terms
 pred ident->term i:ident, o:string, o:term.
 ident->term (iNamed S) S T :- !,
   string->stringterm S ST,
@@ -7,45 +15,90 @@ ident->term (iNamed S) S T :- !,
 ident->term (iAnon N) "anon" T :- !,
   T = {{ IAnon lp:N }}.
 
-type ident_for_pat intro_pat -> ident -> tactic.
-ident_for_pat (iIdent ID) ID G [G].
-ident_for_pat _ (iAnon NT) G GL :-
-  open (go_iFresh NT) G GL.
 
-type ident_for_pat.default intro_pat -> ident -> ident -> tactic.
-ident_for_pat.default (iIdent ID) _ ID G [G].
-ident_for_pat.default _ (iAnon NT) (iAnon NT) _G _GL.
-ident_for_pat.default _ _ (iAnon NT) G GL :-
-  open (go_iFresh NT) G GL.
+pred ident-for-pat i:intro_pat, i:term, o:ident, o:term.
+ident-for-pat (iIdent ID) N ID N.
+ident-for-pat _ NT (iAnon NT) NS :-
+  increase-ctx-count NT NS.
 
-type go_iStartProof open-tactic.
-go_iStartProof (goal _Ctx _Trigger {{ let _ := _ in _ }} _Proof [] as _G) _GL :- !,
+
+pred ident-for-pat.default i:intro_pat, i:ident, i:term, o:ident, o:term.
+ident-for-pat.default (iIdent ID) _ N ID N.
+ident-for-pat.default _ (iAnon NT) N (iAnon NT) N.
+ident-for-pat.default _ _ NT (iAnon NT) NS :-
+  increase-ctx-count NT NS.
+
+
+% Start an Iris proof
+pred do-iStartProof i:hole, o:ihole.
+do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-go_iStartProof (goal _Ctx _Trigger {{ envs_entails _ _ }} _Proof [] as G) [seal G].
-go_iStartProof (goal _Ctx _Trigger Type _Proof [] as G) GL :- 
-  refine {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} G GL.
+do-iStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (ihole N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
+do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
+  coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
+  Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
+  coq.typecheck NProof NType ok,
+  NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
-type go_iFresh term -> open-tactic.
-go_iFresh N (goal _Ctx _Trigger {{ envs_entails (Envs lp:DP lp:DS lp:N) lp:Q }} _Proof _Args as G) GL :-
-  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS,
-  refine {{_ : (envs_entails (Envs lp:DP lp:DS lp:NS) lp:Q) }} G GL.
 
-type go_intro string -> open-tactic.
-go_intro ID G GL :-
-  std.assert! (coq.ltac.id-free? ID G) "eiIntro: name already taken",
+% Introduce a mod
+pred do-iModIntro i:hole, o:hole.
+do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
+  @no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ lp:TC1 lp:TC2 lp:TC3 lp:PM4 lp:SC5 lp:ModProof }},
+  coq.ltac.collect-goals TC1 [G1] _,
+  open tc_solve G1 [],
+  coq.ltac.collect-goals TC2 [G2] _,
+  open tc_solve G2 [],
+  coq.ltac.collect-goals TC3 [G3] _,
+  open tc_solve G3 [],
+  coq.ltac.collect-goals PM4 [G4] _,
+  open pm_reduce G4 [G4'],
+  open tc_solve G4' [],
+  coq.ltac.collect-goals SC5 [G5] _,
+  open (coq.ltac.call "iSolveSideCondition" []) G5 [],
+  coq.typecheck ModProof ModType ok.
+
+
+pred do-intros-forall i:hole, i:(hole -> prop).
+do-intros-forall (hole (prod N T F) Proof) C :- !,
+  if-debug (coq.say "introducing" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    do-intros-forall (hole (F x) (IntroFProof x)) C.
+do-intros-forall H F :- F H.
+
+
+pred do-intro i:string, i:hole, i:(hole -> prop).
+do-intro ID (hole Type Proof) C :-
+  coq.ltac.collect-goals Proof [G] _,
+  open (g\gl\ std.assert! (coq.ltac.id-free? ID g) "eiIntro: name already taken") G _,
   coq.id->name ID N,
-  refine (fun N _ _) G GL.
+  coq.elaborate-skeleton (fun N _ _) Type Proof ok,
+  Proof = (fun _ T IntroFProof),
+  @pi-decl N T x\ 
+    coq.typecheck (IntroFProof x) (F x) ok,
+    C (hole (F x) (IntroFProof x)).
 
-type go_iExFalso tactic.
-go_iExFalso G GL :-
-  open go_iStartProof G [G'],
-  open (refine {{ @tac_ex_falso _ _ _ _ }}) G' GL.
 
-type go_iClear ident -> tactic.
-go_iClear ID G GL :-
+pred do-iExFalso i:hole, o:hole.
+do-iExFalso (hole Type Proof) (hole FalseType FalseProof) :-
+  coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
+  Proof = {{ tac_ex_falso _ _ lp:FalseProof }},
+  coq.typecheck FalseProof FalseType ok.
+
+
+pred do-iClear i:ident, i:hole, o:hole.
+do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   ident->term ID IDS IDT,
-  open (refine {{ @tac_clear _ _ lp:IDT _ _ _ _ _ _ }}) G [G1, G2, G3],
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_clear _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_clear _ _ _ _ _ lp:Lookup lp:TC lp:ClearProof }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
   (open pm_reflexivity G1 []; coq.ltac.fail 0 "iClear:" IDS "not found"),
+  coq.ltac.collect-goals TC [G2] _,
   (
     thenl [
       open pm_reduce,
@@ -53,55 +106,82 @@ go_iClear ID G GL :-
     ] G2 []; 
     coq.ltac.fail 0 "iClear:" IDS "not affine and the goal not absorbing"
   ),
-  thenl [
-    open pm_reduce,
-    open simpl,
-  ] G3 GL.
 
-type go_iPoseLem term -> ident -> tactic.
-go_iPoseLem Lem (iAnon N) G GL :-
-  open go_iStartProof G [GoalStarted],
-  open (go_iFresh N) GoalStarted [GoalFresh],
+  coq.typecheck ClearProof RedType ok,
+  pm-reduce RedType ClearType. 
+  % I am skipping the simpl here, and hope it doesn't matter as much.
+
+
+pred do-iPoseLem i:term, i:ihole, o:ident, o:ihole.
+do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+  increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
-  @no-tc! => open (refine.warn {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}}) GoalFresh [G1, G2],
+
+  @no-tc! => coq.elaborate-skeleton 
+                {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}} 
+                Type Proof ok,
+  Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof _) lp:PosedProof }},
+
+  coq.ltac.collect-goals IEVProof [G1] _,
   open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
   all (open tc_solve) TCGL [],
-  thenl [
-    open pm_reduce,
-    open (false-error "iPoseLem: not fresh"),
-  ] G2 GL.
 
-type go_iIntuitionistic ident -> tactic.
-go_iIntuitionistic ID G [GRes] :-
+  coq.typecheck PosedProof NormType ok,
+  pm-reduce NormType PosedType.
+
+
+pred do-iIntuitionistic i:ident, i:hole, o:hole.
+do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
-  open go_iStartProof G [G'],
-  @no-tc! => open (refine {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }}) G' [GI1, GI2, GI3],
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_impl_intro_intuitionistic _ _ _ _ _ _ lp:FromImpl lp:IP lp:IntProof }},
+
+  coq.ltac.collect-goals FromImpl [GI1] _,
   open (tc_solve) GI1 [], 
   !,
+  coq.ltac.collect-goals IP [GI2] _,
   (open (tc_solve) GI2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
-  open (pm_reduce) GI3 [GI4],
-  open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GI4 [GRes].
-go_iIntuitionistic ID G [GRes] :-
+
+  coq.typecheck IntProof RedType ok,
+  pm-reduce RedType IntType,
+  if (IntType = {{ False }}) (coq.ltac.fail 0 "eiIntuitionistic: " X " not fresh") (true).
+
+do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
-  open go_iStartProof G [G'],
-  @no-tc! => open (refine {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }}) G' [GW1, GW2, GW3, GW4],
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
+
+  coq.ltac.collect-goals FromWand [GW1] _,
   open (tc_solve) GW1 [], 
   !,
+  coq.ltac.collect-goals IP [GW2] _,
   (open (tc_solve) GW2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+  coq.ltac.collect-goals TCOR [GW3] _,
   (open (tc_solve) GW3 []; coq.ltac.fail 0 "eiIntuitionistic: not affine and the goal not absorbing"),
-  open (pm_reduce) GW4 [GW5],
-  open (false-error {calc ("eiIntuitionistic: " ^ X ^ " not fresh")}) GW5 [GRes].
-go_iIntuitionistic ID _ _ :- !,
+
+  coq.typecheck IntProof RedType ok,
+  pm-reduce RedType IntType,
+  if (IntType = {{ False }}) (coq.ltac.fail 0 "eiIntuitionistic: " X " not fresh") (true).
+
+do-iIntuitionistic ID _ _ :- !,
   ident->term ID X _,
   coq.ltac.fail 0 {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
 
-type go_iAndDestruct ident -> ident -> ident -> tactic.
-go_iAndDestruct HID H1ID H2ID G GL :-
+
+pred do-iAndDestruct i:ident, i:ident, i:ident, i:hole, o:hole.
+do-iAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
   ident->term HID ID HIDT,
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
-  open (refine {{ @tac_and_destruct _ _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_and_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_and_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
   (open pm_reflexivity G1 []; coq.ltac.fail 0 "iAndDestruct:" ID "not found"),
+  coq.ltac.collect-goals Into [G2] _,
   (
     thenl [
       open pm_reduce,
@@ -109,47 +189,76 @@ go_iAndDestruct HID H1ID H2ID G GL :-
     ] G2 []; 
     coq.ltac.fail 0 "iAndDestruct: cannot destruct"
   ),
-  thenl [
-    open pm_reduce,
-    open simpl,
-    open (false-error "iAndDestruct: left or right not fresh")
-  ] G3 GL.
 
-type go_iOrDestruct ident -> ident -> ident -> tactic.
-go_iOrDestruct HID H1ID H2ID G GL :-
+  coq.typecheck AndProof RedType ok,
+  pm-reduce RedType AndType,
+  if (AndType = {{ False }}) (coq.ltac.fail 0 "iAndDestruct: left or right not fresh") (true).
+
+
+pred do-iOrDestruct i:ident, i:ident, i:ident, i:hole, o:hole, o:hole.
+do-iOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrRType OrRProof) :-
   ident->term HID ID HIDT,
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
-  open (refine {{ @tac_or_destruct _ _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
+  
+  @no-tc! => coq.elaborate-skeleton {{ tac_or_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_or_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ConjProof }},
+  
+  coq.ltac.collect-goals Lookup [G1] _,
   (open pm_reflexivity G1 []; coq.ltac.fail 0 "iOrDestruct:" ID "not found"),
+  coq.ltac.collect-goals Into [G2] _,
   (open tc_solve G2 []; coq.ltac.fail 0 "iOrDestruct: cannot destruct"),
-  thenl [
-    open pm_reduce,
-    open (false-error "iAndDestruct: left or right not fresh"),
-    open split
-  ] G3 GL.
+  
+  coq.typecheck ConjProof RedType ok,
+  pm-reduce RedType ConjType,
+  if (ConjType = {{ False }}) (coq.ltac.fail 0 "iAndDestruct: left or right not fresh") (true),
 
-type go_iExistDestruct ident -> option string -> ident -> tactic.
-go_iExistDestruct ID X HID G GL :- !,
+  coq.elaborate-skeleton {{ conj _ _ }} ConjType ConjProof ok,
+  ConjProof = {{ conj lp:OrLProof lp:OrRProof }},
+  coq.typecheck OrLProof OrLType ok,
+  coq.typecheck OrRProof OrRType ok.
+
+
+pred do-iExistDestruct i:ident, i:option string, i:ident, i:hole, i:(hole -> prop).
+do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   ident->term ID _ IDT,
   ident->term HID _ HIDT,
-  open (refine {{ @tac_exist_destruct_without_name _ _ _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }}) G [G1, G2, G3],
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExistDestruct:" ID "not found"),
-  (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
-  if (X = some XN) 
-    (open (go_intro XN) G3 [G4])
-    (open (coq.ltac.call "intros_anon" []) G3 [G4]),
-  open pm_reduce G4 [G5],
-  open simpl G5 [G6],
-  open (false-error "iExistDestruct: name already in use.") G6 GL.
-  % Why does into Exists have a name?
 
-type go_iExact ident -> tactic.
-go_iExact ID G [] :-
-  ident->term ID _ IDT,
-  open (refine {{ @tac_assumption _ _ lp:IDT _ _ _ _ _ _ }}) G [G1, G2, G3],
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExact:" ID "not found"),
-  (open tc_solve G2 []; coq.ltac.fail 0 "iExact:" ID "does not match goal"),
+  @no-tc! => coq.elaborate-skeleton {{ tac_exist_destruct_without_name _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
+  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExistDestruct:" ID "not found"),
+  coq.ltac.collect-goals Into [G2] _,
+  (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
+
+  coq.typecheck ExistProof RedType ok,
+  pm-reduce RedType ExistType,
+  if (X = some XN) 
+    (do-intro XN (hole ExistType ExistProof) C)
+    (
+      coq.ltac.collect-goals ExistProof [G3] _,
+      open (coq.ltac.call "intros_anon" []) G3 [G4],
+      open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
+                g = (goal _ _ AnonRedType AnonProof _), 
+                pm-reduce AnonRedType AnonType, 
+                C (hole AnonType AnonProof)
+           ) G4 _
+    ).
+
+
+pred do-iExact i:ident, i:hole.
+do-iExact ID (hole Type Proof) :-
+  ident->term ID IDS IDT,
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_assumption _ _ _ _ _ lp:Lookup lp:FromAs lp:TC }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
+  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExact:" IDS "not found"),
+  coq.ltac.collect-goals FromAs [G2] _,
+  (open tc_solve G2 []; coq.ltac.fail 0 "iExact:" IDS "does not match goal"),
+  coq.ltac.collect-goals TC [G3] _,
   (
     thenl [
       open pm_reduce,
@@ -158,108 +267,121 @@ go_iExact ID G [] :-
     coq.ltac.fail 0 "iExact: remaining hypotheses not affine and the goal not absorbing"
   ).
 
-pred go_iDestruct i:ident, o:intro_pat, i:sealed-goal, o:list sealed-goal.
-% go_iDestruct ID IP _ _ :- coq.say "go_iDestruct: " ID IP, fail.
-go_iDestruct ID (iIdent ID) G [G].
-go_iDestruct (iAnon _) iFresh G [G]. 
-go_iDestruct ID iDrop G GL :-
-  go_iClear ID G GL.
-go_iDestruct ID (iList [[]]) G GL :-
-  thenl [
-    go_iExFalso,
-    go_iExact ID
-  ] G GL.
-go_iDestruct ID (iList [[iPure PN, IP]]) G GL :- !,
-  ident_for_pat.default IP ID HID G [G'],
-  go_iExistDestruct ID PN HID G' [G''],
-  go_iDestruct HID IP G'' GL.
+
+pred do-iDestruct i:ident, o:intro_pat, i:ihole, i:(ihole -> prop).
+do-iDestruct ID IP _ _ :- if-debug (coq.say "do-iDestruct: " ID IP), fail.
+do-iDestruct ID (iIdent ID) IH C :- !, C IH.
+do-iDestruct (iAnon _) iFresh IH C :- !, C IH. 
+do-iDestruct ID iDrop (ihole N H) C :- !, do-iClear ID H H', C (ihole N H').
+do-iDestruct ID (iList [[]]) (ihole _ H) _ :-
+  do-iExFalso H H',
+  do-iExact ID H'.
+do-iDestruct ID (iList [[iPure PN, IP]]) (ihole N H) C :- !,
+  ident-for-pat.default IP ID N HID NS,
+  do-iExistDestruct ID PN HID H (h\ do-iDestruct HID IP (ihole NS h) C).
   % This case now also handles the pure and case with typeclasses,
   % however, that is not neccessary as we can just backtrack in here
   % And take the next case if iExistsDestruct fails.
-go_iDestruct ID (iList [[IP1, IP2]]) G GL :-
-  ident_for_pat.default IP1 ID ID1 G [G'],
-  ident_for_pat IP2 ID2 G' [G''],
-  thenl [
-    go_iAndDestruct ID ID1 ID2,
-    go_iDestruct ID1 IP1,
-    go_iDestruct ID2 IP2
-  ] G'' GL.
-go_iDestruct ID (iList [[IP1], [IP2]]) G GL :-
-  ident_for_pat.default IP1 ID ID1 G [G'],
-  ident_for_pat IP2 ID2 G' [G''],
-  go_iOrDestruct ID ID1 ID2 G'' [G1, G2],
-  go_iDestruct ID1 IP1 G1 GL1,
-  go_iDestruct ID2 IP2 G2 GL2,
-  std.append GL1 GL2 GL.
-go_iDestruct _ IP G [G] :-
-  coq.say "eiDestruct: Skipping " {std.any->string IP}.
+do-iDestruct ID (iList [[IP1, IP2]]) (ihole N H) C :-
+  ident-for-pat.default IP1 ID N ID1 N',
+  ident-for-pat IP2 N' ID2 N'',
+  do-iAndDestruct ID ID1 ID2 H H', !,
+  do-iDestruct ID1 IP1 (ihole N'' H') (ih\ do-iDestruct ID2 IP2 ih C).
+do-iDestruct ID (iList [[IP1], [IP2]]) (ihole N H) C :-
+  ident-for-pat.default IP1 ID N ID1 N',
+  ident-for-pat IP2 N' ID2 N'',
+  do-iOrDestruct ID ID1 ID2 H HL HR, !,
+  do-iDestruct ID1 IP1 (ihole N'' HL) C, !,
+  do-iDestruct ID2 IP2 (ihole N'' HR) C.
+do-iDestruct _ IP IH C :-
+  coq.say "eiDestruct: Skipping " {std.any->string IP}, !,
+  C IH.
 
-type go_iIntros (list intro_pat) -> tactic.
-:name "go_iIntros.start"
-go_iIntros [] G [G].
-go_iIntros [iCoqIntro X | IPS] G GL :-
-  thenl [
-    open (coq.ltac.call-ltac1 X),
-    go_iIntros IPS
-  ] G GL.
-go_iIntros [iSimpl | IPS] G GL :-
+pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
+do-iIntros IPS _ _ :- if-debug (coq.say "do-iIntros: " IPS), fail.
+do-iIntros [] IH C :- !, C IH.
+do-iIntros [iCoqIntro X | IPS] (ihole N (hole _ Proof)) C :-
+  coq.ltac.collect-goals Proof [G] _,
+  open (coq.ltac.call-ltac1 X) G [GTac],
+  open (g\gl\ sigma TacProof\ sigma TacType\ 
+          g = (goal _ _ TacType TacProof _), 
+          do-iIntros IPS (ihole N (hole TacType TacProof)) C
+       ) GTac _.
+do-iIntros [iSimpl | IPS] (ihole N (hole _ Proof)) C :-
+  coq.ltac.collect-goals Proof [G] _,
   open simpl G [G'],
-  go_iIntros IPS G' GL.
-go_iIntros [iDone | IPS] G GL :-
+  open (g\gl\ sigma SimplProof\ sigma SimplType\ 
+          g = (goal _ _ SimplType SimplProof _), 
+          do-iIntros IPS (ihole N (hole SimplType SimplProof)) C
+       ) G' _.
+do-iIntros [iDone | IPS] (ihole N (hole _ Proof)) C :-
+  coq.ltac.collect-goals Proof [G] _,
   (open done G [G']; G' = G),
-  go_iIntros IPS G' GL.
-go_iIntros [iDrop | IPS] G GL :- !,
-  open go_iStartProof G [G'],
+  open (g\gl\ sigma DoneProof\ sigma DoneType\ 
+          g = (goal _ _ DoneType DoneProof _), 
+          do-iIntros IPS (ihole N (hole DoneType DoneProof)) C
+       ) G' _.
+do-iIntros [iDrop | IPS] (ihole N (hole Type Proof)) C :- !,
   (
-    open (refine {{ tac_impl_intro_drop _ _ _ _ _ _ }}) G' [GRes];
-    open (refine {{ tac_wand_intro_drop _ _ _ _ _ _ _ }}) G' [GRes];
+    (coq.elaborate-skeleton {{ tac_impl_intro_drop _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_impl_intro_drop _ _ _ _ _ lp:IntroProof }});
+    (coq.elaborate-skeleton {{ tac_wand_intro_drop _ _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_wand_intro_drop _ _ _ _ _ _ lp:IntroProof }});
     % TODO: Not sure what the forall case is.
     (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
   ),
-  go_iIntros IPS GRes GL.
-go_iIntros [iPure (some X) | IPS] G GL :- !,
-  open go_iStartProof G [StartedG],
-  open (refine {{ tac_forall_intro_nameless _ _ _ _ _ _ }}) StartedG [G'],
-  open (go_intro X) G' [G''],
-  open bi-normalize G'' [G'''],
-  go_iIntros IPS G''' GL.
-go_iIntros [iPure (none) | IPS] G GL :-
-  open go_iStartProof G [StartedG],
-  open (refine {{ tac_forall_intro_nameless _ _ _ _ _ _ }}) StartedG [G'],
-  open (coq.ltac.call "intros_anon" []) G' [G''],
-  open bi-normalize G'' [G'''],
-  go_iIntros IPS G''' GL.
-go_iIntros [iIdent ID | IPS] G GL :-
+  coq.typecheck IntroProof IntroType ok,
+  do-iIntros IPS (ihole N (hole IntroType IntroProof)) C.
+do-iIntros [iPure (some X) | IPS] (ihole N (hole Type Proof)) C :- !,
+  coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
+  coq.typecheck IProof IType ok,
+  do-intro X (hole IProof IType) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+    h = hole IntroType IntroProof,
+    coq.reduction.lazy.bi-norm IntroType NormType,
+    do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+  ).
+do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
+  coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
+  coq.ltac.collect-goals IProof [G] _,
+  open (coq.ltac.call "intros_anon" []) G [G'],
+  open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
+            g = (goal _ _ AnonRedType AnonProof _), 
+            coq.reduction.lazy.bi-norm AnonRedType AnonType, 
+            do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
+        ) G' _.
+do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
   ident->term ID X T,
-  open go_iStartProof G [G'],
   (
-    open (refine {{ @tac_impl_intro _ _ lp:T _ _ _ _ _ _ _ }}) G' [GRes];
     (
-      open (refine {{ @tac_wand_intro _ _ lp:T _ _ _ _ _ }}) G' [G''], !,
-      open (pm_reduce) G'' [G'''],
-      open (false-error {calc ("eiIntro: " ^ X ^ " not fresh")}) G''' [GRes]
-      );
-    (!, coq.ltac.fail 0 {calc ("eiIntro: " ^ X ^ " could not introduce")}, fail)
+      coq.elaborate-skeleton {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} Type Proof ok, 
+      Proof = {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
+      coq.typecheck IProof IType ok
+    );
+    (
+      coq.elaborate-skeleton {{ tac_wand_intro _ lp:T _ _ _ _ _ }} Type Proof ok, !,
+      Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
+      coq.typecheck IProof IType' ok,
+      pm-reduce IType' IType,
+      if (IType = {{ False }}) (coq.ltac.fail 0 "eiIntro: " X " not fresh") (true)
+    );
+    coq.ltac.fail 0 "eiIntro: " X " could not introduce"
   ),
-  go_iIntros IPS GRes GL.
-go_iIntros [iIntuitionistic iFresh | IPS] G GL :- !,
-  open go_iStartProof G [StartedGoal],
-  open (go_iFresh N) StartedGoal [FreshGoal],
-  go_iIntuitionistic (iAnon N) FreshGoal [IntroGoal],
-  go_iIntros IPS IntroGoal GL.
-go_iIntros [iIntuitionistic (iIdent ID) | IPS] G GL :-
-  open go_iStartProof G [G'],
-  go_iIntuitionistic ID G' [GRes],
-  go_iIntros IPS GRes GL.
-go_iIntros [iIntuitionistic (iList IPS) | IPSS] G GL :-
-  open go_iStartProof G [StartedGoal],
-  open (go_iFresh N) StartedGoal [FreshGoal],
-  go_iIntuitionistic (iAnon N) FreshGoal [IntroGoal],
-  go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
-  all (go_iIntros IPSS) GL' GL.
-go_iIntros [iList IPS | IPSS] G GL :- !,
-  open go_iStartProof G [StartedGoal],
-  open (go_iFresh N) StartedGoal [FreshGoal],
-  go_iIntros [iIdent (iAnon N)] FreshGoal [IntroGoal],
-  go_iDestruct (iAnon N) (iList IPS) IntroGoal GL',
-  all (go_iIntros IPSS) GL' GL.
+  do-iIntros IPS (ihole N (hole IType IProof)) C.
+do-iIntros [iIntuitionistic iFresh | IPS] (ihole N H) C :- !,
+  increase-ctx-count N NS,
+  do-iIntuitionistic (iAnon N) H H',
+  do-iIntros IPS (ihole NS H') C.
+do-iIntros [iIntuitionistic (iIdent ID) | IPS] (ihole N H) C :-
+  do-iIntuitionistic ID H H',
+  do-iIntros IPS (ihole N H') C.
+do-iIntros [iIntuitionistic (iList IPS) | IPSS] (ihole N H) C :-
+  increase-ctx-count N NS,
+  do-iIntuitionistic (iAnon N) H H',
+  do-iDestruct (iAnon N) (iList IPS) (ihole NS H') (ih\ do-iIntros IPSS ih C).
+do-iIntros [iList IPS | IPSS] (ihole N H) C :- !,
+  increase-ctx-count N NS,
+  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ 
+    do-iDestruct (iAnon N) (iList IPS) ih (ih'\
+      do-iIntros IPSS ih' C
+    )
+  ).

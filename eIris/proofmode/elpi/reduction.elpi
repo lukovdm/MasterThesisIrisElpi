@@ -6,3 +6,10 @@ pred all-reductions o:list constant.
 all-reductions CS :-
   std.findall (reduction-rule _) Rules,
   std.map Rules (x\r\ x = (reduction-rule r)) CS.
+
+pred pm-reduce i:term, o:term.
+pm-reduce T O :-
+  all-reductions Consts,
+  std.map Consts (x\r\ r = coq.redflags.const x) Deltas,
+  coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
+  @redflags! RF => coq.reduction.cbv.norm T O.

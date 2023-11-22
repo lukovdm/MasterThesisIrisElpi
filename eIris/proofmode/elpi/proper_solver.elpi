@@ -1,73 +1,9 @@
+accumulate eIris/common/stdpp.
+accumulate eIris/proofmode/elpi/reduction.
+accumulate eIris/proofmode/elpi/iris_ltac.
+accumulate eIris/proofmode/elpi/eiris_tactics.
+
 shorten coq.ltac.{ open, thenl, all }.
-
-kind hole type.
-type hole term -> term -> hole. % A pair of of Type, Proof
-
-kind ihole type.
-type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
-
-pred ihole->string i:ihole, o:string.
-ihole->string (ihole N (hole T P)) S :-
-  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " : \n" ^ {coq.term->string T}.
-
-pred increase-ctx-count i:term, o:term.
-increase-ctx-count N NS :-
-  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
-
-pred get-ctx-count i:term, o:term.
-get-ctx-count {{ envs_entails (Envs _ _ lp:N) _ }} N.
-get-ctx-count T _ :-
-  coq.error "get-ctx-count: type not of shape envs entails: " T.
-
-pred set-ctx-count i:term, i:term, o:term.
-set-ctx-count 
-  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
-  NS
-  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }}.
-set-ctx-count T N _ :-
-  coq.error "set-ctx-count: type not of shape envs entails: " N T.
-
-pred addN i:term, i:open-tactic, i:goal, o:list sealed-goal.
-addN N T (goal Ctx Trigger Type Proof Args) GL :-
-  pm-reduce Type Type',
-  set-ctx-count Type' N NType,
-  T (goal Ctx Trigger NType Proof Args) GL.
-
-pred pm-reduce i:term, o:term.
-pm-reduce T O :-
-  all-reductions Consts,
-  std.map Consts (x\r\ r = coq.redflags.const x) Deltas,
-  coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
-  @redflags! RF => coq.reduction.cbv.norm T O.
-
-  %Use elpi database for this
-
-pred do-iStartProof i:hole, o:ihole.
-do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
-  coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-do-iStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (ihole N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
-do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
-  coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
-  Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
-  coq.typecheck NProof NType ok,
-  NType = {{ envs_entails (Envs _ _ lp:N) _}}.
-
-pred do-iModIntro i:hole, o:hole.
-do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
-  @no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok,
-  Proof = {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ lp:TC1 lp:TC2 lp:TC3 lp:PM4 lp:SC5 lp:ModProof }},
-  coq.ltac.collect-goals TC1 [G1] _,
-  open tc_solve G1 [],
-  coq.ltac.collect-goals TC2 [G2] _,
-  open tc_solve G2 [],
-  coq.ltac.collect-goals TC3 [G3] _,
-  open tc_solve G3 [],
-  coq.ltac.collect-goals PM4 [G4] _,
-  open pm_reduce G4 [G4'],
-  open tc_solve G4' [],
-  coq.ltac.collect-goals SC5 [G5] _,
-  open (coq.ltac.call "iSolveSideCondition" []) G5 [],
-  coq.typecheck ModProof ModType ok.
 
 pred do-iPoseProper i:ihole, i:term, i:term, o:ident, o:ihole.
 do-iPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
@@ -124,20 +60,13 @@ do-iApplySimpleExact (ihole _ (hole Type Proof)) ID :-
   ident->term ID _IDS IDT,
   @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
-  if-debug (coq.say "exact elaborated"),
   coq.ltac.collect-goals RefProof [G1] _,
   open pm_reflexivity G1 [],
-  if-debug (coq.say "exact reflex"),
   coq.ltac.collect-goals TCProof [G2] _,
-  if-debug (open show-goal G2 _),
   open tc_solve G2 [],
-  if-debug (coq.say "exact tc"),
   coq.ltac.collect-goals RTCProof [G3] _,
-  if-debug (open show-goal G3 _),
   open (pm_reduce) G3 [G3'],
-  if-debug (open show-goal G3' _),
-  open tc_solve G3' [],
-  if-debug (coq.say "exact tc2").
+  open tc_solve G3' [].
 
 pred do-iApplyProper i:ihole, i:term, i:term, o:list ihole.
 do-iApplyProper IH R F IHS :-
@@ -213,12 +142,12 @@ do-steps.do (ihole _ (hole _ Proof)) _ F F :-
   if-debug (coq.say "Applying assumption" {coq.term->string F}),
   list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
   coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G []. %Should have an addN but crashes for some reason
+  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
 do-steps.do (ihole _ (hole _ Proof)) _ F F :-
   if-debug (coq.say "Applying assumption" {coq.term->string F}),
   list->listterm [ {{ IDone }} ] Args,
   coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G []. %Should have an addN but crashes for some reason
+  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
 do-steps.do IH R (app [F | FS]) _ :- 
   std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
@@ -236,24 +165,15 @@ do-steps.do (ihole _ (hole _ Proof)) _ _ _ :-
   if-debug (coq.say "Applying done"),
   list->listterm [ {{ IDone }} ] Args,
   coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G []. %Should have an addN but crashes for some reason
+  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
 do-steps.do _ T F _ :- !,
   if-debug (coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping").
-
-pred do-intros i:hole, i:(hole -> prop).
-do-intros (hole (prod N T F) Proof) S :- !,
-  if-debug (coq.say "introducing" N),
-  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
-  Proof = (fun _ _ IntroFProof),
-  @pi-decl N T x\
-    do-intros (hole (F x) (IntroFProof x)) S.
-do-intros H F :- F H.
 
 pred do-solve-proper i:hole.
 do-solve-proper (hole Type Proof) :-
   unfold-id "IProper" Type UnfoldedType',
   coq.typecheck Proof UnfoldedType' ok,
-  do-intros (hole UnfoldedType' Proof) (h\ sigma IH\
+  do-intros-forall (hole UnfoldedType' Proof) (h\ sigma IH\
     do-iStartProof h IH,
     do-steps IH
   ).

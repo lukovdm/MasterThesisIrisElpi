@@ -1,9 +1,0 @@
-type startProof open-tactic.
-
-startProof (goal _Ctx _Trigger {{ let _ := _ in _ }} _Proof [] as _G) _GL :- !,
-    coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-
-startProof (goal _Ctx _Trigger {{ envs_entails _ _ }} Proof [] as G) [seal G].
-
-startProof (goal _Ctx _Trigger Type _Proof [] as G) GL :- 
-    refine {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} G GL.

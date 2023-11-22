@@ -11,22 +11,10 @@ From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Import reduction.
 
 From eIris.proofmode Require Import base.
-From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
-From eIris.proofmode.elpi Extra Dependency "reduction.elpi" as reduction.
-From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
-From eIris.common Extra Dependency "parser.elpi" as parser.
-From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
-From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 From eIris.proofmode.elpi Extra Dependency "proper_solver.elpi" as proper_solver.
 
 #[arguments(raw)] Elpi Command EI.ind.
-Elpi Accumulate File stdpp.
-Elpi Accumulate File iris_ltac.
-Elpi Accumulate File tokenize.
-Elpi Accumulate File parser.
-Elpi Accumulate File eiris_tactics.
 Elpi Accumulate Db reduction.db.
-Elpi Accumulate File reduction.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
   kind param type.
@@ -192,13 +180,7 @@ Elpi Typecheck.
 Elpi Export EI.ind.
 
 Elpi Tactic IProper_solver.
-Elpi Accumulate File stdpp.
-Elpi Accumulate File iris_ltac.
-Elpi Accumulate File tokenize.
-Elpi Accumulate File parser.
-Elpi Accumulate File eiris_tactics.
 Elpi Accumulate Db reduction.db.
-Elpi Accumulate File reduction.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
   solve (goal _Ctx _Trigger Type Proof []) _ :- 

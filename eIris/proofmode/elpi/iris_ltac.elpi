@@ -1,3 +1,6 @@
+accumulate eIris/common/stdpp.
+accumulate eIris/proofmode/elpi/reduction.
+
 shorten coq.ltac.{ open, thenl, all }.
 
 type tc_solve open-tactic.
@@ -21,25 +24,31 @@ split G GL :- coq.ltac.call "split" [] G GL.
 type done open-tactic.
 done G GL :- coq.ltac.call "done" [] G GL.
 
-pred refine.warn i:term, i:goal, o:list sealed-goal.
-refine.warn T (goal _ RawEv Ty Ev _) GS :-
-  rm-evar RawEv Ev,
-  @keepunivs! => coq.elaborate-skeleton T Ty TR D,
-  if (D = ok) true (coq.say "refine crashed" D, D = ok),
-  coq.ltac.collect-goals TR GS _,
-  RawEv = T,
-  Ev = TR.
+% Set and read Iris context count in elpi goals
+pred increase-ctx-count i:term, o:term.
+increase-ctx-count N NS :-
+  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
 
-pred refine.norm i:term, i:goal, o:list sealed-goal.
-refine.norm T (goal _ RawEv Ty Ev _) GS :-
-  rm-evar RawEv Ev,
-  @keepunivs! => coq.elaborate-skeleton T Ty TR D,
-  if (D = ok) true (coq.say "refine crashed" D, D = ok),
-  coq.reduction.lazy.bi-norm TR TR',
-  coq.ltac.collect-goals TR' GS _,
-  RawEv = T,
-  Ev = TR'.
+pred get-ctx-count i:term, o:term.
+get-ctx-count {{ envs_entails (Envs _ _ lp:N) _ }} N.
+get-ctx-count T _ :-
+  coq.error "get-ctx-count: type not of shape envs entails: " T.
 
+pred set-ctx-count i:term, i:term, o:term.
+set-ctx-count 
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
+  NS
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }}.
+set-ctx-count T N _ :-
+  coq.error "set-ctx-count: type not of shape envs entails: " N T.
+
+pred addN i:term, i:open-tactic, i:goal, o:list sealed-goal.
+addN N T (goal Ctx Trigger Type Proof Args) GL :-
+  pm-reduce Type Type',
+  set-ctx-count Type' N NType,
+  T (goal Ctx Trigger NType Proof Args) GL.
+
+% Manage elpi goals
 pred thenl! i:list tactic, i:sealed-goal, o:list sealed-goal.
 thenl! [] G [G].
 thenl! [T|Ts] G GS :- T G NG, !, all (thenl Ts) NG GS.
@@ -51,4 +60,4 @@ false-error _ G [seal G].
 pred bi-normalize i:goal, o:list sealed-goal.
 bi-normalize (goal _Ctx _Trigger Type _Proof _Args as G) GL :-
   coq.reduction.lazy.bi-norm Type Type',
-  refine.warn {{ _ : lp:Type' }} G GL.
+  refine {{ _ : lp:Type' }} G GL.

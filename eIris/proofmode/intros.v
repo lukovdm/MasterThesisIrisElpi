@@ -3,44 +3,42 @@ From iris.proofmode Require Export tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.bi Require Export bi telescopes.
 
-From eIris.proofmode Require Import base.
-From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
-From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
-From eIris.common Extra Dependency "parser.elpi" as parser.
+From eIris.proofmode Require Import base reduction.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
 From iris.heap_lang Require Import proofmode.
 
 Elpi Tactic eiIntros.
-
-Elpi Accumulate File stdpp.
-Elpi Accumulate File iris_ltac.
-Elpi Accumulate File tokenize.
-Elpi Accumulate File parser.
+Elpi Accumulate Db reduction.db.
 Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
-  type parse_args (list intro_pat) -> open-tactic.
-  parse_args [iCoqIntro Intro | IPS] (goal _ _ _ _ [tac Intro, str Args] as G) [SG] :- !,
+  pred parse_args i:list argument, o:list intro_pat.
+  parse_args [tac Intro, str Args] [iCoqIntro Intro | IPS] :- !,
     tokenize Args T, !,
-    parse_ipl T IPS, !,
-    coq.ltac.set-goal-arguments [] G (seal G) SG.
-  parse_args IPS (goal _ _ _ _ [str Args] as G) [SG] :- !,
+    parse_ipl T IPS.
+  parse_args [str Args] IPS :- !,
     tokenize Args T, !,
-    parse_ipl T IPS, !,
-    coq.ltac.set-goal-arguments [] G (seal G) SG.
-
-  parse_args _ (goal _ _ _ _ Args) _ :-
+    parse_ipl T IPS.
+  parse_args _ _ :-
     coq.say Args,
     coq.ltac.fail 0 "Did not recognize arguments" Args.
 
-  msolve [SG] GL :-
-    open (parse_args IPS) SG [SG'],
+  solve (goal _ _ Type Proof [str "debug" | Args]) _ :-
+    gettimeofday Start,
+    [get-option "debug" tt, get-option "start" Start] => (
+      parse_args Args IPS,
+      !,
+      do-iStartProof (hole Type Proof) IH,
+      do-iIntros IPS IH (ih\ true)
+    ).
+  solve (goal _ _ Type Proof Args) _ :-
+    parse_args Args IPS,
     !,
-    go_iIntros IPS SG' GL.
-    
+    do-iStartProof (hole Type Proof) IH,
+    do-iIntros IPS IH (ih\ true).
 }}.
 Elpi Typecheck.
 
@@ -65,6 +63,7 @@ Section Proof.
     □ P -∗ P .
   Proof.
     eiIntros "#?".
+    pm_reduce.
     iAssumption.
   Qed.
 
@@ -72,7 +71,7 @@ Section Proof.
   Lemma intros_2 (P : nat -> iProp) :
     □ (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
-    eiIntros "#[%b [[H1 H11] | H3]] [%c H2]".
+    elpi eiIntros "#[%b [[H1 H11] | H3]] [%c H2]".
     - by iExists b.
     - by iExists c.
   Qed.

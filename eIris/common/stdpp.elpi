@@ -66,3 +66,14 @@ map-goal P (goal _ _ Type _ _ as G) GL :-
 type show-goal open-tactic.
 show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
   coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
+
+% Holes are the main type passed around in tactics whenever possible
+kind hole type.
+type hole term -> term -> hole. % A pair of of Type, Proof
+
+kind ihole type.
+type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
+
+pred ihole->string i:ihole, o:string.
+ihole->string (ihole N (hole T P)) S :-
+  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " : \n" ^ {coq.term->string T}.
