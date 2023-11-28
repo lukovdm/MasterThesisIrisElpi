@@ -82,6 +82,17 @@ do-intro ID (hole Type Proof) C :-
     C (hole (F x) (IntroFProof x)).
 
 
+pred do-intro-anon i:hole, i:(hole -> prop).
+do-intro-anon (hole Type Proof) C :-
+  coq.env.fresh-global-id "a" ID,
+  coq.id->name ID N,
+  coq.elaborate-skeleton (fun N _ _) Type Proof ok,
+  Proof = (fun _ T IntroFProof),
+  @pi-decl N T x\ 
+    coq.typecheck (IntroFProof x) (F x) ok,
+    C (hole (F x) (IntroFProof x)).
+
+
 pred do-iExFalso i:hole, o:hole.
 do-iExFalso (hole Type Proof) (hole FalseType FalseProof) :-
   coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
@@ -97,14 +108,14 @@ do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   Proof = {{ tac_clear _ _ _ _ _ lp:Lookup lp:TC lp:ClearProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iClear:" IDS "not found"),
+  (open pm_reflexivity G1 []; coq.error "iClear:" IDS "not found"),
   coq.ltac.collect-goals TC [G2] _,
   (
     thenl [
       open pm_reduce,
       open tc_solve
     ] G2 []; 
-    coq.ltac.fail 0 "iClear:" IDS "not affine and the goal not absorbing"
+    coq.error "iClear:" IDS "not affine and the goal not absorbing"
   ),
 
   coq.typecheck ClearProof RedType ok,
@@ -112,8 +123,8 @@ do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   % I am skipping the simpl here, and hope it doesn't matter as much.
 
 
-pred do-iPoseLem i:term, i:ihole, o:ident, o:ihole.
-do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+pred do-iPoseLem i:term, i:ihole, o:ident, i:list (hole -> prop), o:ihole.
+do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) Cs (ihole NS (hole PosedType PosedProof)) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
 
@@ -123,11 +134,117 @@ do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) (ihole NS (hole PosedType 
   Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof _) lp:PosedProof }},
 
   coq.ltac.collect-goals IEVProof [G1] _,
-  open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
-  all (open tc_solve) TCGL [],
+  open (coq.ltac.call "iIntoEmpValid" []) G1 GL,
+  std.forall2 GL Cs (sg\ c\ open (g\gl\ sigma Proof'\ sigma Type'\ 
+                                  g = (goal _ _ Type' Proof' _), !,
+                                  c (hole Type' Proof')
+                    ) sg _),
 
   coq.typecheck PosedProof NormType ok,
   pm-reduce NormType PosedType.
+
+
+pred do-iPoseHyp i:term, i:ihole, o:ident, o:ihole.
+do-iPoseHyp Hyp (ihole N (hole Type Proof)) (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+  increase-ctx-count N NS,
+  ident->term (iAnon N) _ NT,
+  @no-tc! => coq.elaborate-skeleton 
+                {{ tac_pose_proof_hyp _ lp:Hyp lp:NT _ _}} 
+                Type Proof ok,
+  Proof = {{ tac_pose_proof_hyp _ _ _ _ lp:PosedProof }},
+
+  coq.typecheck PosedProof NormType ok,
+  pm-reduce NormType PosedType,
+  if (PosedType = {{ False }}) (coq.error "Could not find Hyp" {coq.term->string NormType}) (true).
+
+
+pred do-iSpecializeWand i:ihole, i:ident, o:ihole, o:ihole.
+do-iSpecializeWand (ihole N (hole Type Proof)) ID 
+  (ihole N (hole LType LProof)) (ihole N (hole RType RProof)) :-
+    ident->term ID _IDS IDT,
+    @no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
+                Type Proof ok,
+    Proof = {{ tac_specialize_assert_no_am _ _ _ _ _ _ _ _ _ _ lp:RefP lp:TC1P lp:TC2P lp:ConjP}},
+    coq.ltac.collect-goals RefP [G1] _,
+    open pm_reflexivity G1 [],
+    coq.ltac.collect-goals TC1P [G2] _,
+    open tc_solve G2 [],
+    coq.ltac.collect-goals TC2P [G3] _,
+    open tc_solve G3 [],
+    coq.typecheck ConjP RedType ok,
+    pm-reduce RedType ConjType,
+    coq.elaborate-skeleton {{ conj _ _ }} ConjType ConjP ok,
+    ConjP = {{ conj lp:LProof lp:RProof }},
+    coq.typecheck LProof LType' ok,
+    pm-reduce LType' LType,
+    coq.typecheck RProof RType' ok,
+    pm-reduce RType' RType.
+
+
+pred do-iApplySimpleHyp i:ihole, i:ident, o:ihole.
+do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)) :-
+  ident->term ID _IDS IDT,
+  @no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_apply _ _ _ _ _ _ lp:RefProof lp:TCProof lp:ApProof }},
+  coq.ltac.collect-goals RefProof [G1] _,
+  open pm_reflexivity G1 [],
+  coq.ltac.collect-goals TCProof [G2] _,
+  open tc_solve G2 [],
+  coq.typecheck ApProof RedType ok,
+  pm-reduce RedType ApType.
+
+
+pred do-iApplySimpleExact i:ihole, i:ident.
+do-iApplySimpleExact (ihole _ (hole Type Proof)) ID :-
+  ident->term ID _IDS IDT,
+  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
+  coq.ltac.collect-goals RefProof [G1] _,
+  open pm_reflexivity G1 [],
+  coq.ltac.collect-goals TCProof [G2] _,
+  open tc_solve G2 [],
+  coq.ltac.collect-goals RTCProof [G3] _,
+  open (pm_reduce) G3 [G3'],
+  open tc_solve G3' [].
+
+
+pred do-iApplyLem i:term, i:ihole, i:list (hole -> prop), o:list ihole.
+do-iApplyLem Lem IH Cs IHS :-
+  if-debug (coq.say "do-iApplyLem" {coq.term->string Lem}),
+  do-iPoseLem Lem IH ID Cs IHPosed,
+  if-debug (coq.say "Posed Lemma" {ihole->string IHPosed}),
+  do-iApplyLem.aux IHPosed ID IHS.
+do-iApplyLem.aux IH ID [IH'] :- 
+  if-debug (coq.say "simpleApplyHyp"),
+  do-iApplySimpleHyp IH ID IH'.
+do-iApplyLem.aux IH ID [] :- 
+  if-debug (coq.say "simpleApplyExact"),
+  do-iApplySimpleExact IH ID.
+do-iApplyLem.aux IH ID [IHL | IHS] :-
+  if-debug (coq.say "specialize"),
+  do-iSpecializeWand IH ID IHL IHR,
+  if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
+  do-iApplyLem.aux IHR ID IHS.
+
+
+pred do-iApplyHyp i:string, i:ihole, o:list ihole.
+do-iApplyHyp HypString IH IHS :-
+  string->stringterm HypString Hyp,
+  if-debug (coq.say "do-iApplyHyp" HypString),
+  do-iPoseHyp Hyp IH ID IHPosed,
+  if-debug (coq.say "Posed Hyp" {ihole->string IHPosed}),
+  do-iApplyHyp.aux IHPosed ID IHS.
+do-iApplyHyp.aux IH ID [IH'] :- 
+  if-debug (coq.say "simpleApplyHyp"),
+  do-iApplySimpleHyp IH ID IH'.
+do-iApplyHyp.aux IH ID [] :- 
+  if-debug (coq.say "simpleApplyExact"),
+  do-iApplySimpleExact IH ID.
+do-iApplyHyp.aux IH ID [IHL | IHS] :-
+  if-debug (coq.say "specialize"),
+  do-iSpecializeWand IH ID IHL IHR,
+  if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
+  do-iApplyHyp.aux IHR ID IHS.
 
 
 pred do-iIntuitionistic i:ident, i:hole, o:hole.
@@ -141,33 +258,36 @@ do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   open (tc_solve) GI1 [], 
   !,
   coq.ltac.collect-goals IP [GI2] _,
-  (open (tc_solve) GI2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+  (open (tc_solve) GI2 []; coq.error "eiIntuitionistic: not intuitionistic"),
 
   coq.typecheck IntProof RedType ok,
   pm-reduce RedType IntType,
-  if (IntType = {{ False }}) (coq.ltac.fail 0 "eiIntuitionistic: " X " not fresh") (true).
+  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " X " not fresh") (true).
 
 do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
 
+  % if-debug (coq.say "intui1" Proof),
   @no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok,
+  % if-debug (coq.say "intui2" Proof),
   Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
+  % if-debug (coq.say "intui3" IntProof),
 
   coq.ltac.collect-goals FromWand [GW1] _,
   open (tc_solve) GW1 [], 
   !,
   coq.ltac.collect-goals IP [GW2] _,
-  (open (tc_solve) GW2 []; coq.ltac.fail 0 "eiIntuitionistic: not intuitionistic"),
+  (open (tc_solve) GW2 []; coq.error "eiIntuitionistic: not intuitionistic"),
   coq.ltac.collect-goals TCOR [GW3] _,
-  (open (tc_solve) GW3 []; coq.ltac.fail 0 "eiIntuitionistic: not affine and the goal not absorbing"),
+  (open (tc_solve) GW3 []; coq.error "eiIntuitionistic: not affine and the goal not absorbing"),
 
   coq.typecheck IntProof RedType ok,
   pm-reduce RedType IntType,
-  if (IntType = {{ False }}) (coq.ltac.fail 0 "eiIntuitionistic: " X " not fresh") (true).
+  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " X " not fresh") (true).
 
 do-iIntuitionistic ID _ _ :- !,
   ident->term ID X _,
-  coq.ltac.fail 0 {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
+  coq.error {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
 
 
 pred do-iAndDestruct i:ident, i:ident, i:ident, i:hole, o:hole.
@@ -180,19 +300,19 @@ do-iAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
   Proof = {{ tac_and_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iAndDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; coq.error "iAndDestruct:" ID "not found"),
   coq.ltac.collect-goals Into [G2] _,
   (
     thenl [
       open pm_reduce,
       open tc_solve
     ] G2 []; 
-    coq.ltac.fail 0 "iAndDestruct: cannot destruct"
+    coq.error "iAndDestruct: cannot destruct"
   ),
 
   coq.typecheck AndProof RedType ok,
   pm-reduce RedType AndType,
-  if (AndType = {{ False }}) (coq.ltac.fail 0 "iAndDestruct: left or right not fresh") (true).
+  if (AndType = {{ False }}) (coq.error "iAndDestruct: left or right not fresh") (true).
 
 
 pred do-iOrDestruct i:ident, i:ident, i:ident, i:hole, o:hole, o:hole.
@@ -205,13 +325,13 @@ do-iOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrR
   Proof = {{ tac_or_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ConjProof }},
   
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iOrDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; coq.error "iOrDestruct:" ID "not found"),
   coq.ltac.collect-goals Into [G2] _,
-  (open tc_solve G2 []; coq.ltac.fail 0 "iOrDestruct: cannot destruct"),
+  (open tc_solve G2 []; coq.error "iOrDestruct: cannot destruct"),
   
   coq.typecheck ConjProof RedType ok,
   pm-reduce RedType ConjType,
-  if (ConjType = {{ False }}) (coq.ltac.fail 0 "iAndDestruct: left or right not fresh") (true),
+  if (ConjType = {{ False }}) (coq.error "iAndDestruct: left or right not fresh") (true),
 
   coq.elaborate-skeleton {{ conj _ _ }} ConjType ConjProof ok,
   ConjProof = {{ conj lp:OrLProof lp:OrRProof }},
@@ -228,9 +348,9 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExistDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; coq.error "iExistDestruct:" ID "not found"),
   coq.ltac.collect-goals Into [G2] _,
-  (open tc_solve G2 []; coq.ltac.fail 0 "iExistDestruct: cannot destruct"),
+  (open tc_solve G2 []; coq.error "iExistDestruct: cannot destruct"),
 
   coq.typecheck ExistProof RedType ok,
   pm-reduce RedType ExistType,
@@ -241,7 +361,7 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
       open (coq.ltac.call "intros_anon" []) G3 [G4],
       open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
                 g = (goal _ _ AnonRedType AnonProof _), 
-                pm-reduce AnonRedType AnonType, 
+                pm-reduce AnonRedType AnonType,
                 C (hole AnonType AnonProof)
            ) G4 _
     ).
@@ -255,16 +375,16 @@ do-iExact ID (hole Type Proof) :-
   Proof = {{ tac_assumption _ _ _ _ _ lp:Lookup lp:FromAs lp:TC }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.ltac.fail 0 "iExact:" IDS "not found"),
+  (open pm_reflexivity G1 []; coq.error "iExact:" IDS "not found"),
   coq.ltac.collect-goals FromAs [G2] _,
-  (open tc_solve G2 []; coq.ltac.fail 0 "iExact:" IDS "does not match goal"),
+  (open tc_solve G2 []; coq.error "iExact:" IDS "does not match goal"),
   coq.ltac.collect-goals TC [G3] _,
   (
     thenl [
       open pm_reduce,
       open tc_solve
     ] G3 [];
-    coq.ltac.fail 0 "iExact: remaining hypotheses not affine and the goal not absorbing"
+    coq.error "iExact: remaining hypotheses not affine and the goal not absorbing"
   ).
 
 
@@ -298,55 +418,64 @@ do-iDestruct _ IP IH C :-
   C IH.
 
 pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
-do-iIntros IPS _ _ :- if-debug (coq.say "do-iIntros: " IPS), fail.
+do-iIntros [IP | _] IH _ :- if-debug (coq.say "do-iIntros: " IP "in" {ihole->string IH}), fail.
 do-iIntros [] IH C :- !, C IH.
 do-iIntros [iCoqIntro X | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
   open (coq.ltac.call-ltac1 X) G [GTac],
   open (g\gl\ sigma TacProof\ sigma TacType\ 
-          g = (goal _ _ TacType TacProof _), 
+          g = (goal _ _ TacType TacProof _), !,
           do-iIntros IPS (ihole N (hole TacType TacProof)) C
        ) GTac _.
 do-iIntros [iSimpl | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
   open simpl G [G'],
   open (g\gl\ sigma SimplProof\ sigma SimplType\ 
-          g = (goal _ _ SimplType SimplProof _), 
+          g = (goal _ _ SimplType SimplProof _), !,
           do-iIntros IPS (ihole N (hole SimplType SimplProof)) C
        ) G' _.
 do-iIntros [iDone | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
   (open done G [G']; G' = G),
   open (g\gl\ sigma DoneProof\ sigma DoneType\ 
-          g = (goal _ _ DoneType DoneProof _), 
+          g = (goal _ _ DoneType DoneProof _), !,
           do-iIntros IPS (ihole N (hole DoneType DoneProof)) C
        ) G' _.
+do-iIntros [iFresh | IPS] (ihole N H) C :- !,
+  increase-ctx-count N NS,
+  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ !, do-iIntros IPS ih C).
 do-iIntros [iDrop | IPS] (ihole N (hole Type Proof)) C :- !,
   (
     (coq.elaborate-skeleton {{ tac_impl_intro_drop _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_impl_intro_drop _ _ _ _ _ lp:IntroProof }});
     (coq.elaborate-skeleton {{ tac_wand_intro_drop _ _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_wand_intro_drop _ _ _ _ _ _ lp:IntroProof }});
     % TODO: Not sure what the forall case is.
-    (!, coq.ltac.fail 0 "eiIntro: Could not introduce", fail)
+    (!, coq.error "eiIntro: Could not introduce", fail)
   ),
-  coq.typecheck IntroProof IntroType ok,
+  coq.typecheck IntroProof IntroType ok, !,
   do-iIntros IPS (ihole N (hole IntroType IntroProof)) C.
 do-iIntros [iPure (some X) | IPS] (ihole N (hole Type Proof)) C :- !,
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
   coq.typecheck IProof IType ok,
-  do-intro X (hole IProof IType) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+  do-intro X (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
     h = hole IntroType IntroProof,
-    coq.reduction.lazy.bi-norm IntroType NormType,
+    coq.reduction.lazy.bi-norm IntroType NormType, !,
     do-iIntros IPS (ihole N (hole NormType IntroProof)) C
   ).
 do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
+  % coq.typecheck IProof IType ok,
+  % do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+  %   h = hole IntroType IntroProof,
+  %   coq.reduction.lazy.bi-norm IntroType NormType, !,
+  %   do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+  % ).
   coq.ltac.collect-goals IProof [G] _,
   open (coq.ltac.call "intros_anon" []) G [G'],
   open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
             g = (goal _ _ AnonRedType AnonProof _), 
-            coq.reduction.lazy.bi-norm AnonRedType AnonType, 
+            coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
             do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
         ) G' _.
 do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
@@ -362,26 +491,34 @@ do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
       Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
       coq.typecheck IProof IType' ok,
       pm-reduce IType' IType,
-      if (IType = {{ False }}) (coq.ltac.fail 0 "eiIntro: " X " not fresh") (true)
+      if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true)
     );
-    coq.ltac.fail 0 "eiIntro: " X " could not introduce"
-  ),
+    coq.error "eiIntro: " X " could not introduce"
+  ), !,
   do-iIntros IPS (ihole N (hole IType IProof)) C.
+do-iIntros [iModalIntro | IPS] (ihole N H) C :- !,
+  do-iModIntro H H', !,
+  do-iIntros IPS (ihole N H') C.
+do-iIntros [iHyp H | IPS] IH C :-
+  do-iApplyHyp H IH IHS, !,
+  std.forall IHS (ih\ do-iIntros IPS ih C).
 do-iIntros [iIntuitionistic iFresh | IPS] (ihole N H) C :- !,
   increase-ctx-count N NS,
-  do-iIntuitionistic (iAnon N) H H',
+  do-iIntuitionistic (iAnon N) H H', !,
   do-iIntros IPS (ihole NS H') C.
 do-iIntros [iIntuitionistic (iIdent ID) | IPS] (ihole N H) C :-
-  do-iIntuitionistic ID H H',
+  do-iIntuitionistic ID H H', !,
   do-iIntros IPS (ihole N H') C.
 do-iIntros [iIntuitionistic (iList IPS) | IPSS] (ihole N H) C :-
   increase-ctx-count N NS,
-  do-iIntuitionistic (iAnon N) H H',
-  do-iDestruct (iAnon N) (iList IPS) (ihole NS H') (ih\ do-iIntros IPSS ih C).
+  do-iIntuitionistic (iAnon N) H H', !,
+  do-iDestruct (iAnon N) (iList IPS) (ihole NS H') (ih\ !, do-iIntros IPSS ih C).
 do-iIntros [iList IPS | IPSS] (ihole N H) C :- !,
   increase-ctx-count N NS,
-  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ 
-    do-iDestruct (iAnon N) (iList IPS) ih (ih'\
+  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ !,
+    do-iDestruct (iAnon N) (iList IPS) ih (ih'\ !,
       do-iIntros IPSS ih' C
     )
   ).
+do-iIntros IPS IH _ :-
+  coq.error "Failed to apply" IPS "in hole" IH.

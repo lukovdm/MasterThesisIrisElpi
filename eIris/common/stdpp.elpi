@@ -47,7 +47,7 @@ is-identifier S :- 1 is size S, C is rhc S, ((C >= 48, C =< 57); (C >= 65, C =< 
 pred if-debug i:prop.
 if-debug P :- get-option "debug" tt, get-option "start" Start, !, 
   T is {gettimeofday} - Start, 
-  coq.say "[" T "s]", 
+  coq.say "\n================= [" T "s] =================", 
   P.
 if-debug P :- get-option "debug" tt, !, P.
 if-debug _ .
@@ -76,4 +76,4 @@ type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
 
 pred ihole->string i:ihole, o:string.
 ihole->string (ihole N (hole T P)) S :-
-  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " : \n" ^ {coq.term->string T}.
+  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " (" ^ {std.any->string P} ^ ") : \n" ^ {coq.term->string T}.

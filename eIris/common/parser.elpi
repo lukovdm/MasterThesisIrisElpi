@@ -9,6 +9,7 @@ type iFresh, iDrop, iFrame, iPureIntro, iModalIntro, iSimpl, iDone, iForall, iAl
 type iIdent ident -> intro_pat.
 type iList list (list intro_pat) -> intro_pat.
 type iPure option string -> intro_pat.
+type iHyp string -> intro_pat.
 type iIntuitionistic intro_pat -> intro_pat.
 type iSpatial intro_pat -> intro_pat.
 type iModalElim intro_pat -> intro_pat.
@@ -52,6 +53,7 @@ parse_ip [tDone | TS] TS (iDone) :- !.
 parse_ip [tPureIntro | TS] TS (iPureIntro) :- !.
 parse_ip [tModalIntro | TS] TS (iModalIntro) :- !.
 parse_ip [tPure X | TS] TS (iPure X) :- !.
+parse_ip [tHyp X | TS] TS (iHyp X) :- !.
 parse_ip [tArrow D | TS] TS (iRewrite D) :- !.
 
 parse_ip [tBracketL | TS] TS' (iList L) :- !,

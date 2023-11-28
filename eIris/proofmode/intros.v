@@ -26,19 +26,24 @@ Elpi Accumulate lp:{{
     coq.say Args,
     coq.ltac.fail 0 "Did not recognize arguments" Args.
 
-  solve (goal _ _ Type Proof [str "debug" | Args]) _ :-
+  solve (goal _ _ Type Proof [str "debug" | Args]) GS :-
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
-      parse_args Args IPS,
-      !,
-      do-iStartProof (hole Type Proof) IH,
-      do-iIntros IPS IH (ih\ true)
+      parse_args Args IPS, !,
+      do-iStartProof (hole Type Proof) IH, !,
+      do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+      coq.ltac.collect-goals Proof GL SG,
+      all (open pm-reduce-goal) GL GL',
+      all (open show-goal) GL' _,
+      std.append GL' SG GS
     ).
-  solve (goal _ _ Type Proof Args) _ :-
-    parse_args Args IPS,
-    !,
-    do-iStartProof (hole Type Proof) IH,
-    do-iIntros IPS IH (ih\ true).
+  solve (goal _ _ Type Proof Args) GS :-
+    parse_args Args IPS, !,
+    do-iStartProof (hole Type Proof) IH, !,
+    do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+    coq.ltac.collect-goals Proof GL SG,
+    all (open pm-reduce-goal) GL GL',
+    std.append GL' SG GS.
 }}.
 Elpi Typecheck.
 
@@ -59,12 +64,11 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  Lemma intros_1 (P : iProp) :
-    □ P -∗ P .
+  (* Elpi Trace Browser. *)
+  Lemma intros_1 (Q : Prop) (P : nat -> iProp) :
+    ∀ x:nat, □ P x -∗ P x.
   Proof.
-    eiIntros "#?".
-    pm_reduce.
-    iAssumption.
+    elpi eiIntros "% #H @H".
   Qed.
 
   (* Elpi Trace Browser. *)

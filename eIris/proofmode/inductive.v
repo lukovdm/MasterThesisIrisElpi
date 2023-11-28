@@ -10,7 +10,7 @@ From stdpp Require Import base finite.
 From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Import reduction.
 
-From eIris.proofmode Require Import base.
+From eIris.proofmode Require Import base intros.
 From eIris.proofmode.elpi Extra Dependency "proper_solver.elpi" as proper_solver.
 
 #[arguments(raw)] Elpi Command EI.ind.
@@ -20,25 +20,37 @@ Elpi Accumulate lp:{{
   kind param type.
   type par id -> implicit_kind -> term -> term -> param.
 
+  
   pred constructor->term i:indc-decl, o:term.
   constructor->term (constructor _ Arity) T :- coq.arity->term Arity T.
 
+
+  pred type-depth i:term, o:int.
+  type-depth (prod _ _ F) N :- !,
+    (pi x\ type-depth (F x) N'),
+    N is N' + 1.
+  type-depth _ 0.
+
+  
   pred find-PROP i:term, o:term.
   find-PROP (prod _ _ F) O :- !,
     (pi x\ find-PROP (F x) O).
   find-PROP O O :- !.
 
+  
   pred type-to-fun i:term, o:term.
   type-to-fun (prod N T F) (fun N T FB) :- !,
     (pi x\ type-to-fun (F x) (FB x)).
   type-to-fun X X :- !.
 
+  
   pred init-prod-to-bi-exist i:term, o:term.
   init-prod-to-bi-exist (prod N T F) {{ bi_exist lp:Fun}} :- !,
     (pi x\ init-prod-to-bi-exist (F x) (F' x)),
     Fun = (fun N T F').
   init-prod-to-bi-exist X X.
 
+  
   pred last-rec-to-and i:term, i:list term, i:term, o:term.
   last-rec-to-and A B {{ bi_exist lp:{{ fun N T F}} }} {{ bi_exist lp:{{ fun N T F' }} }} :- !,
     (pi x\ last-rec-to-and A B (F x) (F' x)).
@@ -54,6 +66,7 @@ Elpi Accumulate lp:{{
   last-rec-to-and _ [_ | _] (app [T | TS]) _ :-
     coq.error "EI.Ind: " {coq.term->string (app [T | TS])} "has to many or to few arguments".
 
+  
   pred top-wand-to-sepand i:term, o:term.
   top-wand-to-sepand {{ bi_emp_valid lp:T }} T' :- !,
     top-wand-to-sepand T T'.
@@ -67,6 +80,7 @@ Elpi Accumulate lp:{{
     top-wand-to-sepand R R'.
   top-wand-to-sepand X X :- !.
 
+  
   pred replace-params-bo i:list param, i:term, o:term.
   replace-params-bo [] T T.
   replace-params-bo [(par ID _IK Type C) | Params] Term (fun N Type FTerm) :-
@@ -74,6 +88,7 @@ Elpi Accumulate lp:{{
     replace-params-bo Params Term Term',
     (pi x\ (copy C x :- !) => copy Term' (FTerm x)).
 
+  
   pred replace-params-ty i:list param, i:term, o:term.
   replace-params-ty [] T T.
   replace-params-ty [(par ID _IK PType C) | Params] Type (prod N PType FType) :-
@@ -81,6 +96,7 @@ Elpi Accumulate lp:{{
     replace-params-ty Params Type Type',
     (pi x\ (copy C x :- !) => copy Type' (FType x)).
 
+  
   pred constr-body-disj i:(term -> list indc-decl), o:(term -> term).
   constr-body-disj Constructors ConstrBo :-
     if-debug ((pi x\ print-contructors (Constructors x))),
@@ -98,11 +114,12 @@ Elpi Accumulate lp:{{
       (ConstrBo f)),
     if-debug (coq.say "------ Constructor body disjunction" {coq.term->string (ConstrBo {{ True }})}).
 
+  
   pred constr-body i:list param, i:term, i:(term -> list indc-decl), o:term, o:term.
   constr-body Params TypeTerm Constructors EBo Ty :-
     find-PROP TypeTerm PROP,
     constr-body-disj Constructors ConstrBo,
-    (pi b\ (type-to-fun PROP b :- !) => type-to-fun TypeTerm (FunTerm b)), % TODO: A proper PROP should be added not the hacky heap-lang one
+    (pi b\ (type-to-fun PROP b :- !) => type-to-fun TypeTerm (FunTerm b)),
     (pi b\
       % Save the variables of functions in a list
       (pi N T T1 F F1 A \ fold-map (fun N T F) A (fun N T1 F1) A :- !,
@@ -116,6 +133,7 @@ Elpi Accumulate lp:{{
     if-debug (coq.say "------- Type" { coq.term->string Ty }),
     @keepunivs! => std.assert-ok! (coq.elaborate-skeleton PBo Ty EBo) "Type check body failed".
 
+  
   pred build-proper i:list param, i:term, i:term, o:term.
   build-proper Params F Type EBo :-
     find-PROP Type PROP,
@@ -128,15 +146,91 @@ Elpi Accumulate lp:{{
     replace-params-ty Params {{ IProper (□> lp:R ==> lp:R) lp:Fapp }} Proper,
     @keepunivs! => std.assert-ok! (coq.elaborate-skeleton Proper {{ Prop }} EBo) "Type check proper failed".
 
+  
   pred proper-proof i:term, o:term.
   proper-proof Proper Proof :-
     coq.typecheck Proof Proper ok,
     do-solve-proper (hole Proper Proof).
 
+  
+  pred mk-fixpoint.fun i:term, i:list param, i:term, i:term, i:list term, o:term.
+  mk-fixpoint.fun Pre Params Type (prod N T F) L (fun N T F') :-
+    @pi-decl N T x\ mk-fixpoint.fun Pre Params Type (F x) [x | L] (F' x).
+  mk-fixpoint.fun Pre Params Type _ RevL {{ bi_forall lp:F }} :-
+    std.rev RevL L,
+    coq.id->name "Φ" N,
+    F = fun N Type Forall,
+    @pi-decl N Type phi\ ( sigma AppPhi\ sigma Prem\
+      AppPhi = app [phi | L],
+      mk-fixpoint.forall Pre Params phi [] Type Prem,
+      Forall phi = {{ bi_wand (□ lp:Prem) lp:AppPhi }}
+    ).
+
+  
+  pred mk-fixpoint.forall i:term, i:list param, i:term, i:list term, i:term, o:term.
+  mk-fixpoint.forall Pre Params Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
+    Fun = fun N T F',
+    @pi-decl N T x\ mk-fixpoint.forall Pre Params Phi [x | Xs] (F x) (F' x).
+  mk-fixpoint.forall Pre Params Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
+    std.rev RevXs Xs,
+    std.map Params (x\r\ x = par _ _ _ r) Ps,
+    L = app { std.append [Pre | Ps] [Phi | Xs] },
+    R = app [Phi | Xs].
+
+  
+  pred mk-fixpoint i:list param, i:term, i:term, o:term.
+  mk-fixpoint Params Type Pre Fixpoint :-
+    mk-fixpoint.fun Pre Params Type Type [] Fixpoint',
+    replace-params-bo Params Fixpoint' Fixpoint,
+    if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint} Fixpoint),
+    coq.typecheck Fixpoint _ D, 
+    if (D = ok) (true) (coq.error D).
+
+
+  pred mk-unfold-2.toproof i:list param, i:term, i:term, i:list term, i:term, o:term.
+  mk-unfold-2.toproof Params Pre Fix Xs (prod N T F) (prod N T F') :-
+    @pi-decl N T x\ mk-unfold-2.toproof Params Pre Fix [x | Xs] (F x) (F' x).
+  mk-unfold-2.toproof Params Pre Fix RevXs _ {{ lp:L ⊢ lp:R }} :-
+    std.rev RevXs Xs,
+    std.map Params (x\r\ x = par _ _ _ r) Ps,
+    L = app {std.append [Pre | Ps] [app [Fix | Ps] | Xs]},
+    R = app [Fix | {std.append Ps Xs}].
+
+
+  pred mk-unfold-2.proof i:int, i:term, i:term, i:hole.
+  mk-unfold-2.proof N Proper Mono (hole Type Proof) :-
+    do-intros-forall (hole Type Proof) (mk-unfold-2.proof-1 N Proper Mono).
+  pred mk-unfold-2.proof-1 i:int, i:term, i:term, i:hole.
+  mk-unfold-2.proof-1 N Proper Mono H :-
+    do-iStartProof H IH', !,
+    if-debug (coq.say "started proof" {ihole->string IH'}),
+    do-iIntros [iIdent (iNamed "HF"), iPure (some "Φ"), 
+                iIntuitionistic (iIdent (iNamed "HI")), 
+                iHyp "HI"] IH' (mk-unfold-2.proof-2 N Proper Mono).
+  pred mk-unfold-2.proof-2 i:int, i:term, i:term, i:ihole.
+  mk-unfold-2.proof-2 N Proper (app [_ | MonoArgs]) IH :-
+    do-iApplyLem (app [{{ @iProper }} | MonoArgs]) IH [(h\ sigma PType\ sigma PProof\
+      h = hole PType PProof, !,
+      coq.elaborate-skeleton Proper PType PProof ok
+    )] [IH1, IH2],
+    if-debug (coq.say "pre apply HF" {ihole->string IH2}), !,
+    do-iApplyHyp "HF" IH2 [], !,
+    std.map {std.iota N} (x\r\ sigma TMP\ TMP is "a" ^ (int_to_string x), r = iPure (some TMP)) Pures, !,
+    do-iIntros {std.append [iModalIntro | Pures] [iIdent (iNamed "H"), iHyp "H", iModalIntro, iHyp "HI"]} IH1 (ih\ true).
+
+
+  pred mk-unfold-2 i:list param, i:term, i:term, i:term, i:term, i:term, o:hole.
+  mk-unfold-2 Params Pre Proper Mono Fix Type (hole ToProof Proof) :-
+    mk-unfold-2.toproof Params Pre Fix [] Type ToProof',!,
+    replace-params-ty Params ToProof' ToProof,!,
+    if-debug (coq.say "unfold 2:" {coq.term->string ToProof}),
+    mk-unfold-2.proof {type-depth Type} Proper Mono (hole ToProof Proof).
+  
+
   pred create-iInductive i:list param, i:indt-decl.
   create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) :-
     std.rev Params' Params,
-    coq.say Params,
+    if-debug (coq.say Params),
     if-debug (coq.say "------ Creating inductive" Name),
     coq.arity->term Arity TypeTerm,
     if-debug (coq.say "------ With type" { coq.term->string TypeTerm }),
@@ -144,30 +238,46 @@ Elpi Accumulate lp:{{
     constr-body Params TypeTerm Constructors EBo Ty,
     if-debug (coq.say "------ typed body" { coq.term->string EBo }),
     coq.env.add-const {calc (Name ^ "_pre")} EBo Ty ff C,
-    if-debug (coq.say "const" C),
+    if-debug (coq.say "const" C),!,
 
     if (get-option "noproper" tt) (true)
       (
         build-proper Params (global (const C)) TypeTerm Proper,
         if-debug (coq.say "Relation" {coq.term->string Proper})
-      ),
+      ),!,
 
     if (get-option "nosolver" tt) (true)
       (
-      proper-proof Proper ProofTerm,
-      coq.env.add-const { calc (Name ^ "_pre_mono") } ProofTerm Proper ff M,
+      proper-proof Proper MonoProof,
+      coq.env.add-const { calc (Name ^ "_pre_mono") } MonoProof Proper ff M,
       if-debug (coq.say "Mono" M)
+      ),!,
+
+    if (get-option "nofixpoint" tt) (true)
+      (
+      mk-fixpoint Params TypeTerm (global (const C)) Fixpoint,
+      coq.env.add-const Name Fixpoint _ ff Fix,
+      if-debug (coq.say "Fixpoint" Fix)
+      ),!,
+
+    if (get-option "nounfold" tt) (true)
+      (
+      mk-unfold-2 Params (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (hole Unfold2Type Unfold2Proof),
+      coq.env.add-const {calc (Name ^ "_unfold_2")} Unfold2Proof Unfold2Type ff U2,
+      if-debug (coq.say "unfold_2" U2)
       ).
   create-iInductive Params (parameter ID IK T IND) :-
     pi p\ create-iInductive [(par ID IK T p) | Params] (IND p).
 
-  % main is, well, the entry point
+
   main [indt-decl I] :- 
     attributes A,
     coq.parse-attributes A [
       att "debug" bool,
       att "noproper" bool,
       att "nosolver" bool,
+      att "nofixpoint" bool,
+      att "nounfold" bool,
     ] Opts,
     gettimeofday Start,
     [get-option "start" Start | Opts] => (
@@ -198,6 +308,7 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
+  #[debug]
   EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
@@ -205,6 +316,53 @@ Section Tests.
 
   Print is_list_pre.
   Check is_list_pre_mono.
+  Print is_list.
+  Check is_list_unfold_2.
+
+  (* Lemma is_list_unfold_1 x y : is_list_pre is_list x y ⊢ is_list x y.
+  Proof.
+    elpi eiIntros debug "HF %a #Hi @Hi".
+    iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+    { refine is_list_pre_mono. }
+    2: {
+      eiIntros "@HF".
+    }
+    elpi eiIntros debug "!> % % H @H !> @Hi".
+  Qed. *)
+
+  Lemma is_list_unfold_2 x y : is_list x y ⊢ is_list_pre is_list x y.
+  Proof.
+    eiIntros "HF @HF !> % % Hy /=".
+    iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+    { refine is_list_pre_mono. }
+    2: {
+      eiIntros "@Hy".
+    }
+    elpi eiIntros debug "!> % % HF".
+    iApply is_list_unfold_1.
+    eiIntros "@HF".
+  Qed.
+
+  #[debug]
+  EI.ind 
+  Inductive is_l : val → iProp :=
+    | empty_is_l : is_l NONEV
+    | cons_is_l l v tl : l ↦ (v,tl) -∗ is_l tl -∗ is_l (SOMEV #l).
+
+  Print is_l_pre.
+  Check is_l_pre_mono.
+  Print is_l.
+
+  Lemma is_l_unfold y : is_l_pre is_l y ⊢ is_l y.
+  Proof.
+    elpi eiIntros debug "HF %a #Hi @Hi".
+    iApply (iProper (□> .> bi_wand ==> .> bi_wand) is_l_pre).
+    { refine is_l_pre_mono. }
+    2: {
+      eiIntros "@HF".
+    }
+    elpi eiIntros debug "!> % H @H !> @Hi".
+  Qed.
 
   EI.ind 
   Inductive is_P_list : (val → iProp) → val → iProp :=
@@ -213,7 +371,9 @@ Section Tests.
 
   Print is_P_list_pre.
   Check is_P_list_pre_mono.
+  Print is_P_list.
 
+  #[debug]
   EI.ind 
   Inductive is_P2_list {A} (P : val → A → iProp) : val → list A → iProp :=
     | empty_is_P2_list : is_P2_list P NONEV []
@@ -221,4 +381,17 @@ Section Tests.
 
   Print is_P2_list_pre.
   Check is_P2_list_pre_mono.
+  Print is_P2_list.
+
+  Lemma is_P2_list_unfold A P x y : is_P2_list_pre A P (is_P2_list A P) x y ⊢ is_P2_list A P x y.
+  Proof.
+    elpi eiIntros debug "HF % #Hi @Hi".
+    iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) (is_P2_list_pre A P)).
+    { refine (is_P2_list_pre_mono _ _). }
+    2: {
+      eiIntros "@HF".
+    }
+    elpi eiIntros debug "!> % % H @H !> @Hi".
+  Qed.
+
 End Tests.

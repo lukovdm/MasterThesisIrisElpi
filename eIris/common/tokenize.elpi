@@ -7,6 +7,7 @@ type tAnon, tFrame, tBar, tBracketL, tBracketR, tAmp, tParenL, tParenR, tBraceL,
 type tName string -> token.
 type tNat int -> token.
 type tPure option string -> token.
+type tHyp string -> token.
 type tArrow direction -> token.
 
 pred tokenize.rec i:list string, o:list token.
@@ -42,6 +43,11 @@ tokenize.rec ["%" | SL] [tPure (some S) | TS] :-
   { calc (size S) } > 0, !,
   tokenize.rec SL' TS.
 tokenize.rec ["%" | SL] [tPure none | TS] :- !, tokenize.rec SL TS.
+tokenize.rec ["@" | SL] [tHyp S | TS] :- 
+  take-while-split SL (x\ is-identifier x) S' SL',
+  std.string.concat "" S' S, 
+  { calc (size S) } > 0, !,
+  tokenize.rec SL' TS.
 tokenize.rec SL [tNat N | TS] :-
   take-while-split SL (x\ is-digit x) S' SL',
   std.string.concat "" S' S,

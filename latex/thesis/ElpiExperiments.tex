@@ -12,6 +12,7 @@ In this chapter we will show how \elpi together with \ce can be used to create n
 \coqinline{iIntros} is based on the \coq \coqinline{intros} tactic. The \coq \coqinline{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqinline{iIntros} tactic, only it was expanded, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, to also perform other common initial proof steps such as \coqinline{simpl}, \coqinline{done} and others. We will show a few examples of how \coqinline{iIntros} can be used to help prove lemmas.
 
 We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources. Thus, where a normal implication introduction adds the left-hand side to the coq context, the magic wand adds the left-hand side to the disjoint resource context.
+% Give concrete example and show how coq implication differs from iris wand 
 
 \begin{coqcode}
   P, R: iProp
@@ -34,7 +35,7 @@ We have introduced the two separation logic propositions into the \iris context.
   ==============================================
   ----------------------------------------------∗
   ∀ x : nat, (∃ y : nat, P x ∗ P y) ∨ P 0 -∗ P 1
-\end{coqcode}
+\end{coqcode} %Universal quantification existensial quantification
 It consists of a forall existential, an exists existential, a conjunction and a disjunction. We can again use one application of \coqinline{iIntros} to introduce and eliminate the premise. \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} takes the proof to the following state of two goals
 \begin{coqcode}
   (1/2)
@@ -62,12 +63,14 @@ The intro pattern consists of multiple sub intro patterns. Each sub intro patter
     \item[\coqinline{"[H1 H2]"}] is the separating and pattern. This introduction pattern is two intro patterns surrounded by square brackets but not separated by a bar. We perform a separating conjunction elimination.
     \item[\coqinline{"[\%x H]"}] is the exists pattern. If first element of a separating and pattern is a pure elimination we first try to eliminate an exists in the hypothesis. If that does not succeed we do a conjunction elimination.
 \end{itemize}
+% Add simpl and done here and refrence ssreflect with citation
 Thus, we can break down \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqinline{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqinline{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqinline{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the or, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqinline{y} to the \coq context. Lastly, \coqinline{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqinline{"Hx"} and \coqinline{"Hy"}.
 
-There are more patterns available to introduce more complicated goals, these can be found in \cite*{krebbersInteractiveProofsHigherorder2017}.
+There are more patterns available to introduce more complicated goals, these can be found in \citet{krebbersInteractiveProofsHigherorder2017}.
 
 \section{Elpi implementation of iIntros}
 We implement our tactic in the $\lambda$Prolog language \elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. \elpi implements $\lambda$prolog \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012} and adds constraint handling rules to it \cite{monfroyConstraintHandlingRules2011}. These constraint handling rules allow us to define invariants and constraints for variables by allowing us to defer the execution of a program when a variable gets assigned a value.
+\todoo{Defer constraint handeling to later}
 
 To use \elpi as a \coq meta programming language there exists the \elpi \coq connector, \ce \cite{tassiElpiExtensionLanguage2018}. We will \ce to implement the \elpi variant of \coqinline{iIntros}, called \coqinline{eiIntros}.
 
@@ -96,6 +99,7 @@ Our \elpi implementation \coqinline{eiIntros} consists of four parts as seen in 
   \caption{Structure of \coqinline{eiIntros} with the input and output types on the edges.}
   \label{fig:eiintrosstruct}
 \end{figure}
+%Zeg dat ook het doel is om een tutorial te geven over elpi
 
 \subsection{Tokenizer}\label{ssec:tokenizer}
 The tokenizer takes as input a string. We will interpret every symbol in the string and produce a list of tokens from this string. Thus, the first step is to define our tokens. Next we show how to define a predicate that transform our string into the tokens we defined.
@@ -141,7 +145,7 @@ Line 1 describes the type of the predicate. The keyword \elpiinline{pred} starts
 \begin{elpicode}
   pred rex.split i:string, i:string, o:list string.
 \end{elpicode}
-When we call it, we assign the empty string to its first argument, the string we want to tokenize to the second argument, and we store the output list of string in the new variable \elpiinline{SS}. This predicate allows us to split a string at a certain delimiter. We take as delimiter the empty string, thus splitting the string up in a list of strings of one character each. String support is very minimal in, and we can't pattern match on the first character of a string. Thus, we need this workaround.
+When we call it, we assign the empty string to its first argument, the string we want to tokenize to the second argument, and we store the output list of string in the new variable \elpiinline{SS}. This predicate allows us to split a string at a certain delimiter. We take as delimiter the empty string, thus splitting the string up in a list of strings of one character each. String support is very minimal in, and we can't pattern match on the first character of a string. Thus, we need this workaround.  % Net zoals ocaml is een string een cstring en geen lijst dat is een keuze maar dus moeten we dit doen
 
 The next line, line 4, calls the recursive tokenizer, \elpiinline{tokenizer.rec}\footnote{Names in \elpi can have special characters in them like \elpiinline{.}, \elpiinline{-} and \elpiinline{>}, thus, \elpiinline{tokenize} and \elpiinline{tokenize.rec} are fully separate predicates. It is just a convention that when creating a helper predicate we name it by adding a dot and a short name for the helper.}, on the split list of string and assigns the output to the output variable \elpiinline{O}.
 
