@@ -84,7 +84,7 @@ do-intro ID (hole Type Proof) C :-
 
 pred do-intro-anon i:hole, i:(hole -> prop).
 do-intro-anon (hole Type Proof) C :-
-  coq.env.fresh-global-id "a" ID,
+  coq.ltac.fresh-id "a" {{ False }} ID,
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
@@ -130,7 +130,8 @@ do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) Cs (ihole NS (hole PosedTy
 
   @no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}} 
-                Type Proof ok,
+                Type Proof D,
+  if (D = ok) (true) (if-debug (coq.say "pose lem error" D), fail),
   Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof _) lp:PosedProof }},
 
   coq.ltac.collect-goals IEVProof [G1] _,
@@ -212,10 +213,10 @@ pred do-iApplyLem i:term, i:ihole, i:list (hole -> prop), o:list ihole.
 do-iApplyLem Lem IH Cs IHS :-
   if-debug (coq.say "do-iApplyLem" {coq.term->string Lem}),
   do-iPoseLem Lem IH ID Cs IHPosed,
-  if-debug (coq.say "Posed Lemma" {ihole->string IHPosed}),
+  if-debug (coq.say "Posed Lemma"),
   do-iApplyLem.aux IHPosed ID IHS.
 do-iApplyLem.aux IH ID [IH'] :- 
-  if-debug (coq.say "simpleApplyHyp"),
+  if-debug (coq.say "simpleApplyHyp" {ihole->string IH}),
   do-iApplySimpleHyp IH ID IH'.
 do-iApplyLem.aux IH ID [] :- 
   if-debug (coq.say "simpleApplyExact"),
@@ -232,10 +233,10 @@ do-iApplyHyp HypString IH IHS :-
   string->stringterm HypString Hyp,
   if-debug (coq.say "do-iApplyHyp" HypString),
   do-iPoseHyp Hyp IH ID IHPosed,
-  if-debug (coq.say "Posed Hyp" {ihole->string IHPosed}),
+  if-debug (coq.say "Posed Hyp"),
   do-iApplyHyp.aux IHPosed ID IHS.
 do-iApplyHyp.aux IH ID [IH'] :- 
-  if-debug (coq.say "simpleApplyHyp"),
+  if-debug (coq.say "simpleApplyHyp" {ihole->string IH}),
   do-iApplySimpleHyp IH ID IH'.
 do-iApplyHyp.aux IH ID [] :- 
   if-debug (coq.say "simpleApplyExact"),
@@ -419,7 +420,7 @@ do-iDestruct _ IP IH C :-
 
 pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
 do-iIntros [IP | _] IH _ :- if-debug (coq.say "do-iIntros: " IP "in" {ihole->string IH}), fail.
-do-iIntros [] IH C :- !, C IH.
+do-iIntros [] IH C :- !, if-debug (coq.say "do-iIntros done"), C IH.
 do-iIntros [iCoqIntro X | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
   open (coq.ltac.call-ltac1 X) G [GTac],
@@ -465,19 +466,19 @@ do-iIntros [iPure (some X) | IPS] (ihole N (hole Type Proof)) C :- !,
 do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
-  % coq.typecheck IProof IType ok,
-  % do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
-  %   h = hole IntroType IntroProof,
-  %   coq.reduction.lazy.bi-norm IntroType NormType, !,
-  %   do-iIntros IPS (ihole N (hole NormType IntroProof)) C
-  % ).
-  coq.ltac.collect-goals IProof [G] _,
-  open (coq.ltac.call "intros_anon" []) G [G'],
-  open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
-            g = (goal _ _ AnonRedType AnonProof _), 
-            coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
-            do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
-        ) G' _.
+  coq.typecheck IProof IType ok,
+  do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+    h = hole IntroType IntroProof,
+    coq.reduction.lazy.bi-norm IntroType NormType, !,
+    do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+  ).
+  % coq.ltac.collect-goals IProof [G] _,
+  % open (coq.ltac.call "intros_anon" []) G [G'],
+  % open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
+  %           g = (goal _ _ AnonRedType AnonProof _), 
+  %           coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
+  %           do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
+  %       ) G' _.
 do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
   ident->term ID X T,
   (

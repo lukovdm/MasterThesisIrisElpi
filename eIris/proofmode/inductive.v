@@ -182,7 +182,7 @@ Elpi Accumulate lp:{{
   mk-fixpoint Params Type Pre Fixpoint :-
     mk-fixpoint.fun Pre Params Type Type [] Fixpoint',
     replace-params-bo Params Fixpoint' Fixpoint,
-    if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint} Fixpoint),
+    if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint}),
     coq.typecheck Fixpoint _ D, 
     if (D = ok) (true) (coq.error D).
 
@@ -197,25 +197,32 @@ Elpi Accumulate lp:{{
     R = app [Fix | {std.append Ps Xs}].
 
 
-  pred mk-unfold-2.proof i:int, i:term, i:term, i:hole.
-  mk-unfold-2.proof N Proper Mono (hole Type Proof) :-
-    do-intros-forall (hole Type Proof) (mk-unfold-2.proof-1 N Proper Mono).
-  pred mk-unfold-2.proof-1 i:int, i:term, i:term, i:hole.
-  mk-unfold-2.proof-1 N Proper Mono H :-
+  pred mk-unfold-2.proof i:int, i:int, i:term, i:term, i:hole.
+  mk-unfold-2.proof Ps N Proper Mono (hole Type Proof) :-
+    do-intros-forall (hole Type Proof) (mk-unfold-2.proof-1 Ps N Proper Mono).
+  pred mk-unfold-2.proof-1 i:int, i:int, i:term, i:term, i:hole.
+  mk-unfold-2.proof-1 Ps N Proper Mono H :-
     do-iStartProof H IH', !,
     if-debug (coq.say "started proof" {ihole->string IH'}),
-    do-iIntros [iIdent (iNamed "HF"), iPure (some "Φ"), 
+    do-iIntros [iIdent (iNamed "HF"), iPure none, 
                 iIntuitionistic (iIdent (iNamed "HI")), 
-                iHyp "HI"] IH' (mk-unfold-2.proof-2 N Proper Mono).
-  pred mk-unfold-2.proof-2 i:int, i:term, i:term, i:ihole.
-  mk-unfold-2.proof-2 N Proper (app [_ | MonoArgs]) IH :-
-    do-iApplyLem (app [{{ @iProper }} | MonoArgs]) IH [(h\ sigma PType\ sigma PProof\
-      h = hole PType PProof, !,
-      coq.elaborate-skeleton Proper PType PProof ok
+                iHyp "HI"] IH' (mk-unfold-2.proof-2 Ps N Proper Mono).
+  pred mk-unfold-2.proof-2 i:int, i:int, i:term, i:term, i:ihole.
+  mk-unfold-2.proof-2 Ps N Proper Mono IH :-
+    ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
+    type-to-fun MonoiProper' MonoiProper,
+    std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+    do-iApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes2\ !,
+      h = hole PType PProof,
+      std.iota Ps List,
+      std.map List (x\r\ r = {{ _ }}) Holes2,
+      if-debug (coq.say "pre proper elabo" PProof),
+      coq.elaborate-skeleton (app [Proper | Holes2]) PType PProof D,
+      if (D = ok) (true) (if-debug (coq.say "IProper error" D), fail)
     )] [IH1, IH2],
     if-debug (coq.say "pre apply HF" {ihole->string IH2}), !,
     do-iApplyHyp "HF" IH2 [], !,
-    std.map {std.iota N} (x\r\ sigma TMP\ TMP is "a" ^ (int_to_string x), r = iPure (some TMP)) Pures, !,
+    std.map {std.iota N} (x\r\ r = iPure none) Pures, !,
     do-iIntros {std.append [iModalIntro | Pures] [iIdent (iNamed "H"), iHyp "H", iModalIntro, iHyp "HI"]} IH1 (ih\ true).
 
 
@@ -224,8 +231,7 @@ Elpi Accumulate lp:{{
     mk-unfold-2.toproof Params Pre Fix [] Type ToProof',!,
     replace-params-ty Params ToProof' ToProof,!,
     if-debug (coq.say "unfold 2:" {coq.term->string ToProof}),
-    mk-unfold-2.proof {type-depth Type} Proper Mono (hole ToProof Proof).
-  
+    mk-unfold-2.proof {std.length Params} {type-depth Type} Proper Mono (hole ToProof Proof).   
 
   pred create-iInductive i:list param, i:indt-decl.
   create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) :-
@@ -307,7 +313,7 @@ Section Tests.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
-
+(* 
   #[debug]
   EI.ind 
   Inductive is_list : val → list val → iProp :=
@@ -330,7 +336,7 @@ Section Tests.
     elpi eiIntros debug "!> % % H @H !> @Hi".
   Qed. *)
 
-  Lemma is_list_unfold_2 x y : is_list x y ⊢ is_list_pre is_list x y.
+  Lemma is_list_unfold_1 x y : is_list x y ⊢ is_list_pre is_list x y.
   Proof.
     eiIntros "HF @HF !> % % Hy /=".
     iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
@@ -339,7 +345,7 @@ Section Tests.
       eiIntros "@Hy".
     }
     elpi eiIntros debug "!> % % HF".
-    iApply is_list_unfold_1.
+    iApply is_list_unfold_2.
     eiIntros "@HF".
   Qed.
 
@@ -352,6 +358,7 @@ Section Tests.
   Print is_l_pre.
   Check is_l_pre_mono.
   Print is_l.
+  Print is_l_unfold_2.
 
   Lemma is_l_unfold y : is_l_pre is_l y ⊢ is_l y.
   Proof.
@@ -372,16 +379,18 @@ Section Tests.
   Print is_P_list_pre.
   Check is_P_list_pre_mono.
   Print is_P_list.
+  Print is_P_list_unfold_2. *)
 
   #[debug]
   EI.ind 
   Inductive is_P2_list {A} (P : val → A → iProp) : val → list A → iProp :=
     | empty_is_P2_list : is_P2_list P NONEV []
     | cons_is_P2_list l v tl x xs : l ↦ (v,tl) -∗ P v x -∗ is_P2_list P tl xs -∗ is_P2_list P (SOMEV #l) (x :: xs).
-
+ 
   Print is_P2_list_pre.
   Check is_P2_list_pre_mono.
   Print is_P2_list.
+  Check is_P2_list_unfold_2.
 
   Lemma is_P2_list_unfold A P x y : is_P2_list_pre A P (is_P2_list A P) x y ⊢ is_P2_list A P x y.
   Proof.

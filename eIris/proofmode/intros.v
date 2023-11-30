@@ -66,9 +66,9 @@ Section Proof.
 
   (* Elpi Trace Browser. *)
   Lemma intros_1 (Q : Prop) (P : nat -> iProp) :
-    ∀ x:nat, □ P x -∗ P x.
+    ∀ x:nat, ∀ y:nat, ∀ z:nat, □ P x -∗ P x.
   Proof.
-    elpi eiIntros "% #H @H".
+    elpi eiIntros "% % % #H @H".
   Qed.
 
   (* Elpi Trace Browser. *)
