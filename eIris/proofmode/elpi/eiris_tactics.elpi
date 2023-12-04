@@ -466,19 +466,19 @@ do-iIntros [iPure (some X) | IPS] (ihole N (hole Type Proof)) C :-
 do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
-  coq.typecheck IProof IType ok, !,
-  do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
-    h = hole IntroType IntroProof,
-    coq.reduction.lazy.bi-norm IntroType NormType, !,
-    do-iIntros IPS (ihole N (hole NormType IntroProof)) C
-  ).
-  % coq.ltac.collect-goals IProof [G] _,
-  % open (coq.ltac.call "intros_anon" []) G [G'],
-  % open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
-  %           g = (goal _ _ AnonRedType AnonProof _), 
-  %           coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
-  %           do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
-  %       ) G' _.
+  % coq.typecheck IProof IType ok, !,
+  % do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+  %   h = hole IntroType IntroProof,
+  %   coq.reduction.lazy.bi-norm IntroType NormType, !,
+  %   do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+  % ).
+  coq.ltac.collect-goals IProof [G] _,
+  open (coq.ltac.call "intros_anon" []) G [G'],
+  open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
+            g = (goal _ _ AnonRedType AnonProof _), 
+            coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
+            do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
+        ) G' _.
 do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
   ident->term ID X T,
   (
