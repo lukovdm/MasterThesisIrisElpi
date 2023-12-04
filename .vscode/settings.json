@@ -949,5 +949,8 @@
   "vscoq.goals.messages.full": true,
   "vscoq.proof.delegation": "None",
   "vscoq.diagnostics.full": true,
-  "vscoq.trace.server": "verbose"
+  "vscoq.trace.server": "verbose",
+  "coqtop.args": [
+    "-bt"
+  ]
 }

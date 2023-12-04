@@ -268,11 +268,11 @@ do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
 do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
 
-  % if-debug (coq.say "intui1" Proof),
+  if-debug (coq.say "intui1" Proof),
   @no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok,
-  % if-debug (coq.say "intui2" Proof),
+  if-debug (coq.say "intui2" Proof),
   Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
-  % if-debug (coq.say "intui3" IntProof),
+  if-debug (coq.say "intui3" IntProof),
 
   coq.ltac.collect-goals FromWand [GW1] _,
   open (tc_solve) GW1 [], 
@@ -466,19 +466,19 @@ do-iIntros [iPure (some X) | IPS] (ihole N (hole Type Proof)) C :-
 do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
-  % coq.typecheck IProof IType ok, !,
-  % do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
-  %   h = hole IntroType IntroProof,
-  %   coq.reduction.lazy.bi-norm IntroType NormType, !,
-  %   do-iIntros IPS (ihole N (hole NormType IntroProof)) C
-  % ).
-  coq.ltac.collect-goals IProof [G] _,
-  open (coq.ltac.call "intros_anon" []) G [G'],
-  open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
-            g = (goal _ _ AnonRedType AnonProof _), 
-            coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
-            do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
-        ) G' _.
+  coq.typecheck IProof IType ok, !,
+  do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+    h = hole IntroType IntroProof,
+    coq.reduction.lazy.bi-norm IntroType NormType, !,
+    do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+  ).
+  % coq.ltac.collect-goals IProof [G] _,
+  % open (coq.ltac.call "intros_anon" []) G [G'],
+  % open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
+  %           g = (goal _ _ AnonRedType AnonProof _), 
+  %           coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
+  %           do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
+  %       ) G' _.
 do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
   ident->term ID X T,
   (
