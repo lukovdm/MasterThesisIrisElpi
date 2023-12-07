@@ -73,4 +73,4 @@ pred parse_ipl i:list token, o:list intro_pat.
 parse_ipl [] [].
 parse_ipl TS [IP | IPS] :- 
   parse_ip TS R' IP, !, parse_ipl R' IPS.
-parse_ipl TS _ :- !, coq.error { calc ("Failed to parse: " ^ {std.any->string TS})}.
+parse_ipl TS _ :- !, coq.error "Failed to parse: " {std.any->string TS}.

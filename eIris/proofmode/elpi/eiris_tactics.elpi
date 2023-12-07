@@ -93,6 +93,26 @@ do-intro-anon (hole Type Proof) C :-
     C (hole (F x) (IntroFProof x)).
 
 
+pred do-iIntro-ident i:ident, i:ihole, o:ihole.
+do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
+  ident->term ID _ T,
+  coq.elaborate-skeleton {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} Type Proof ok, !,
+  Proof = {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
+  coq.typecheck IProof IType' ok,
+  pm-reduce IType' IType,
+  if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
+do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
+  ident->term ID _ T,
+  coq.elaborate-skeleton {{ tac_wand_intro _ lp:T _ _ _ _ _ }} Type Proof ok, !,
+  Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
+  coq.typecheck IProof IType' ok,
+  pm-reduce IType' IType,
+  if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
+do-iIntro-ident ID _ _ :-
+  ident->term ID X _,
+  coq.error "eiIntro: " X " could not introduce".
+
+
 pred do-iExFalso i:hole, o:hole.
 do-iExFalso (hole Type Proof) (hole FalseType FalseProof) :-
   coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
@@ -444,7 +464,8 @@ do-iIntros [iDone | IPS] (ihole N (hole _ Proof)) C :-
        ) G' _.
 do-iIntros [iFresh | IPS] (ihole N H) C :- !,
   increase-ctx-count N NS,
-  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ !, do-iIntros IPS ih C).
+  do-iIntro-ident (iAnon N) (ihole NS H) IH, !, 
+  do-iIntros IPS IH C.
 do-iIntros [iDrop | IPS] (ihole N (hole Type Proof)) C :- !,
   (
     (coq.elaborate-skeleton {{ tac_impl_intro_drop _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_impl_intro_drop _ _ _ _ _ lp:IntroProof }});
@@ -479,24 +500,9 @@ do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
   %           coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
   %           do-iIntros IPS (ihole N (hole AnonType AnonProof)) C
   %       ) G' _.
-do-iIntros [iIdent ID | IPS] (ihole N (hole Type Proof)) C :-
-  ident->term ID X T,
-  (
-    (
-      coq.elaborate-skeleton {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} Type Proof ok, 
-      Proof = {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
-      coq.typecheck IProof IType ok
-    );
-    (
-      coq.elaborate-skeleton {{ tac_wand_intro _ lp:T _ _ _ _ _ }} Type Proof ok, !,
-      Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
-      coq.typecheck IProof IType' ok,
-      pm-reduce IType' IType,
-      if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true)
-    );
-    coq.error "eiIntro: " X " could not introduce"
-  ), !,
-  do-iIntros IPS (ihole N (hole IType IProof)) C.
+do-iIntros [iIdent ID | IPS] IH C :-
+  do-iIntro-ident ID IH IH', !,
+  do-iIntros IPS IH' C.
 do-iIntros [iModalIntro | IPS] (ihole N H) C :- !,
   do-iModIntro H H', !,
   do-iIntros IPS (ihole N H') C.
@@ -516,10 +522,9 @@ do-iIntros [iIntuitionistic (iList IPS) | IPSS] (ihole N H) C :-
   do-iDestruct (iAnon N) (iList IPS) (ihole NS H') (ih\ !, do-iIntros IPSS ih C).
 do-iIntros [iList IPS | IPSS] (ihole N H) C :- !,
   increase-ctx-count N NS,
-  do-iIntros [iIdent (iAnon N)] (ihole NS H) (ih\ !,
-    do-iDestruct (iAnon N) (iList IPS) ih (ih'\ !,
-      do-iIntros IPSS ih' C
-    )
+  do-iIntro-ident (iAnon N) (ihole NS H) IH, !,
+  do-iDestruct (iAnon N) (iList IPS) IH (ih'\ !,
+    do-iIntros IPSS ih' C
   ).
 do-iIntros IPS IH _ :-
   coq.error "Failed to apply" IPS "in hole" {ihole->string IH}.

@@ -1,0 +1,99 @@
+\documentclass[thesis.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Background on Iris}
+Wat is seperatie logica
+syntax, wetjes en intuitie van semantiek
+iets over inductieve definities zonder het over oplossing the hebben
+gebruik is_list als voorbeeld voor hoofdstuk
+
+waarom is een fixpoint niet genoeg
+probeer iets te bedenken waarom je ind of iter nodig hebt
+
+
+\section[Iris iIntros]{Iris \coqinline{iIntros}}
+\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Propositions can be seen as predicates over resources, \eg heaps. Thus, there are a number of extra logical connectives such as \coqinline{P ∗ Q}, which represents that \coqinline{P} and \coqinline{Q} split up the resources into two disjoints in which they respectively hold. Moreover, hypotheses in our logic can often be used only once when proving something, they represent resources that we consume when used. To be able to reason in this logic in \coq a tactics language has been added to \coq called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. In the IPM two new context are added along sides the \coq context, the spatial and the intuitionistic context, these will be explained below in \ldots.
+The tactics the IPM adds are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris contexts. We will be specifically looking at the \coqinline{iIntros} tactic. First, we will show how \coqinline{iIntros} works, and then we will show how \coqinline{iIntros} can be created using \elpi in the form of a new tactic \coqinline{eiIntros}.
+
+\subsection[iIntros example]{\coqinline{iIntros} example}
+\coqinline{iIntros} is based on the \coq \coqinline{intros} tactic. The \coq \coqinline{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqinline{iIntros} tactic, but adopted to the \iris contexts. Also, a few expansions, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, were added to perform other common initial proof steps such as \coqinline{simpl}, \coqinline{done} and others. We will show a few examples of how \coqinline{iIntros} can be used to help prove lemmas.
+
+We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources.
+
+\begin{minipage}{0.4\textwidth}
+    \begin{prooftree}
+        \AxiomC{$P\ ∗\ Q \vdash R$}
+        \RightLabel{$\mathrel{\rule[0.5ex]{1em}{0.55pt}∗}$-Intro}
+        \UnaryInfC{$P \vdash Q \mathrel{\rule[0.5ex]{1em}{0.55pt}∗} R$}
+    \end{prooftree}
+\end{minipage}
+%
+\begin{minipage}{0.4\textwidth}
+    \begin{prooftree}
+        \AxiomC{$P \land Q \vdash R$}
+        \RightLabel{$\to$-Intro}
+        \UnaryInfC{$P \vdash Q \to R$}
+    \end{prooftree}
+\end{minipage}
+
+Thus, where a normal implication introduction adds the left-hand side to the \coq context, the magic wand adds the left-hand side to the spatial resource context.
+\todoo{Rewrite when I have a solid explanation of the \iris contexts}
+
+\begin{coqcode}
+  P, R: iProp
+  ============
+  ------------∗
+  P -∗ R -∗ P
+\end{coqcode}
+When using \coqinline{iIntros "HP HR"}, the proof state is transformed into the following state.
+\begin{coqcode}
+  P, R: iProp
+  ============
+  "HP" : P
+  "HR" : R
+  ------------∗
+  P
+\end{coqcode}
+We have introduced the two separation logic propositions into the spatial context. This does not only work on the magic wand, we can also use this to introduce more complicated statements. Take the following proof state,
+\begin{coqcode}
+  P: nat → iProp
+  ==============================================
+  ----------------------------------------------∗
+  ∀ x : nat, (∃ y : nat, P x ∗ P y) ∨ P 0 -∗ P 1
+\end{coqcode}
+%Universal quantification existensial quantification
+It consists of a universal quantification, an existential quantification, a conjunction and a disjunction. We can again use one application of \coqinline{iIntros} to introduce and eliminate the premise. \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} takes the proof to the following state of two goals
+\begin{coqcode}
+  (1/2)
+  P: nat → iProp
+  x, y: nat
+  ==================
+  "Hx" : P x
+  "Hy" : P y
+  ------------------∗
+  P 1
+
+  (2/2)
+  P: nat → iProp
+  x: nat
+  ==================
+  "H0" : P 0
+  ------------------∗
+  P 1
+\end{coqcode}
+The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a forall introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. They can have the following interpretations:
+\begin{itemize}
+    \item \coqinline{"H"} represents renaming a hypothesis. The name given is used as the name of the hypothesis in the spatial context.
+    \item \coqinline{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
+    \item \coqinline{"[IPL | IPR]"} represents disjunction elimination. We perform a disjunction elimination on the introduced hypothesis. Then, we apply the two included intro patterns two the two cases created by the disjunction elimination.
+    \item \coqinline{"[IPL IPR]"} represents separating conjunction elimination. We perform a separating conjunction elimination. Then, we apply the two included intro patterns two the two hypotheses by the seperating conjunction elimination.
+    \item \coqinline{"[\%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply hte included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
+\end{itemize}
+% Add simpl and done here and refrence ssreflect with citation
+Thus, we can break down \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqinline{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqinline{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqinline{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqinline{y} to the \coq context. Lastly, \coqinline{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqinline{"Hx"} and \coqinline{"Hy"}.
+
+There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
+
+
+\end{document}

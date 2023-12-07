@@ -4,8 +4,6 @@ From iris.bi Require Export bi fixpoint.
 From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 
-From eIris.proofmode Require Import telescopes.
-
 Section iRelation_Definition.
 
   Definition iRelation {PROP : bi} {A} := A → A → PROP.

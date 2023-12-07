@@ -2,6 +2,7 @@ From elpi Require Import elpi.
 From iris.proofmode Require Export tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 
+From eIris.proofmode Require Import base reduction.
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 
@@ -10,6 +11,7 @@ Elpi Tactic eiSplitL.
 Ltac helper_eiSplit SIDE HS := eapply tac_sep_split with SIDE HS _ _.
 
 Elpi Accumulate File stdpp.
+Elpi Accumulate Db reduction.db.
 Elpi Accumulate File iris_ltac.
 Elpi Accumulate lp:{{
   type sep_split term -> term -> open-tactic.

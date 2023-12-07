@@ -1,4 +1,3 @@
--arg -w -arg -elpi.accumulate-syntax
 -arg -w -arg +elpi.typecheck
 -R eIris/ eIris
 

@@ -1,3 +1,5 @@
+accumulate eIris/common/stdpp.
+
 pred add-reduction-rule i:constant.
 add-reduction-rule C :-
   coq.elpi.accumulate _ "reduction.db" (clause _ _ (reduction-rule C)).
