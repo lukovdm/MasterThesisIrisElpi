@@ -287,9 +287,10 @@ Elpi Accumulate lp:{{
   
   pred mk-iter.toproof-2 i:list param, i:term, i:term, i:term, i:term, o:term.
   mk-iter.toproof-2 Params Pre Fix Type Phi ToProof :-
-    mk-fix-toproof (p\u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ bi_wand lp:U lp:F }}) Params Pre [Phi] [] Type Assump,
-    mk-fix-toproof (p\u\f\res\ sigma Fi\ sigma Pr\ f = [Fi,Pr], res = {{ bi_wand lp:Fi lp:Pr }}) Params Pre [Fix, Phi] [] Type Prem,
-    ToProof = {{ bi_wand (□ lp:Assump) lp:Prem }}.
+    find-PROP Type PROP,
+    mk-fix-toproof (p\u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ @bi_wand lp:PROP lp:U lp:F }}) Params Pre [Phi] [] Type Assump,
+    mk-fix-toproof (p\u\f\res\ sigma Fi\ sigma Pr\ f = [Fi,Pr], res = {{ @bi_wand lp:PROP lp:Fi lp:Pr }}) Params Pre [Fix, Phi] [] Type Prem,
+    ToProof = {{ @bi_wand lp:PROP (@bi_intuitionistically lp:PROP lp:Assump) lp:Prem }}.
 
   pred mk-iter i:list param, i:term, i:term, i:term, o:hole.
   mk-iter Params Pre Fix Type (hole ToProof Proof) :- 
@@ -297,7 +298,14 @@ Elpi Accumulate lp:{{
     replace-params-ty Params ToProof' ToProof, !,
     if-debug (coq.say "mk-iter toproof replace" {coq.term->string ToProof} ToProof),
     std.assert-ok! (coq.typecheck Proof ToProof) "mk-iter ToProof failed",
-    if-debug (coq.say "iter to proof" {coq.term->string ToProof}).
+    if-debug (coq.say "iter to proof" {coq.term->string ToProof}), !,
+    do-iStartProof (hole ToProof Proof) IH, !,
+    std.map {std.iota {type-depth Type} } (x\r\ r = iPure none) Pures, !,
+    do-iIntros {std.append [iIntuitionistic (iIdent (iNamed "Hphi")) | Pures]
+                           [iIdent (iNamed "HF"), iHyp "HF", iHyp "Hphi"]}
+               IH (ih\ true),
+    if-debug (coq.say "iter proof finished").
+
 
 
   pred create-iInductive i:list param, i:indt-decl.
@@ -346,9 +354,9 @@ Elpi Accumulate lp:{{
 
     if (get-option "noiter" tt) (true)
       (
-      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm _
-      % coq.env.add-const Name Fixpoint _ ff Fix,
-      % if-debug (coq.say "Fixpoint" Fix)
+      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm (hole IterType IterProof),
+      coq.env.add-const {calc (Name ^ "_iter")} IterProof IterType ff IterConst,
+      if-debug (coq.say "Iter" IterConst)
       ).
   create-iInductive Params (parameter ID IK T IND) :-
     pi p\ create-iInductive [(par ID IK T p) | Params] (IND p).
@@ -388,12 +396,21 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 Elpi Export IProper_solver. *)
 
+(* Implicit Types l : loc.
+
+#[debug]
+EI.ind 
+Inductive is_list `{!heapGS Σ} : val → list val → iProp Σ :=
+  | empty_is_list : is_list NONEV []
+  | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs). *)
+
+
 Section Tests.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  #[debug]
+  #[debug,noiter]
   EI.ind 
   Inductive is_list : val → list val → iProp :=
     | empty_is_list : is_list NONEV []
@@ -415,6 +432,55 @@ Section Tests.
   Proof.
     eiIntros "#Hphi % % HF @HF @Hphi".
   Qed.
+
+  Lemma least_fixpoint_ind (Φ : val → list val → iProp) :
+    □ (∀ x y, is_list_pre (λ x' y', Φ x' y' ∧ is_list x' y') x y -∗ Φ x y) -∗
+    ∀ x y, is_list x y -∗ Φ x y.
+  Proof using Type*.
+    iIntros "#Hmon" (x y).
+    rewrite is_list_unfold_1.
+    iIntros "Hx".
+    iApply "Hmon".
+    iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+    { apply is_list_pre_mono. }
+    2: { iApply "Hx". }
+    iModIntro.
+    iApply least_fixpoint_iter.
+    iIntros "!>" (a b) "Hilp".
+    iSplit.
+    - iApply "Hmon". iApply "Hilp".
+    - iApply is_list_unfold_2.
+      iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+      { apply is_list_pre_mono. }
+      2: { iApply "Hilp". }
+      iIntros "!>" (c d) "Hilp".
+      iDestruct "Hilp" as "[_ $]".
+  Qed.
+
+  Lemma least_fixpoint_ind_ei (Φ : val → list val → iProp) :
+    □ (∀ x y, is_list_pre (λ x' y', Φ x' y' ∧ is_list x' y') x y -∗ Φ x y) -∗
+    ∀ x y, is_list x y -∗ Φ x y.
+  Proof using Type*.
+    eiIntros "#Hmon %x %y".
+    rewrite is_list_unfold_1.
+    eiIntros "Hx @Hmon".
+    iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+    { apply is_list_pre_mono. }
+    2: { iApply "Hx". }
+    eiIntros "!>".
+    iApply least_fixpoint_iter.
+    eiIntros "!> %a %b Hilp".
+    iSplit.
+    - eiIntros "@Hmon @Hilp".
+    - iApply is_list_unfold_2.
+      iApply (iProper (□> .> .> bi_wand ==> .> .> bi_wand) is_list_pre).
+      { apply is_list_pre_mono. }
+      2: { iApply "Hilp". }
+      eiIntros "!> %c %d Hilp".
+      iDestruct "Hilp" as "[_ Hilp]".
+      iApply "Hilp".
+  Qed.
+
 
   EI.ind 
   Inductive is_l : val → iProp :=
