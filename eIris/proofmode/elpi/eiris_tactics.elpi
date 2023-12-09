@@ -94,15 +94,15 @@ do-intro-anon (hole Type Proof) C :-
 
 
 pred do-iIntro-ident i:ident, i:ihole, o:ihole.
-do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
-  ident->term ID _ T,
+do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IProof)) :-
+  ident->term ID X T,
   coq.elaborate-skeleton {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} Type Proof ok, !,
   Proof = {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
   coq.typecheck IProof IType' ok,
   pm-reduce IType' IType,
   if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
-do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
-  ident->term ID _ T,
+do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IProof)) :-
+  ident->term ID X T,
   coq.elaborate-skeleton {{ tac_wand_intro _ lp:T _ _ _ _ _ }} Type Proof ok, !,
   Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
   coq.typecheck IProof IType' ok,
@@ -156,7 +156,7 @@ do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) Cs (ihole NS (hole PosedTy
 
   coq.ltac.collect-goals IEVProof [G1] _,
   open (coq.ltac.call "iIntoEmpValid" []) G1 GL,
-  std.forall2 GL Cs (sg\ c\ open (g\gl\ sigma Proof'\ sigma Type'\ 
+  forall2-flex GL Cs (sg\ c\ open (g\gl\ sigma Proof'\ sigma Type'\ 
                                   g = (goal _ _ Type' Proof' _), !,
                                   c (hole Type' Proof')
                     ) sg _),
@@ -205,7 +205,8 @@ do-iSpecializeWand (ihole N (hole Type Proof)) ID
 pred do-iApplySimpleHyp i:ihole, i:ident, o:ihole.
 do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)) :-
   ident->term ID _IDS IDT,
-  @no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  @no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof D,
+  if (D = ok) (true) (if-debug (coq.say "simple apply hyp failed" D), fail),
   Proof = {{ tac_apply _ _ _ _ _ _ lp:RefProof lp:TCProof lp:ApProof }},
   coq.ltac.collect-goals RefProof [G1] _,
   open pm_reflexivity G1 [],
@@ -218,7 +219,8 @@ do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)
 pred do-iApplySimpleExact i:ihole, i:ident.
 do-iApplySimpleExact (ihole _ (hole Type Proof)) ID :-
   ident->term ID _IDS IDT,
-  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof D,
+  if (D = ok) (true) (if-debug (coq.say "simple apply exact failed" D), fail),
   Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
   coq.ltac.collect-goals RefProof [G1] _,
   open pm_reflexivity G1 [],
@@ -288,11 +290,8 @@ do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
 do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
 
-  if-debug (coq.say "intui1" Proof),
   @no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok,
-  if-debug (coq.say "intui2" Proof),
   Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
-  if-debug (coq.say "intui3" IntProof),
 
   coq.ltac.collect-goals FromWand [GW1] _,
   open (tc_solve) GW1 [], 

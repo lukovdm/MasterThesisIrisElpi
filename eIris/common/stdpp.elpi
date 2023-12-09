@@ -2,6 +2,10 @@ pred foldr i:list B, i:A, i:(B -> A -> A -> prop), o:A.
 foldr [] A _ A.
 foldr [X|XS] A F R :- foldr XS A F A', F X A' R.
 
+pred forall2-flex i:list A, i:list B, i:(A -> B -> prop).
+forall2-flex [X|XS] [Y|YS] P :- P X Y, !, forall2-flex XS YS P.
+forall2-flex _ _ _.
+
 pred int->bools i:int, o:list bool.
 pred int->bools.unpadded i:int, o:list bool.
 int->bools.unpadded 0 [] :- !.
