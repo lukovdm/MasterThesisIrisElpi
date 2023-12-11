@@ -18,18 +18,6 @@ pm-reduce T O :-
   coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
   @redflags! RF => coq.reduction.cbv.norm T O.
 
-pred refine.warn i:term, i:goal, o:list sealed-goal.
-refine.warn T (goal _ RawEv Ty Ev _) GS :-
-  rm-evar RawEv Ev,
-  @keepunivs! => coq.elaborate-skeleton T Ty TR D,
-  if (D = ok) (true) (coq.say D, fail),
-  coq.ltac.collect-goals TR GS _,
-  if-debug (coq.say "pre rawev" {coq.term->string T}),
-  RawEv = T,
-  if-debug (coq.say "pre ev" {coq.term->string TR}),
-  % std.spy (Ev = TR),
-  if-debug (coq.say "post rawev").
-
 pred pm-reduce-goal i:goal, o:list sealed-goal.
 pm-reduce-goal (goal _ _ Type _ _ as G) GL :-
   pm-reduce Type Type',

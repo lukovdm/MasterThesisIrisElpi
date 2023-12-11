@@ -9,12 +9,14 @@ From stdpp Require Import base finite.
 
 From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Import reduction.
+From eIris.proofmode Require Import inductiveDB.
 
 From eIris.proofmode Require Import base intros apply.
 From eIris.proofmode.elpi Extra Dependency "proper_solver.elpi" as proper_solver.
 
 #[arguments(raw)] Elpi Command EI.ind.
 Elpi Accumulate Db reduction.db.
+Elpi Accumulate Db induction.db.
 Elpi Accumulate File proper_solver.
 Elpi Accumulate lp:{{
   kind param type.
@@ -369,7 +371,10 @@ Elpi Accumulate lp:{{
       (
       mk-fixpoint Params TypeTerm (global (const C)) Fixpoint,
       coq.env.add-const Name Fixpoint _ ff Fix,
-      if-debug (coq.say "Fixpoint" Fix)
+      if-debug (coq.say "Fixpoint" Fix),
+
+      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-pre (const Fix) (const C))),
+      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-pre (const Fix) (const M)))
       ),!,
 
     if (get-option "nounfold" tt) (true)
@@ -387,14 +392,18 @@ Elpi Accumulate lp:{{
       (
       mk-iter Params (global (const C)) (global (const Fix)) TypeTerm (hole IterType IterProof),
       coq.env.add-const {calc (Name ^ "_iter")} IterProof IterType ff IterConst,
-      if-debug (coq.say "Iter" IterConst)
+      if-debug (coq.say "Iter" IterConst),
+      
+      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-iter (const Fix) (const IterConst)))
       ),!,
 
     if (get-option "noind" tt) (true)
       (
       mk-ind Params (global (const C)) (global (const Fix)) TypeTerm (hole IndType IndProof),
       coq.env.add-const {calc (Name ^ "_ind")} IndProof IndType ff IndConst,
-      if-debug (coq.say "Induction" IndConst)
+      if-debug (coq.say "Induction" IndConst),
+
+      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-pre (const Fix) (const IndConst)))
       ).
   create-iInductive Params (parameter ID IK T IND) :-
     pi p\ create-iInductive [(par ID IK T p) | Params] (IND p).
@@ -449,7 +458,7 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  #[debug,noiter]
+  #[noiter,noind]
   EI.ind 
   Inductive is_list (q : Qp) : val → list val → iProp :=
     | empty_is_list : is_list q NONEV []
@@ -577,7 +586,7 @@ Section Tests.
       iApply "Hilp".
   Qed. *)
 
-
+  #[noiter,noind]
   EI.ind 
   Inductive is_l : val → iProp :=
     | empty_is_l : is_l NONEV
@@ -589,6 +598,7 @@ Section Tests.
   Check is_l_unfold_2.
   Check is_l_unfold_1.
 
+  #[noiter,noind]
   EI.ind 
   Inductive is_P_list : (val → iProp) → val → iProp :=
     | empty_is_P_list P : is_P_list P NONEV
@@ -600,6 +610,7 @@ Section Tests.
   Check is_P_list_unfold_2.
   Check is_P_list_unfold_1.
 
+  #[noiter,noind]
   EI.ind 
   Inductive is_P2_list {A} (P : val → A → iProp) : val → list A → iProp :=
     | empty_is_P2_list : is_P2_list P NONEV []
