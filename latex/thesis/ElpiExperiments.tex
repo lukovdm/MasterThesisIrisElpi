@@ -180,14 +180,23 @@ If we take the following example
 When evaluating this predicate we would first apply the name rule of the \elpiinline{tokenize.rec} predicate. This would unify \elpiinline{TS} with \elpiinline{[tName "H" | TS']} and call line 3, \elpiinline{tokenize.rec ["^"] TS'}. Every rule of \elpiinline{tokenize.rec} fails including the last fail rule. This rule does first print \elpiinline{"unrecognized tokens ^"} but then also fails. Now when executing the rule of line 1, we have failed on the last predicate of the rule. If there was no cut before it, we would backtrack to the fail rule and also print \elpiinline{"unrecognized tokens [H, ^]"}. But, because there is a cut we don't print the faulty error message. Thus, we only print meaningful error message when we fail to tokenize an input.
 
 \section{Parser}\label{ssec:parser}
-
-\subsection{Data structure}
-Explain the data structure of intro patterns
+\quest{Ik twijfel over dit hele stuk aangezien er niet zo veel nieuws in wordt uitgelegt dat nuttig is voor later, behalve pas op met backtracking.}
 \begin{itemize}
-  \item Tree structure
-  \item iList, allow for destructing of more than just or, and.
+  \item Describe sections of parser
+\end{itemize}
+Alternative for this section
+\begin{itemize}
+  \item Parser uses many of the same techniques as tokenizer for parsing
+  \item Not much to explain
+  \item Implements a reductive descent parsing
+  \item Minimize backtracking
+  \item Look at code for full details
 \end{itemize}
 
+\subsection{Data structure}
+\begin{itemize}
+  \item structured to be easily read to apply the intro pattern.
+\end{itemize}
 \begin{elpicode}
   kind ident type.
   type iNamed string -> ident.
@@ -198,13 +207,15 @@ Explain the data structure of intro patterns
   type iIdent ident -> intro_pat.
   type iList list (list intro_pat) -> intro_pat.
 \end{elpicode}
+\begin{itemize}
+  \item Tree structure?
+  \item iList is combination of existential, disjunction and conjunction pattern
+\end{itemize}
 
 \subsection{Reductive descent parsing}
 \begin{itemize}
-  \item We can translate a grammar directly to a parser
-  \item Give partial grammar for the intro patterns (in terms of tokens?)
-  \item Show code for parser, use \elpiinline{parse_ilist} as example
-  \item How to translate a grammar rule to a parser rule
+  \item We can translate a grammar directly into a parser
+  \item Below, partial grammar for the intro patterns
 \end{itemize}
 
 \begin{grammar}
@@ -224,6 +235,12 @@ Explain the data structure of intro patterns
   \alt <intropattern> `&' <intropattern\_conj\_list>
 \end{grammar}
 
+\begin{itemize}
+  \item Explain structure of parser
+  \item give example of anon, simpl and done
+  \item Using tokenizer name has become the same
+\end{itemize}
+
 \begin{elpicode}
   pred parse_ip i:list token, o:list token, o:intro_pat.
   parse_ip [tAnon | TS] TS (iFresh) :- !.
@@ -231,6 +248,11 @@ Explain the data structure of intro patterns
   parse_ip [tDone | TS] TS (iDone) :- !.
   parse_ip [tName X | TS] TS (iIdent (iNamed X)) :- !.
 \end{elpicode}
+
+\begin{itemize}
+  \item Check after calling new parser that conditions for values hold
+  \item Post process conj parser result
+\end{itemize}
 
 \begin{elpicode}
   parse_ip [tBracketL | TS] TS' (iList L) :- !,
@@ -240,6 +262,9 @@ Explain the data structure of intro patterns
   {std.length L'} >= 2,
   foldr {std.drop-last 2 L'} (iList [{std.take-last 2 L'}]) (x\ a\ r\ r = iList [[x, a]]) IP.
 \end{elpicode}
+\begin{itemize}
+  \item Recursive parser
+\end{itemize}
 
 \begin{elpicode}
   pred parse_ilist i:list token, o:list token, o:list (list intro_pat).
@@ -260,11 +285,11 @@ Explain the data structure of intro patterns
 \end{elpicode}
 
 \subsection{Danger of backtracking}
-Explain how backtracking can lead to massive slowdowns when not managed correctly.
 \begin{itemize}
   \item Show timing of current \elpiinline{parse_ilist} code on larger inputs
   \item Change backtracking
   \item Show new timings
+  \item Explain why it is better
 \end{itemize}
 
 \begin{elpicode}
@@ -286,61 +311,191 @@ Explain how backtracking can lead to massive slowdowns when not managed correctl
 \end{elpicode}
 
 \section{Applier}\label{ssec:applier}
-Something about \ce becoming relevant here
+\begin{itemize}
+  \item Only used standard \elpi
+  \item Now use \ce
+  \item What \ce adds
+  \item Section overview
+\end{itemize}
+
 \subsection{Elpi coq HOAS}
+\begin{itemize}
+  \item First step, represent \coq terms in \elpi
+  \item Names and function application are just constructors
+\end{itemize}
 \coqinline{1+1}
 \begin{elpicode}
   app [global (const «Nat.add»), 
       app [global (indc «S»), global (indc «O»)], 
       app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
+\begin{itemize}
+  \item Explain app, global, const, indc and «»
+\end{itemize}
 
-\coqinline{forall (n: nat), n + 1}
+\begin{itemize}
+  \item \ce uses higher-order abstract syntax (HOAS)
+  \item functions in \coq are functions that produce terms in \ce
+\end{itemize}
+\coqinline{fun (n: nat), n + 1}
 \begin{elpicode}
-  prod `n` (global (indt «nat»)) c0 \ 
-      app [global (indt «sum»), 
-           c0, 
-           app [global (indc «S»), global (indc «O»)]]
+  FUN = fun `n` (global (indt «nat»)) n \ 
+          app [global (indt «sum»), 
+              n, 
+              app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
+\begin{itemize}
+  \item fun constructor taking name, type and function producing term
+  \item footnote about names all being convertible
+\end{itemize}
+\begin{elpicode}
+  type fun  name -> term -> (term -> term) -> term.
+\end{elpicode}
+\begin{itemize}
+  \item prod, let, fix work the same
+\end{itemize}
+
+\subsection{Coq context in elpi}
+\begin{itemize}
+  \item Looking at terms in functions becomes hard as we need to give the function an input to get the term
+  \item introduce fresh constant using \elpiinline{pi x\ }
+\end{itemize}
+\begin{elpicode}
+  FUN = fun _ _ F,
+  pi x\ F x = app [_, _, P],
+  P = app [global (indc «S»), global (indc «O»)]
+\end{elpicode}
+\begin{itemize}
+  \item Take function out of constructor
+  \item Fill in function with existential variable to inspect contents
+  \item Take out number we add
+  \item We lose type and name information about x
+\end{itemize}
+\begin{elpicode}
+  pred decl i:term, o:name, o:term.
+  decl x `n` (global (indt «nat»)).
+\end{elpicode}
+\begin{itemize}
+  \item decl rule describes types and names of variables
+  \item Lookup type using \elpiinline{decl x N T}
+  \item We have to add the rule when we define x
+\end{itemize}
+\begin{elpicode}
+  pi x\ decl x `n` (global (indt «nat»)) 
+          => coq.typecheck (F x) Type ok.
+\end{elpicode}
+\begin{itemize}
+  \item We add a rule to the top of the rules for the execution of the code after the \elpiinline{=>}
+  \item During typecheck, \elpiinline{decl x N T} is executed resulting in ...
+  \item \elpiinline{Type} becomes (global (indt «nat»))
+  \item \elpiinline{=>} has many more uses later on
+\end{itemize}
 
 \subsection{Quotation and anti-quotation}
+\begin{itemize}
+  \item Writing terms is a lot of work
+  \item \ce allows us to write \coq code that is translated immediately using imports in current file
+\end{itemize}
 \begin{elpicode}
-  {{ forall (n: nat), n + 1 }} =
-    prod `n` (global (indt «nat»)) c0 \ 
+  {{ λ (n: nat), n + 1 }} =
+    fun `n` (global (indt «nat»)) c0 \ 
         app [global (indt «sum»), 
             c0, 
             app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
-
+\begin{itemize}
+  \item \ce also allows putting \elpi vars in \coq terms (anti quotation)
+\end{itemize}
 \begin{elpicode}
-  Plus = {{ 2 }},
-  Foo = {{ forall (n: nat), n + lp:Plus }}
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} 
 \end{elpicode}
-\subsection{Coq context in elpi}
+\begin{itemize}
+  \item Extract values from term
+  \item Insert values in term, useful in proofs
+\end{itemize}
+\begin{elpicode}
+  {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }}
+\end{elpicode}
+\begin{itemize}
+  \item Lemma useful in next section
+  \item Type is type of goal we want to proof
+  \item Term becomes lemma we can apply to goal
+\end{itemize}
 \subsection{Proofs in Elpi}
+\begin{itemize}
+  \item Proofs in \elpi built up proof term step by step
+  \item Pass around Type of goal and variable to assign proof term to
+  \item This is hole
+\end{itemize}
+\begin{elpicode}
+  kind hole type.
+  type hole term -> term -> hole. % hole Type Proof
+\end{elpicode}
+\begin{itemize}
+  \item Proofs take a hole and often produce new holes
+  \item Following proof step applies the ex Falso proof step
+  \item Replace type with False
+\end{itemize}
+\begin{elpicode}
+  pred do-iExFalso i:hole, o:hole.
+  do-iExFalso (hole Type Proof) (hole FalseType FalseProof) :-
+    coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
+    Proof = {{ tac_ex_falso _ _ lp:FalseProof }},
+    coq.typecheck FalseProof FalseType ok.
+\end{elpicode}
+\begin{coqcode}
+  Lemma tac_ex_falso Δ Q : envs_entails Δ False → envs_entails Δ Q.
+\end{coqcode}
+\begin{itemize}
+  \item Elaborate Lemma against type to generate proof term
+  \item Term will be Lemma filled in with necessary values
+  \item Next, extract New proof variable
+  \item Get type of new proof variable
+\end{itemize}
+
+\subsubsection{Iris context counter}
+\begin{itemize}
+  \item Iris can have anonymous hyps in context
+  \item Keep track of number to assign to anon hyps
+  \item Normally in Type
+  \item Since we derive the type from the proof term we have to apply increases in this number in the proof term
+  \item Instead we keep track of it separately
+\end{itemize}
 \begin{elpicode}
   pred do-iStartProof i:hole, o:ihole.
-  do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
-    coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-  do-iStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (ihole N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
   do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
     coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
     Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
     coq.typecheck NProof NType ok,
     NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 \end{elpicode}
-
-\subsection{Introducing anonymous Iris hypothesis}
+\begin{itemize}
+  \item Start proof applies start proof lemma
+  \item Next extracts current anon hyp count
+  \item Stores it in hole using new type ihole
+\end{itemize}
 \begin{elpicode}
-  pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
-  do-iIntros [] IH C :- !, if-debug (coq.say "do-iIntros done"), C IH.
-  do-iIntros [iFresh | IPS] (ihole N H) C :- !,
-    increase-ctx-count N NS,
-    do-iIntro-ident (iAnon N) (ihole NS H) IH, !, 
-    do-iIntros IPS IH C.
+  kind ihole type.
+  type ihole term -> hole -> ihole. % ihole iris hyp counter, (hole type proof)
 \end{elpicode}
+\begin{itemize}
+  \item Counter is \coq positive since increasing it is fairly easy
+\end{itemize}
+\begin{elpicode}
+  pred increase-ctx-count i:term, o:term.
+  increase-ctx-count N NS :-
+    coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
+\end{elpicode}
+\begin{itemize}
+  \item We can increase counter and put it in the resulting \elpiinline{ihole} when necessary.
+\end{itemize}
 
 \subsection{Continuation Passing Style}
+\begin{itemize}
+  \item When introducing a forall we need to add the variable to our context
+  \item Next steps in the proof thus need the new value in the context
+  \item We have to use continuation passing style
+\end{itemize}
 \begin{elpicode}
   pred do-intro-anon i:hole, i:(hole -> prop).
   do-intro-anon (hole Type Proof) C :-
@@ -352,27 +507,97 @@ Something about \ce becoming relevant here
       coq.typecheck (IntroFProof x) (F x) ok,
       C (hole (F x) (IntroFProof x)).
 \end{elpicode}
+\begin{itemize}
+  \item This introduces a variable without needing a name
+  \item first two steps create the name of the variable
+  \item Next we use a function as the proof term
+  \item We extract the (term -> term) proof variable and the type
+  \item Add the new variable to the context with the name
+  \item Get the type of the new hole
+  \item Call the continuation function on the hole in the context
+\end{itemize}
+
+\begin{itemize}
+  \item In our eiIntros tactic we will be calling predicates like \elpiinline{do-intro-anon} and thus we get a similar type
+\end{itemize}
+\begin{elpicode}
+  pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
+  do-iIntros [] IH C :- !, C IH.
+  do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
+    coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
+    Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
+    coq.typecheck IProof IType ok, !,
+    do-intro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
+      h = hole IntroType IntroProof,
+      coq.reduction.lazy.bi-norm IntroType NormType, !,
+      do-iIntros IPS (ihole N (hole NormType IntroProof)) C
+    ).
+\end{elpicode}
+\begin{itemize}
+  \item The predicate \elpiinline{do-iIntros} gets a list of intropatterns, an ihole and the continuation function
+  \item Base case calls the cont. pred
+  \item Pure intro case
+  \item First transform goal to put forall at the top of goal
+  \item Then use \elpiinline{do-intro-anon} to introduce that variable
+  \item Lastly normalize the type and call iIntros on the new hole
+  \item No anon \iris hyps introduced thus counter stays the same
+\end{itemize}
 
 \subsection{Backtracking in proofs}
+\quest{We don't actually need to backtrack here, we can just look at the type and see which case we need}
 \begin{elpicode}
   pred do-iIntro-ident i:ident, i:ihole, o:ihole.
-  do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
+  do-iIntro-ident ID (ihole N (hole Type Proof)) 
+                     (ihole N (hole IType IProof)) :-
     ident->term ID _ T,
-    coq.elaborate-skeleton {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} Type Proof ok, !,
-    Proof = {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
+    coq.elaborate-skeleton 
+      {{ tac_impl_intro _ lp:T _ _ _ _ _ _ _ }} 
+      Type Proof ok, !,
+    Proof = 
+      {{ tac_impl_intro _ _ _ _ _ _ _ _ lp:IProof }},
     coq.typecheck IProof IType' ok,
     pm-reduce IType' IType,
-    if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
-  do-iIntro-ident ID (ihole N (hole Type Proof)) (ihole N (hole IType IntroPIProofroof)) :-
+    if (IType = {{ False }}) 
+       (coq.error "eiIntro: " X " not fresh")
+       (true).
+  do-iIntro-ident ID (ihole N (hole Type Proof)) 
+                     (ihole N (hole IType IProof)) :-
     ident->term ID _ T,
-    coq.elaborate-skeleton {{ tac_wand_intro _ lp:T _ _ _ _ _ }} Type Proof ok, !,
+    coq.elaborate-skeleton 
+      {{ tac_wand_intro _ lp:T _ _ _ _ _ }} 
+      Type Proof ok, !,
     Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:IProof }}, 
     coq.typecheck IProof IType' ok,
     pm-reduce IType' IType,
-    if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
+    if (IType = {{ False }}) 
+       (coq.error "eiIntro: " X " not fresh") 
+       (true).
   do-iIntro-ident ID _ _ :-
     ident->term ID X _,
     coq.error "eiIntro: " X " could not introduce".
 \end{elpicode}
+
+\subsection{Starting the tactic}
+\begin{itemize}
+  \item solve is the entrypoint
+  \item gets a goal with type proof and the arguments
+\end{itemize}
+\begin{elpicode}
+  solve (goal _ _ Type Proof [str Args]) GS :-
+    tokenize Args T, !,
+    parse_ipl T IPS, !,
+    do-iStartProof (hole Type Proof) IH, !,
+    do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+    coq.ltac.collect-goals Proof GL SG,
+    all (open pm-reduce-goal) GL GL',
+    std.append GL' SG GS.
+\end{elpicode}
+\begin{itemize}
+  \item First we parse the arguments
+  \item Ten start proof and get the ihole
+  \item Then start do-iIntros where at the end we put the context counter in the proof
+  \item ...
+  \item ...
+\end{itemize}
 
 \end{document}

@@ -12,5 +12,7 @@ Elpi Accumulate lp:{{
     foo :- true.
 }}.
 Elpi Query lp:{{
-    T = {{ forall (n: nat), n + 1 }}.
+    T = {{ fun (n: nat) => n + 1 }},
+    T = fun _ _ F,
+    pi x\ F x = app [_, _, P]
 }}.

@@ -19,3 +19,4 @@
 {"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\Qconsists of a separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and a tactics language for separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
 {"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\Qis a separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and a tactics language for separation logic \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
 {"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\QTo be able to reason about this logic in coq a tactics language has been added called the Iris Proof Mode (IPM) \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"ON_IN_THE_MIDDLE","sentence":"^\\QThis introduces a variable without needing a name first two steps create the name of the variable Next we use a function as the proof term We extract the (term -> term) proof variable and the type Add the new variable to the context with the name Get the type of the new hole Call the continuation function on the hole in the context\\E$"}
