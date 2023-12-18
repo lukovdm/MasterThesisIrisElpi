@@ -35,11 +35,55 @@ do-iStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
 do-iStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (ihole N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
 do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
-  coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
+  std.assert-ok! (coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof) "iStartProof elaborate failed",
   Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
   coq.typecheck NProof NType ok,
   NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
+
+pred do-iSplit i:bool, i:list ident, i:hole, o:hole, o:hole.
+do-iSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
+  if (IsLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
+  std.map Hyps (x\r\ ident->term x _ r) HypsT,
+  list->listterm HypsT ListT,
+  coq.typecheck ListT {{ list _ }} ok,
+  @no-tc! => coq.elaborate-skeleton {{ tac_sep_split _ lp:D lp:ListT _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_sep_split _ _ _ _ _ _ lp:FromSep lp:ConjProof }},
+  coq.ltac.collect-goals FromSep [G1] _,
+  open tc_solve G1 [],
+  coq.typecheck ConjProof RedType ok,
+  pm-reduce RedType ConjType,
+  coq.elaborate-skeleton {{ conj _ _ }} ConjType ConjProof ok,
+  ConjProof = {{ conj lp:LProof lp:RProof }},
+  coq.typecheck LProof LType' ok,
+  pm-reduce LType' LType,
+  coq.typecheck RProof RType' ok,
+  pm-reduce RType' RType.
+ 
+
+pred do-iAndSplit i:hole, o:hole, o:hole.
+do-iAndSplit (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
+  @no-tc! => coq.elaborate-skeleton {{ tac_and_split _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_and_split _ _ _ _ lp:FromAnd lp:LProof lp:RProof }},
+  coq.ltac.collect-goals FromAnd [G1] _,
+  open tc_solve G1 [],
+  coq.typecheck LProof LType ok,
+  coq.typecheck RProof RType ok.
+
+
+pred do-iEvalIn i:ident, i:hole, o:ihole, o:hole.
+do-iEvalIn ID (hole Type Proof) IH (hole EvalType EvalProof) :-
+  ident->term ID _ T,
+  pm-reduce Type Type',
+  @no-tc! => coq.elaborate-skeleton {{ tac_eval_in _ lp:T _ _ _ _ _ _ _ }} Type' Proof ok,
+  Proof = {{ tac_eval_in _ _ _ _ _ _ lp:Refl lp:StartProof lp:EvalProof }},
+  coq.ltac.collect-goals Refl [G1] _,
+  open pm_reflexivity G1 [],
+  coq.typecheck StartProof StartType' ok,
+  pm-reduce StartType' StartType,
+  do-iStartProof (hole StartType StartProof) IH,
+  coq.typecheck EvalProof EvalType' ok,
+  pm-reduce EvalType' EvalType.
 
 % Introduce a mod
 pred do-iModIntro i:hole, o:hole.
@@ -146,7 +190,7 @@ do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
 pred do-iPoseLem i:term, i:ihole, o:ident, i:list (hole -> prop), o:ihole.
 do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) Cs (ihole NS (hole PosedType PosedProof)) :-
   increase-ctx-count N NS,
-  ident->term (iAnon N) _ NT,
+  ident->term (iAnon N) _ NT, !,
 
   @no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}} 
@@ -235,16 +279,15 @@ pred do-iApplyLem i:term, i:ihole, i:list (hole -> prop), o:list ihole.
 do-iApplyLem Lem IH Cs IHS :-
   if-debug (coq.say "do-iApplyLem" {coq.term->string Lem}),
   do-iPoseLem Lem IH ID Cs IHPosed, !,
-  if-debug (coq.say "Posed Lemma"),
+  if-debug (coq.say "Posed Lemma" {ihole->string IHPosed}),
   do-iApplyLem.aux IHPosed ID IHS.
-do-iApplyLem.aux IH ID [IH'] :- 
-  if-debug (coq.say "simpleApplyHyp" {ihole->string IH}),
-  do-iApplySimpleHyp IH ID IH'.
-do-iApplyLem.aux IH ID [] :- 
-  if-debug (coq.say "simpleApplyExact"),
-  do-iApplySimpleExact IH ID.
+do-iApplyLem.aux IH ID [] :-
+  do-iApplySimpleExact IH ID,
+  if-debug (coq.say "simpleApplyExact success").
+do-iApplyLem.aux IH ID [IH'] :-
+  do-iApplySimpleHyp IH ID IH',
+  if-debug (coq.say "simpleApplyHyp sucess" {ihole->string IH'}).
 do-iApplyLem.aux IH ID [IHL | IHS] :-
-  if-debug (coq.say "specialize"),
   do-iSpecializeWand IH ID IHL IHR,
   if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
   do-iApplyLem.aux IHR ID IHS.
@@ -255,16 +298,15 @@ do-iApplyHyp HypString IH IHS :-
   string->stringterm HypString Hyp,
   if-debug (coq.say "do-iApplyHyp" HypString ":-" {ihole->string IH}),
   do-iPoseHyp Hyp IH ID IHPosed, !,
-  if-debug (coq.say "Posed Hyp"),
+  if-debug (coq.say "Posed Hyp" {ihole->string IHPosed}),
   do-iApplyHyp.aux IHPosed ID IHS.
-do-iApplyHyp.aux IH ID [IH'] :- 
-  if-debug (coq.say "simpleApplyHyp" {ihole->string IH}),
-  do-iApplySimpleHyp IH ID IH'.
-do-iApplyHyp.aux IH ID [] :- 
-  if-debug (coq.say "simpleApplyExact"),
-  do-iApplySimpleExact IH ID.
+do-iApplyHyp.aux IH ID [] :-
+  do-iApplySimpleExact IH ID,
+  if-debug (coq.say "simpleApplyExact success").
+do-iApplyHyp.aux IH ID [IH'] :-
+  do-iApplySimpleHyp IH ID IH',
+  if-debug (coq.say "simpleApplyHyp sucess" {ihole->string IH'}).
 do-iApplyHyp.aux IH ID [IHL | IHS] :-
-  if-debug (coq.say "specialize"),
   do-iSpecializeWand IH ID IHL IHR, !,
   if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
   do-iApplyHyp.aux IHR ID IHS.
@@ -333,6 +375,32 @@ do-iAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
   coq.typecheck AndProof RedType ok,
   pm-reduce RedType AndType,
   if (AndType = {{ False }}) (coq.error "iAndDestruct: left or right not fresh") (true).
+
+
+pred do-iAndChoiceDestruct i:ident, i:ident, i:bool, i:hole, o:hole.
+do-iAndChoiceDestruct ID OID ChooseLeft (hole Type Proof) (hole AndType AndProof) :-
+  ident->term ID X IDT,
+  ident->term OID OX OIDT,
+
+  if (ChooseLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
+
+  @no-tc! => std.assert-ok! (coq.elaborate-skeleton {{ tac_and_destruct_choice _ lp:IDT _ lp:D lp:OIDT _ _ _ _ _ _ _ }} Type Proof) "iAndChoiceDestruct failed",
+  Proof = {{ tac_and_destruct_choice _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
+  (open pm_reflexivity G1 []; coq.error "iAndChoiceDestruct:" X "not found"),
+  coq.ltac.collect-goals Into [G2] _,
+  (
+    thenl [
+      open pm_reduce,
+      open tc_solve
+    ] G2 []; 
+    coq.error "iAndChoiceDestruct: cannot destruct"
+  ),
+
+  coq.typecheck AndProof RedType ok,
+  pm-reduce RedType AndType,
+  if (AndType = {{ False }}) (coq.error "iAndChoiceDestruct: " OX " not fresh") (true).
 
 
 pred do-iOrDestruct i:ident, i:ident, i:ident, i:hole, o:hole, o:hole.
@@ -422,6 +490,14 @@ do-iDestruct ID (iList [[iPure PN, IP]]) (ihole N H) C :- !,
   % This case now also handles the pure and case with typeclasses,
   % however, that is not neccessary as we can just backtrack in here
   % And take the next case if iExistsDestruct fails.
+do-iDestruct ID (iList [[IP, iDrop]]) (ihole N H) C :- !,
+  ident-for-pat.default IP ID N HID N',
+  do-iAndChoiceDestruct ID HID tt H H', !,
+  do-iDestruct HID IP (ihole N' H') C.
+do-iDestruct ID (iList [[iDrop, IP]]) (ihole N H) C :- !,
+  ident-for-pat.default IP ID N HID N',
+  do-iAndChoiceDestruct ID HID ff H H', !,
+  do-iDestruct HID IP (ihole N' H') C.
 do-iDestruct ID (iList [[IP1, IP2]]) (ihole N H) C :-
   ident-for-pat.default IP1 ID N ID1 N',
   ident-for-pat IP2 N' ID2 N'',

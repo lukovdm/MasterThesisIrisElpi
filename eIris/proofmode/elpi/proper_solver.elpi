@@ -120,7 +120,7 @@ do-steps.do (ihole _ (hole _ Proof)) _ _ _ :-
   coq.ltac.collect-goals Proof [G] _,
   open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
 do-steps.do _ T F _ :- !,
-  if-debug (coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping").
+  if-debug (coq.say "No case for relation" T "with " F "😢 stopping").
 
 pred do-solve-proper i:hole.
 do-solve-proper (hole Type Proof) :-

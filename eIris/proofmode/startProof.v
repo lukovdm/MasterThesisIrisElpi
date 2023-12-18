@@ -23,8 +23,6 @@ Section proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
 
-  Elpi Trace Browser.
-
   Lemma and_exist_sep (P : iProp) :
     P -∗ P.
   Proof.
