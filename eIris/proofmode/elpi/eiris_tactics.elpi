@@ -17,16 +17,32 @@ ident->term (iAnon N) "anon" T :- !,
 
 
 pred ident-for-pat i:intro_pat, i:term, o:ident, o:term.
+ident-for-pat (iList [[IP]]) N ID N' :-
+  ident-for-pat IP N ID N'.
 ident-for-pat (iIdent ID) N ID N.
 ident-for-pat _ NT (iAnon NT) NS :-
   increase-ctx-count NT NS.
 
 
 pred ident-for-pat.default i:intro_pat, i:ident, i:term, o:ident, o:term.
+ident-for-pat.default (iList [[IP]]) DID N ID N' :-
+  ident-for-pat.default IP DID N ID N'.
 ident-for-pat.default (iIdent ID) _ N ID N.
 ident-for-pat.default _ (iAnon NT) N (iAnon NT) N.
 ident-for-pat.default _ _ NT (iAnon NT) NS :-
   increase-ctx-count NT NS.
+
+
+pred find-hyp i:ident, i:term, o:term.
+find-hyp ID {{ envs_entails (Envs lp:P _ _) _ }} H :-
+  find-hyp.aux ID P H.
+find-hyp ID {{ envs_entails (Envs _ lp:S _) _ }} H :-
+  find-hyp.aux ID S H.
+pred find-hyp.aux i:ident, i:term, o:term.
+find-hyp.aux ID {{ Esnoc _ lp:IDT lp:H }} H :-
+  ident->term ID _ IDT, !.
+find-hyp.aux ID {{ Esnoc lp:E _ _ }} OH :-
+  find-hyp.aux ID E OH.
 
 
 % Start an Iris proof
@@ -185,6 +201,38 @@ do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   coq.typecheck ClearProof RedType ok,
   pm-reduce RedType ClearType. 
   % I am skipping the simpl here, and hope it doesn't matter as much.
+
+
+pred do-iPure i:ident, i:option string, i:hole, i:(hole -> prop).
+do-iPure ID PID (hole Type Proof) C :-
+  ident->term ID IDS IDT,
+
+  @no-tc! => coq.elaborate-skeleton {{ tac_pure _ lp:IDT _ _ _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_pure _ _ _ _ _ _ lp:Lookup lp:IntoPure lp:Affine lp:IntroProof }},
+
+  coq.ltac.collect-goals Lookup [G1] _,
+  (open pm_reflexivity G1 []; coq.error "iPure:" IDS "not found"),
+  coq.ltac.collect-goals IntoPure [G2] _,
+  (open tc_solve G2 []; coq.error "iPure:" IDS "not pure"),
+  coq.ltac.collect-goals Affine [G3] _,
+  (
+    thenl [
+      open pm_reduce,
+      open tc_solve
+    ] G3 []; 
+    coq.error "iPure:" IDS "not affine and the goal not absorbing"
+  ),
+
+  coq.typecheck IntroProof IntroType ok,
+  pm-reduce IntroType IntroType',
+  ((
+    PID = some SID, 
+    do-intro SID (hole IntroType' IntroProof) C
+  );
+  (
+    PID = none,
+    do-intro-anon (hole IntroType' IntroProof) C
+  )).
 
 
 pred do-iPoseLem i:term, i:ihole, o:ident, i:list (hole -> prop), o:ihole.
@@ -369,7 +417,7 @@ do-iAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
       open pm_reduce,
       open tc_solve
     ] G2 []; 
-    coq.error "iAndDestruct: cannot destruct"
+    (open show-goal G2 _, coq.error "iAndDestruct: cannot destruct")
   ),
 
   coq.typecheck AndProof RedType ok,
@@ -395,7 +443,7 @@ do-iAndChoiceDestruct ID OID ChooseLeft (hole Type Proof) (hole AndType AndProof
       open pm_reduce,
       open tc_solve
     ] G2 []; 
-    coq.error "iAndChoiceDestruct: cannot destruct"
+    (open show-goal G2 _, coq.error "iAndChoiceDestruct: cannot destruct")
   ),
 
   coq.typecheck AndProof RedType ok,
@@ -413,9 +461,10 @@ do-iOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrR
   Proof = {{ tac_or_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ConjProof }},
   
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.error "iOrDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; (open show-goal G1 _, coq.error "iOrDestruct:" ID "not found")),
   coq.ltac.collect-goals Into [G2] _,
-  (open tc_solve G2 []; coq.error "iOrDestruct: cannot destruct"),
+  if-debug (coq.say "intoOr", open show-goal G2 _),
+  (open tc_solve G2 []; (open show-goal G2 _, coq.say "iOrDestruct: cannot destruct")),
   
   coq.typecheck ConjProof RedType ok,
   pm-reduce RedType ConjType,
@@ -436,9 +485,9 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.error "iExistDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; (open show-goal G1 _, coq.error "iExistDestruct:" ID "not found")),
   coq.ltac.collect-goals Into [G2] _,
-  (open tc_solve G2 []; coq.error "iExistDestruct: cannot destruct"),
+  (open tc_solve G2 []; (open show-goal G2 _, coq.error "iExistDestruct: cannot destruct")),
 
   coq.typecheck ExistProof RedType ok,
   pm-reduce RedType ExistType,
@@ -477,13 +526,30 @@ do-iExact ID (hole Type Proof) :-
 
 
 pred do-iDestruct i:ident, o:intro_pat, i:ihole, i:(ihole -> prop).
+:name "do-iDestruct-start"
 do-iDestruct ID IP _ _ :- if-debug (coq.say "do-iDestruct: " ID IP), fail.
+do-iDestruct ID (iList [[IP]]) IH C :- !, do-iDestruct ID IP IH C.
 do-iDestruct ID (iIdent ID) IH C :- !, C IH.
 do-iDestruct (iAnon _) iFresh IH C :- !, C IH. 
 do-iDestruct ID iDrop (ihole N H) C :- !, do-iClear ID H H', C (ihole N H').
+do-iDestruct ID (iPure PID) (ihole N H) C :- !, do-iPure ID PID H (h\ C (ihole N h)).
 do-iDestruct ID (iList [[]]) (ihole _ H) _ :-
   do-iExFalso H H',
   do-iExact ID H'.
+do-iDestruct ID (iAll) (ihole N (hole Type Proof)) C :-
+  find-hyp ID Type (app [global GREF | _]),
+  inductive-unfold GREF _ _ _ NConstr, !,
+  std.map {std.iota NConstr} (x\r\ r = [iFresh]) IPSS,
+  do-iDestruct ID (iList IPSS) (ihole N (hole Type Proof)) C.
+do-iDestruct ID (iList IPSS) (ihole N (hole Type Proof)) C :-
+  find-hyp ID Type (app [global GREF | _]),
+  inductive-unfold GREF U1 _ _ NConstr, !,
+  if-debug (coq.say "Destructing ind" {coq.term->string (global GREF)} NConstr),
+
+  do-iEvalIn ID (hole Type Proof) IH H,
+  do-iApplyLem (global U1) IH [] [],
+  
+  do-iDestruct ID (iList IPSS) (ihole N H) C.
 do-iDestruct ID (iList [[iPure PN, IP]]) (ihole N H) C :- !,
   ident-for-pat.default IP ID N HID NS,
   do-iExistDestruct ID PN HID H (h\ do-iDestruct HID IP (ihole NS h) C).
@@ -503,12 +569,12 @@ do-iDestruct ID (iList [[IP1, IP2]]) (ihole N H) C :-
   ident-for-pat IP2 N' ID2 N'',
   do-iAndDestruct ID ID1 ID2 H H', !,
   do-iDestruct ID1 IP1 (ihole N'' H') (ih\ do-iDestruct ID2 IP2 ih C).
-do-iDestruct ID (iList [[IP1], [IP2]]) (ihole N H) C :-
-  ident-for-pat.default IP1 ID N ID1 N',
-  ident-for-pat IP2 N' ID2 N'',
+do-iDestruct ID (iList [IPSL | IPSSR]) (ihole N H) C :-
+  ident-for-pat.default (iList [IPSL]) ID N ID1 N',
+  ident-for-pat (iList IPSSR) N' ID2 N'',
   do-iOrDestruct ID ID1 ID2 H HL HR, !,
-  do-iDestruct ID1 IP1 (ihole N'' HL) C, !,
-  do-iDestruct ID2 IP2 (ihole N'' HR) C.
+  do-iDestruct ID1 (iList [IPSL]) (ihole N'' HL) C, !,
+  do-iDestruct ID2 (iList IPSSR) (ihole N'' HR) C.
 do-iDestruct _ IP IH C :-
   coq.say "eiDestruct: Skipping " {std.any->string IP}, !,
   C IH.

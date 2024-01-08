@@ -1,10 +1,11 @@
 From elpi Require Import elpi.
 
 Elpi Db induction.db lp:{{
-  pred inductive-pre i:gref, o:gref, o:int.
-  pred inductive-mono i:gref, o:gref.
-  pred inductive-fix i:gref, o:gref.
-  pred inductive-unfold i:gref, o:gref.
-  pred inductive-iter i:gref, o:gref.
-  pred inductive-ind i:gref, o:gref.
+  pred inductive-pre o:gref, o:gref.
+  pred inductive-mono o:gref, o:gref.
+  pred inductive-fix o:gref, o:gref.
+  pred inductive-unfold o:gref, o:gref, o:gref, o:gref, o:int.
+  pred inductive-iter o:gref, o:gref.
+  pred inductive-ind o:gref, o:gref.
+  pred inductive-type o:gref, o:indt-decl.
 }}.
