@@ -4,6 +4,8 @@ From iris.prelude Require Import options.
 From iris.bi Require Export bi.
 From iris.algebra Require Import ofe monoid list.
 
+From stdpp Require Import numbers.
+
 From eIris.proofmode Require Import base reduction inductiveDB inductive.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
@@ -155,16 +157,16 @@ Tactic Notation "eiIntros" string(x) :=
   elpi eiIntros ltac_string:(x).
 
 Tactic Notation "eiDestruct" string(x) "as" string(y) :=
-  elpi eiDestruct debug ltac_string:(x) ltac_string:(y).
+  elpi eiDestruct ltac_string:(x) ltac_string:(y).
 
 Tactic Notation "eiDestruct" string(x) :=
-  elpi eiDestruct debug ltac_string:(x) "**".
+  elpi eiDestruct ltac_string:(x) "**".
 
 Tactic Notation "eiInduction" string(x) "as" string(y) :=
-  elpi eiInduction debug ltac_string:(x) ltac_string:(y).
+  elpi eiInduction ltac_string:(x) ltac_string:(y).
 
 Tactic Notation "eiInduction" string(x) :=
-  elpi eiInduction debug ltac_string:(x) "**".
+  elpi eiInduction ltac_string:(x) "**".
 
 Section Proof.
   Context `{!heapGS Σ}.
@@ -201,12 +203,11 @@ Section Proof.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
-      eiInduction "Hq" as "[IH|IH]"; eiIntros "Hq'".
+      eiInduction "Hq" as "[IH|[%l' [%v' [%vs' [%tl' (Hl' & IH & %Hx & %Hy)]]]]]"; eiIntros "Hq'".
       + iApply is_list_unfold_2.
         iLeft.
         iFrame.
-      + eiDestruct "IH" as "[%l' [%v' [%vs' [%tl' (Hl' & IH & %Hx & %Hy)]]]]". 
-        simplify_eq.
+      + simplify_eq.
         iApply is_list_unfold_2.
         iRight.
         iExists l', v', vs', tl'.
@@ -218,7 +219,7 @@ Section Proof.
         * iApply ("IH" with "[$]").
         * iSplit; iPureIntro; done.
     - eiIntros "Hi".
-      eiInduction "Hi" as "[IH|IH]".
+      eiInduction "Hi" as "[IH|[%l [%v' [%vs' [%tl ([Hq Hq'] & [[Hiq Hiq'] _] & %Hx & %Hy)]]]]]".
       + iDestruct "IH" as "[-> ->]".
         iSplitL.
         * iApply is_list_unfold.
@@ -227,8 +228,7 @@ Section Proof.
         * iApply is_list_unfold.
           iLeft.
           by iPureIntro.
-      + eiDestruct "IH" as "[%l [%v' [%vs' [%tl ([Hq Hq'] & [[Hiq Hiq'] _] & %Hx & %Hy)]]]]".
-        iSplitL "Hq Hiq".
+      + iSplitL "Hq Hiq".
         * iApply is_list_unfold.
           iRight.
           iExists l, v', vs', tl.
@@ -239,6 +239,20 @@ Section Proof.
           iExists l, v', vs', tl.
           iFrame.
           by iPureIntro.
+  Qed.
+
+  Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
+    is_list q v vs -∗ ⌜vs = []⌝ ∨ ⌜(q ≤ 1)%Qp⌝.
+  Proof.
+    eiIntros "[Hv Hvs | (%l & %v' & %vs' & %tl & Hl & _ & _ & _)]".
+    - iLeft.
+      iFrame.
+    - iRight.
+      iEval (iApply pointsto_valid) in "Hl".
+      iRevert "Hl".
+      iPureIntro.
+      intros Hq.
+      by apply dfrac_valid in Hq.
   Qed.
 
 

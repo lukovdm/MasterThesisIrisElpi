@@ -4,7 +4,7 @@ accumulate eIris/proofmode/elpi/reduction.
 shorten coq.ltac.{ open, thenl, all }.
 
 type tc_solve open-tactic.
-tc_solve G GL :- std.spy (coq.ltac.call "tc_solve" [] G GL).
+tc_solve G GL :- coq.ltac.call "tc_solve" [] G GL.
 
 type pm_reduce open-tactic.
 pm_reduce G GL :- coq.ltac.call "pm_reduce" [] G GL.

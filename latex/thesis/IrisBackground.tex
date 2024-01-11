@@ -3,13 +3,41 @@
 \begin{document}
 
 \chapter{Background on Iris}
-Wat is seperatie logica
-syntax, wetjes en intuitie van semantiek
-iets over inductieve definities zonder het over oplossing the hebben
-gebruik is_list als voorbeeld voor hoofdstuk
 
-waarom is een fixpoint niet genoeg
-probeer iets te bedenken waarom je ind of iter nodig hebt
+% Wat is seperatie logica
+% syntax, wetjes en intuitie van semantiek
+% iets over inductieve definities zonder het over oplossing the hebben
+% gebruik is_list als voorbeeld voor hoofdstuk
+
+% waarom is een fixpoint niet genoeg
+% probeer iets te bedenken waarom je ind of iter nodig hebt
+
+\begin{itemize}
+  \item Concept of sepeartion logic
+  \item Any references
+\end{itemize}
+
+\section{Grammer}
+\begin{itemize}
+  \item Write down the grammer we will use for Iris
+\end{itemize}
+\quest{Should I include ghost states etc. in this grammer? We won't be using them but they are part of Iris.}
+\section{Proof rules}
+\begin{itemize}
+  \item Write down proof rules
+  \item Explain important ones, or maybe all???
+\end{itemize}
+
+\section{Contexts}
+\begin{itemize}
+  \item How does the pre condition of the entailment translate to the contexts we see in Iris
+\end{itemize}
+
+\section{Tactics}
+\begin{itemize}
+  \item Proof rules are hard to use
+  \item Better lemma that are usuable and can be inclueded in tactics
+\end{itemize}
 
 
 \section[Iris iIntros]{Iris \coqinline{iIntros}}
@@ -22,19 +50,19 @@ The tactics the IPM adds are build to replicate many of the behaviors of the \co
 We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources.
 
 \begin{minipage}{0.4\textwidth}
-    \begin{prooftree}
-        \AxiomC{$P\ ∗\ Q \vdash R$}
-        \RightLabel{$\mathrel{\rule[0.5ex]{1em}{0.55pt}∗}$-Intro}
-        \UnaryInfC{$P \vdash Q \mathrel{\rule[0.5ex]{1em}{0.55pt}∗} R$}
-    \end{prooftree}
+  \begin{prooftree}
+    \AxiomC{$P\ ∗\ Q \vdash R$}
+    \RightLabel{$\mathrel{\rule[0.5ex]{1em}{0.55pt}∗}$-Intro}
+    \UnaryInfC{$P \vdash Q \mathrel{\rule[0.5ex]{1em}{0.55pt}∗} R$}
+  \end{prooftree}
 \end{minipage}
 %
 \begin{minipage}{0.4\textwidth}
-    \begin{prooftree}
-        \AxiomC{$P \land Q \vdash R$}
-        \RightLabel{$\to$-Intro}
-        \UnaryInfC{$P \vdash Q \to R$}
-    \end{prooftree}
+  \begin{prooftree}
+    \AxiomC{$P \land Q \vdash R$}
+    \RightLabel{$\to$-Intro}
+    \UnaryInfC{$P \vdash Q \to R$}
+  \end{prooftree}
 \end{minipage}
 
 Thus, where a normal implication introduction adds the left-hand side to the \coq context, the magic wand adds the left-hand side to the spatial resource context.
@@ -84,16 +112,21 @@ It consists of a universal quantification, an existential quantification, a conj
 \end{coqcode}
 The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a forall introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. They can have the following interpretations:
 \begin{itemize}
-    \item \coqinline{"H"} represents renaming a hypothesis. The name given is used as the name of the hypothesis in the spatial context.
-    \item \coqinline{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
-    \item \coqinline{"[IPL | IPR]"} represents disjunction elimination. We perform a disjunction elimination on the introduced hypothesis. Then, we apply the two included intro patterns two the two cases created by the disjunction elimination.
-    \item \coqinline{"[IPL IPR]"} represents separating conjunction elimination. We perform a separating conjunction elimination. Then, we apply the two included intro patterns two the two hypotheses by the seperating conjunction elimination.
-    \item \coqinline{"[\%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply hte included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
+  \item \coqinline{"H"} represents renaming a hypothesis. The name given is used as the name of the hypothesis in the spatial context.
+  \item \coqinline{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
+  \item \coqinline{"[IPL | IPR]"} represents disjunction elimination. We perform a disjunction elimination on the introduced hypothesis. Then, we apply the two included intro patterns two the two cases created by the disjunction elimination.
+  \item \coqinline{"[IPL IPR]"} represents separating conjunction elimination. We perform a separating conjunction elimination. Then, we apply the two included intro patterns two the two hypotheses by the seperating conjunction elimination.
+  \item \coqinline{"[\%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply hte included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
 \end{itemize}
 % Add simpl and done here and refrence ssreflect with citation
 Thus, we can break down \coqinline{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqinline{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqinline{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqinline{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqinline{y} to the \coq context. Lastly, \coqinline{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqinline{"Hx"} and \coqinline{"Hy"}.
 
 There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
 
+
+\section{Induction or something}
+\begin{itemize}
+  \item Write something about fixpoints, ind, iter and others
+\end{itemize}
 
 \end{document}

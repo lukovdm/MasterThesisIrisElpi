@@ -120,17 +120,15 @@ proper-proof Proper Proof :-
 
 pred mk-fixpoint.fun i:term, i:list param, i:term, i:term, i:list term, o:term.
 mk-fixpoint.fun Pre Params Type (prod N T F) L (fun N T F') :-
-  @pi-decl N T x\ mk-fixpoint.fun Pre Params Type (F x) [x | L] (F' x).
+  pi x\ mk-fixpoint.fun Pre Params Type (F x) [x | L] (F' x).
 mk-fixpoint.fun Pre Params Type _ RevL {{ bi_forall lp:F }} :-
   std.rev RevL L,
-  coq.id->name "Φ" N,
-  F = fun N Type Forall,
-  @pi-decl N Type phi\ ( sigma AppPhi\ sigma Prem\
+  F = fun _ Type Forall,
+  pi phi\ ( sigma AppPhi\ sigma Prem\
     AppPhi = app [phi | L],
     mk-fixpoint.forall Pre Params phi [] Type Prem,
     Forall phi = {{ bi_wand (□ lp:Prem) lp:AppPhi }}
   ).
-
 
 pred mk-fixpoint.forall i:term, i:list param, i:term, i:list term, i:term, o:term.
 mk-fixpoint.forall Pre Params Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
@@ -141,7 +139,6 @@ mk-fixpoint.forall Pre Params Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   std.map Params (x\r\ x = par _ _ _ r) Ps,
   L = app { std.append [Pre | Ps] [Phi | Xs] },
   R = app [Phi | Xs].
-
 
 pred mk-fixpoint i:list param, i:term, i:term, o:term.
 mk-fixpoint Params Type Pre Fixpoint :-
