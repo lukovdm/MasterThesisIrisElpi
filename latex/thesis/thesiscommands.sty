@@ -39,8 +39,8 @@
 
 \newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
 \newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
-\newmintinline{elpi}{}
-\newmintinline{coq}{}
+\newmintinline[elpii]{elpi}{}
+\newmintinline[coqi]{coq}{}
 
 % Names of projects
 \newcommand{\elpi}{Elpi\xspace}
@@ -57,3 +57,13 @@
 \newcommand{\note}[1]{\todo[color=green!20]{Note: #1}}
 
 \newcommand{\eg}{\emph{e.g.,}\xspace}
+
+% \extrarowheight=\jot	% else, arrays are scrunched compared to, say, aligned
+% \newcolumntype{.}{@{}}
+% Array {rMcMl} modifies array {rcl}, putting mathrel-style spacing
+% around the centered column. (We used this, for example, in laying
+% out some of Iris' axioms. Generally, aligned is simpler but aligned
+% does not work in mathpar because \\ inherits mathpar's 2em vskip.)
+% The capital M stands for THICKMuskip. The smaller medmuskip would be
+% right for mathbin-style spacing.
+\newcolumntype{M}{@{\mskip\thickmuskip}}

@@ -18,6 +18,18 @@
         "type": "github"
       }
     },
+    "ltex_pkgs": {
+      "locked": {
+        "lastModified": 1678571061,
+        "narHash": "sha256-0gI2FHID8XYD3504kLFRLH3C2GmMCzVMC50APV/kZp8=",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8.tar.gz"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1693377291,
@@ -36,6 +48,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "ltex_pkgs": "ltex_pkgs",
         "nixpkgs": "nixpkgs"
       }
     },

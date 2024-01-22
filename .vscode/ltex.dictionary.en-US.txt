@@ -1,13 +1,8 @@
 intropatternlist
-Elpi
 subgoals
 iIntros
-Coq
-coq
-coq-elpi
 evars
 LTac
-Coq-elpi
 Zullip
 simpl
 iProp
@@ -18,3 +13,12 @@ Prolog
 substructural
 recurses
 intuitionistic
+HeapLang
+hoare
+IProperTop
+iInductive
+IProper
+ihole
+do-iIntros
+HOAS
+decl

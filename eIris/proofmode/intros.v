@@ -191,36 +191,35 @@ Section Proof.
   Qed. *)
 
   EI.ind 
-  Inductive is_list (q : Qp) : val → list val → iProp :=
-    | empty_is_list : is_list q NONEV []
-    | cons_is_list l v vs tl : l ↦{#q} (v,tl) -∗ is_list q tl vs -∗ is_list q (SOMEV #l) (v :: vs).
+    Inductive is_list (q : Qp) : val → iProp :=
+      | empty_is_list : is_list q NONEV
+      | cons_is_list l v tl : l ↦{#q} (v,tl) -∗ is_list q tl -∗ is_list q (SOMEV #l).
+  Print is_list_ind.
 
-  Print is_list_pre.
-
-  Lemma ind_test_1 (q q' : Qp) (v : val) (vs : list val) :
-    is_list q v vs ∗ is_list q' v vs ∗-∗ is_list (q+q') v vs.
+  Lemma ind_test_1 (q q' : Qp) (v : val) :
+    is_list q v ∗ is_list q' v ∗-∗ is_list (q+q') v.
   Proof.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
-      eiInduction "Hq" as "[IH|[%l' [%v' [%vs' [%tl' (Hl' & IH & %Hx & %Hy)]]]]]"; eiIntros "Hq'".
+      eiInduction "Hq" as "[IH | (%l' & %v' & %tl' & Hl' & IH & %Hy)]"; eiIntros "Hq'".
       + iApply is_list_unfold_2.
         iLeft.
         iFrame.
       + simplify_eq.
         iApply is_list_unfold_2.
         iRight.
-        iExists l', v', vs', tl'.
-        eiDestruct "Hq'" as "[[%Hl %Hv] | [%l'' [%v'' [%vs'' [%tl'' (Hl & Hilq' & %Hl & %Hv)]]]]]"; simplify_eq.
+        iExists l', v', tl'.
+        eiDestruct "Hq'" as "[%Hl | (%l'' & %v'' & %tl'' & Hl & Hilq' & %Hv)]"; simplify_eq.
         iCombine "Hl' Hl" as "Hl" gives %[_ ?]; simplify_eq.
         iFrame.
         iDestruct "IH" as "[IH _]".
         iSplitL.
         * iApply ("IH" with "[$]").
-        * iSplit; iPureIntro; done.
+        * by iPureIntro.
     - eiIntros "Hi".
-      eiInduction "Hi" as "[IH|[%l [%v' [%vs' [%tl ([Hq Hq'] & [[Hiq Hiq'] _] & %Hx & %Hy)]]]]]".
-      + iDestruct "IH" as "[-> ->]".
+      eiInduction "Hi" as "[%Ha | (%l & %v' & %tl & [Hq Hq'] & [[Hiq Hiq'] _] & %Hy)]".
+      + simplify_eq.
         iSplitL.
         * iApply is_list_unfold.
           iLeft.
@@ -231,12 +230,12 @@ Section Proof.
       + iSplitL "Hq Hiq".
         * iApply is_list_unfold.
           iRight.
-          iExists l, v', vs', tl.
+          iExists l, v', tl.
           iFrame.
           by iPureIntro.
         * iApply is_list_unfold.
           iRight.
-          iExists l, v', vs', tl.
+          iExists l, v', tl.
           iFrame.
           by iPureIntro.
   Qed.

@@ -530,7 +530,7 @@ pred do-iDestruct i:ident, o:intro_pat, i:ihole, i:(ihole -> prop).
 do-iDestruct ID IP _ _ :- if-debug (coq.say "do-iDestruct: " ID IP), fail.
 do-iDestruct ID (iList [[IP]]) IH C :- !, do-iDestruct ID IP IH C.
 do-iDestruct ID (iIdent ID) IH C :- !, C IH.
-do-iDestruct (iAnon _) iFresh IH C :- !, C IH. 
+do-iDestruct (iAnon _) iFresh IH C :- !, C IH.
 do-iDestruct ID iDrop (ihole N H) C :- !, do-iClear ID H H', C (ihole N H').
 do-iDestruct ID (iPure PID) (ihole N H) C :- !, do-iPure ID PID H (h\ C (ihole N h)).
 do-iDestruct ID (iList [[]]) (ihole _ H) _ :-

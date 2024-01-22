@@ -2,93 +2,9 @@
 
 \begin{document}
 \chapter{Inductive}
-\begin{itemize}
-  \item What are we going to do
-  \item First create functor
-  \item Proof functor is Monotone
-  \item Apply fixpoint to functor
-  \item Proof unfold lemma's for fixpoint
-  \item Proof iter lemma for fixpoint
-  \item Proof induction lemma for fixpoint
-\end{itemize}
-
-\section{Functor}
-\subsection{Theory}
-\begin{itemize}
-  \item Take a function and apply it under one level of the inductive statement
-  \item Maybe draw the diagram
-\end{itemize}
-
-\subsection{Elpi}
-\begin{itemize}
-  \item We can also make commands
-  \item What do we get as input for our commands
-  \item What do we need to turn it in to
-  \item Show example for is_list
-\end{itemize}
-
-\section{Monotone}
-\subsection{Theory}
-\begin{itemize}
-  \item What are we proving, what is Monotone
-  \item This can be seen as a proper
-  \item We have to transform proper to Iris Propositions
-  \item Respectfull, pointwise, persistent
-  \item Define Proper instances for connectives
-  \item How to find proper instance
-  \item IProperTop
-  \item Example of Proper proof
-\end{itemize}
-\subsection{Elpi}
-\paragraph{Proper}
-\begin{itemize}
-  \item Write tactic for solving IProper proofs
-  \item We write small tactics for different possibel steps
-  \item Simple steps, for respectfull, pointwise, persistent
-  \item Finishing steps for assumption and reflexive implication
-  \item Apply other proper instance
-  \item Find how many arguments to add to connective
-  \item Lemma to get Iproper instance from IProperTop instance
-  \item Apply Lemma IProper
-  \item Compose till all goals proven
-\end{itemize}
-
-\paragraph{Induction for proper}
-\begin{itemize}
-  \item Create Proper Type for Fixpoint
-  \item Add pointwise for every constructor using fold-map
-  \item Add this to left and right of Respectfull with a persistent around lefthand side
-  \item Apply proper solver
-\end{itemize}
-
-\section{Least fixpoint}
-\subsection{Theory}
-\begin{itemize}
-  \item Intuition about what a least fixpoint is
-  \item The least fixpoint of a functor holds for a value if for all fixpoints of the functor the value holds
-  \item What does our fixpoint function create
-  \item Example for is_list
-\end{itemize}
-\subsection{Elpi}
-\begin{itemize}
-  \item The basic structure is this \dots
-  \item We recurse over the type of the fixpoint to introduce lambda's and foralls
-  \item As the last step we add lambda's for any parameters we have
-\end{itemize}
-
-\section{Unfold lemma}
-\subsection{Theory}
-\begin{itemize}
-  \item Allows for more easy reasoning about fixpoints by using the functor
-  \item Essential in following proofs
-\end{itemize}
-\subsection{Elpi}
 
 \section{Induction scheme}
-\subsection{Theory}
-\subsection{Elpi}
-
-\section[iConstructor, iDestruct, iInductive]{\coqinline{iConstructor}, \coqinline{iDestruct} abd \coqinline{iInductive}}
+\section[iConstructor, iDestruct, iInductive]{\coqi{iConstructor}, \coqi{iDestruct} abd \coqi{iInductive}}
 
 
 \end{document}

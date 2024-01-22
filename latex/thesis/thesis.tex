@@ -4,7 +4,7 @@
 \usepackage{url}
 
 \usepackage{fontspec}
-\setmonofont{FiraCode Nerd Font}
+\setmonofont{Hack}
 
 \usepackage{graphicx}
 \usepackage{amsthm}
@@ -16,7 +16,11 @@
 \usepackage{subfiles}
 \usepackage[hidelinks]{hyperref}
 
+\usepackage{array}
 \usepackage{thesiscommands}
+\usepackage{mathpartir}
+\usepackage{pftools}
+\usepackage{iris}
 
 \usepackage[noabbrev]{cleveref}
 
@@ -51,7 +55,7 @@
     \textsc{\Large Radboud University}\\[1cm]
     \hrule
     \vspace{0.4cm}
-    \textbf{\huge Iris Induction or something}\\[0.4cm]
+    \textbf{\huge Extending Iris with Inductive predicates using Elpi}\\[0.4cm]
     \hrule
     \vspace{2cm}
     \begin{minipage}[t]{0.45\textwidth}
@@ -93,7 +97,10 @@ Lijstje van je contributies, ik heb x y en z gedaan en verwijzen naar hoofdstuk
 \subfile{IrisBackground}
 
 \subfile{ElpiTactics} %Iris Proofmode in Elpi
+\subfile{Showcase}
+\subfile{Fixpoints}
 \subfile{Induction}
+\subfile{ElpiImplementation}
 
 \printbibliography
 

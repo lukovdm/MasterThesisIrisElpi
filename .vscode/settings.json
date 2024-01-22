@@ -952,7 +952,17 @@
   "vscoq.trace.server": "verbose",
   "coq.proofViewDiff.addedTextIsItalic": true,
   "coq.proofViewDiff.removedTextIsStrikedthrough": true,
-  "coqtop.args": [
-    "-bt"
-  ]
+  "coqtop.args": ["-bt"],
+  "ltex.latex.environments": {
+    "elpicode": "ignore",
+    "coqcode": "ignore"
+  },
+  "ltex.latex.commands": {
+    "elpii": "dummy",
+    "coqi": "dummy",
+    "coq": "dummy",
+    "elpi": "dummy",
+    "iris": "dummy",
+    "ce": "dummy"
+  }
 }
