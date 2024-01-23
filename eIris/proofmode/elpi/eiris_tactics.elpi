@@ -57,6 +57,24 @@ do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :-
   NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
 
+pred do-iLeft i:hole, o:hole.
+do-iLeft (hole Type Proof) (hole LeftType LeftProof) :-
+  @no-tc! => coq.elaborate-skeleton {{ tac_or_l _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_or_l _ _ _ _ lp:FromOr lp:LeftProof }},
+  coq.ltac.collect-goals FromOr [G1] _,
+  open tc_solve G1 [],
+  coq.typecheck LeftProof LeftType ok.
+
+
+pred do-iRight i:hole, o:hole.
+do-iRight (hole Type Proof) (hole RightType RightProof) :-
+  @no-tc! => coq.elaborate-skeleton {{ tac_or_r _ _ _ _ _ _ }} Type Proof ok,
+  Proof = {{ tac_or_r _ _ _ _ lp:FromOr lp:RightProof }},
+  coq.ltac.collect-goals FromOr [G1] _,
+  open tc_solve G1 [],
+  coq.typecheck RightProof RightType ok.
+
+
 pred do-iSplit i:bool, i:list ident, i:hole, o:hole, o:hole.
 do-iSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
   if (IsLeft = tt) (D = {{ Left }}) (D = {{ Right }}),

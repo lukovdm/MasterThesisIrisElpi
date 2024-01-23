@@ -173,42 +173,24 @@ Section Proof.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  (* #[debug]
-  EI.ind 
-  Inductive is_list_alt (q : Qp) : val → list val → iProp :=
-    | empty_is_list : is_list_alt q NONEV []
-    | empty_alt_is_list : is_list_alt q NONEV [NONEV]
-    | cons_is_list l v vs tl : l ↦{#q} (v,tl) -∗ is_list_alt q tl vs -∗ is_list_alt q (SOMEV #l) (v :: vs). *)
-
-  (* Lemma intros_ind (q : Qp) (v : val) (vs : list val) :
-    is_list_alt q v vs -∗ is_list_alt q v vs.
-  Proof.
-    eiIntros "H".
-    eiDestruct "H"; iApply is_list_alt_unfold_2.
-    + by iLeft.
-    + iRight. by iLeft.
-    + iRight. by iRight.
-  Qed. *)
-
   EI.ind 
     Inductive is_list (q : Qp) : val → iProp :=
       | empty_is_list : is_list q NONEV
       | cons_is_list l v tl : l ↦{#q} (v,tl) -∗ is_list q tl -∗ is_list q (SOMEV #l).
-  Print is_list_ind.
+      
+  Check is_list_pre.
 
   Lemma ind_test_1 (q q' : Qp) (v : val) :
     is_list q v ∗ is_list q' v ∗-∗ is_list (q+q') v.
   Proof.
+    Print is_list.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
       eiInduction "Hq" as "[IH | (%l' & %v' & %tl' & Hl' & IH & %Hy)]"; eiIntros "Hq'".
-      + iApply is_list_unfold_2.
-        iLeft.
-        iFrame.
+      + by iApply empty_is_list.
       + simplify_eq.
-        iApply is_list_unfold_2.
-        iRight.
+        iApply cons_is_list.
         iExists l', v', tl'.
         eiDestruct "Hq'" as "[%Hl | (%l'' & %v'' & %tl'' & Hl & Hilq' & %Hv)]"; simplify_eq.
         iCombine "Hl' Hl" as "Hl" gives %[_ ?]; simplify_eq.
@@ -221,26 +203,22 @@ Section Proof.
       eiInduction "Hi" as "[%Ha | (%l & %v' & %tl & [Hq Hq'] & [[Hiq Hiq'] _] & %Hy)]".
       + simplify_eq.
         iSplitL.
-        * iApply is_list_unfold.
-          iLeft.
+        * iApply empty_is_list.
           by iPureIntro.
-        * iApply is_list_unfold.
-          iLeft.
+        * iApply empty_is_list.
           by iPureIntro.
       + iSplitL "Hq Hiq".
-        * iApply is_list_unfold.
-          iRight.
+        * iApply cons_is_list.
           iExists l, v', tl.
           iFrame.
           by iPureIntro.
-        * iApply is_list_unfold.
-          iRight.
+        * iApply cons_is_list.
           iExists l, v', tl.
           iFrame.
           by iPureIntro.
   Qed.
 
-  Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
+  (* Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
     is_list q v vs -∗ ⌜vs = []⌝ ∨ ⌜(q ≤ 1)%Qp⌝.
   Proof.
     eiIntros "[Hv Hvs | (%l & %v' & %vs' & %tl & Hl & _ & _ & _)]".
@@ -252,7 +230,7 @@ Section Proof.
       iPureIntro.
       intros Hq.
       by apply dfrac_valid in Hq.
-  Qed.
+  Qed. *)
 
 
   (* Elpi Trace Browser. *)

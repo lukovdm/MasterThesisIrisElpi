@@ -166,11 +166,11 @@ mk-unfold-2.proof Ps N Proper Mono (hole Type Proof) :-
 
 pred mk-unfold-2.proof-1 i:int, i:int, i:term, i:term, i:hole.
 mk-unfold-2.proof-1 Ps N Proper Mono H :-
-  do-iStartProof H IH', !,
-  if-debug (coq.say "started proof unfold_2" {ihole->string IH'}),
+  do-iStartProof H IH, !,
+  if-debug (coq.say "started proof unfold_2" {ihole->string IH}),
   do-iIntros [iIdent (iNamed "HF"), iPure none, 
               iIntuitionistic (iIdent (iNamed "HI")), 
-              iHyp "HI"] IH' (mk-unfold-2.proof-2 Ps N Proper Mono).
+              iHyp "HI"] IH (mk-unfold-2.proof-2 Ps N Proper Mono).
 
 pred mk-unfold-2.proof-2 i:int, i:int, i:term, i:term, i:ihole.
 mk-unfold-2.proof-2 Ps N Proper Mono IH :-

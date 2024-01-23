@@ -3,7 +3,7 @@ From iris.proofmode Require Export tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.bi Require Export bi telescopes.
 
-From eIris.proofmode Require Import base reduction.
+From eIris.proofmode Require Import base reduction inductiveDB.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
@@ -11,6 +11,7 @@ From iris.heap_lang Require Import proofmode.
 
 Elpi Tactic eiApply.
 Elpi Accumulate Db reduction.db.
+Elpi Accumulate Db induction.db.
 Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.

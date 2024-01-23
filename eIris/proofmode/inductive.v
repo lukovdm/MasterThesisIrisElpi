@@ -13,11 +13,76 @@ From eIris.proofmode Require Import base.
 (* From eIris.proofmode Require Import intros apply startProof. *)
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 
-#[arguments(raw)] Elpi Command EI.ind.
+#[arguments(raw)] 
+Elpi Command EI.ind.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.
 Elpi Accumulate lp:{{
+  pred constr-in-prebody i:term, i:list term, i:option term, i:list term, i:int, i:int, o:term.
+  constr-in-prebody Pre Ps Fix Xs Nth Total Res :- 
+    if-debug (coq.say "constr-in-prebody" {coq.term->string Pre} Ps Fix Xs Nth Total Res), fail.
+  constr-in-prebody (fun _ _ F) [P | Ps] Fix Xs Nth Total Res :- !,
+    constr-in-prebody (F P) Ps Fix Xs Nth Total Res.
+  constr-in-prebody (fun _ _ F) [] (some Fix) Xs Nth Total Res :- !,
+    constr-in-prebody (F Fix) [] none Xs Nth Total Res.
+  constr-in-prebody (fun _ _ F) [] none [X | Xs] Nth Total Res :- !,
+    constr-in-prebody (F X) [] none Xs Nth Total Res.
+  constr-in-prebody (app [_, _, _, R]) [] none [] 1 2 R :- !.
+  constr-in-prebody (app [_, _, L, _]) [] none [] 0 _ L :- !.
+  constr-in-prebody (app [_, _, _, R]) [] none [] Nth Total Res :- !,
+    constr-in-prebody R [] none [] { calc (Nth - 1) } { calc (Total - 1) } Res.
+
+
+  pred mk-constr-lem.toproof i:list param, i:term, i:term, i:term, i:int, i:int, i:list term, i:list term, o:term.
+  mk-constr-lem.toproof [(par ID _ T C) | Params] PreBody Fix Type Nth Total Ps [] (prod N T F) :- !,
+    coq.id->name ID N,
+    mk-constr-lem.toproof Params PreBody Fix Type Nth Total [C | Ps] [] Lem,
+    pi x\ (copy C x :- !) => copy Lem (F x).
+  mk-constr-lem.toproof [] PreBody Fix (prod N T F) Nth Total Ps Xs (prod N T F') :- !,
+    @pi-decl N T x\ mk-constr-lem.toproof [] PreBody Fix (F x) Nth Total Ps [x | Xs] (F' x).
+  mk-constr-lem.toproof [] PreBody Fix _ Nth Total PsRev XsRev {{ lp:Constr -∗ lp:FixTerm }} :- !,
+    std.rev PsRev Ps,
+    std.rev XsRev Xs,
+    constr-in-prebody PreBody Ps (some (app [Fix | Ps])) Xs Nth Total Constr,
+    FixTerm = app {std.append [Fix | Ps] Xs}.
+
+  pred mk-constr-lem.proof i:term, i:int, i:int, i:int, i:hole.
+  mk-constr-lem.proof Unfold2 Ps Nth Total (hole Type Proof) :-
+    do-intros-forall (hole Type Proof) (mk-constr-lem.proof-1 Unfold2 Ps Nth Total).
+
+  pred mk-constr-lem.proof-1 i:term, i:int, i:int, i:int, i:hole.
+  mk-constr-lem.proof-1 Unfold2 Ps Nth Total H :-
+    do-iStartProof H IH, !,
+    do-iIntros [iIdent (iNamed "H")] IH (mk-constr-lem.proof-2 Unfold2 Ps Nth Total).
+
+  pred mk-constr-lem.proof-2 i:term, i:int, i:int, i:int, i:ihole.
+  mk-constr-lem.proof-2 Unfold2 Ps Nth Total IH :-
+    std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+    do-iApplyLem (app [Unfold2 | Holes]) IH [] [AppliedIH], !,
+    mk-constr-lem.proof-3 Nth Total AppliedIH.
+
+  pred mk-constr-lem.proof-3 i:int, i:int, i:ihole.
+  mk-constr-lem.proof-3 1 2 (ihole N H) :- !,
+    do-iRight H H', !,
+    do-iApplyHyp "H" (ihole N H') [].
+  mk-constr-lem.proof-3 0 _ (ihole N H) :- !,
+    do-iLeft H H', !,
+    do-iApplyHyp "H" (ihole N H') [].
+  mk-constr-lem.proof-3 Nth Total (ihole N H) :- !,
+    do-iRight H H', !,
+    mk-constr-lem.proof-3 { calc (Nth - 1) } {calc (Total - 1)} (ihole N H').
+
+  pred mk-constr-lem i:list param, i:term, i:(term -> list indc-decl), i:term, i:term, i:term, i:int, i:int, o:constant.
+  mk-constr-lem Params Unfold2 Constructors PreBody Fix Type Nth Total ConstrLem :-
+    mk-constr-lem.toproof Params PreBody Fix Type Nth Total [] [] ConstrType,
+    if-debug (coq.say "----- Constr Lemma" { coq.term->string ConstrType } ),
+    mk-constr-lem.proof Unfold2 {std.length Params} Nth Total (hole ConstrType ConstrProof),
+    
+    std.nth Nth (Constructors Fix) (constructor Name _),
+    coq.env.add-const Name ConstrProof ConstrType ff ConstrLem.
+
+
   pred create-iInductive i:list param, i:indt-decl, o:gref , o:indt-decl.
   create-iInductive Params' (inductive Name In-Or-Co Arity Constructors) (const Fix) (inductive Name In-Or-Co Arity BIConstructors) :-
     std.rev Params' Params,
@@ -71,6 +136,12 @@ Elpi Accumulate lp:{{
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-unfold (const Fix) (const U1) (const U2) (const U) NConstr))
       ),!,
 
+    if (get-option "noconstr" tt) (true)
+      (
+        std.map { std.iota NConstr } (n\ r\ mk-constr-lem Params (global (const U2)) BIConstructors EBo (global (const Fix)) TypeTerm n NConstr r) ConstrLems,
+        if-debug (coq.say "Constructor Lemmas" ConstrLems)
+      ), !,
+
     if (get-option "noiter" tt) (true)
       (
       mk-iter Params (global (const C)) (global (const Fix)) TypeTerm (hole IterType IterProof),
@@ -103,6 +174,7 @@ Elpi Accumulate lp:{{
       att "nosolver" bool,
       att "nofixpoint" bool,
       att "nounfold" bool,
+      att "noconstr" bool,
       att "noiter" bool,
       att "noind" bool,
     ] Opts,
@@ -110,7 +182,7 @@ Elpi Accumulate lp:{{
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
       create-iInductive [] I Fix I',
-      if-debug (coq.say "saving type" Fix I'),
+      % if-debug (coq.say "saving type" Fix I'),
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
     ).
 }}.
@@ -131,7 +203,7 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind 
+  (* EI.ind 
   Inductive is_list (q : Qp) : val → list val → iProp :=
     | empty_is_list : is_list q NONEV []
     | cons_is_list l v vs tl : l ↦{#q} (v,tl) -∗ is_list q tl vs -∗ is_list q (SOMEV #l) (v :: vs).
@@ -142,6 +214,8 @@ Section Tests.
   Check is_list_unfold_2.
   Check is_list_unfold_1.
   Check is_list_unfold.
+  Check empty_is_list.
+  Check cons_is_list.
   Check is_list_iter.
   Check is_list_ind.
 
@@ -182,5 +256,6 @@ Section Tests.
   Print is_P2_list.
   Check is_P2_list_unfold_2.
   Check is_P2_list_unfold_1.
+  Check empty_is_P2_list. *)
 
 End Tests.
