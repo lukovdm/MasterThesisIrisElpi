@@ -7,7 +7,7 @@ From iris.heap_lang Require Import proofmode notation.
 From stdpp Require Import base finite.
 
 From eIris.proofmode Require Export proper.
-From eIris.proofmode Require Import reduction.
+From eIris.proofmode Require Export reduction.
 From eIris.proofmode Require Import inductiveDB.
 From eIris.proofmode Require Import base.
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
@@ -152,9 +152,9 @@ Section Tests.
   (* Pers islist DfracDiscarded *)
 
   EI.ind 
-  Inductive is_l : val-> list val → iProp :=
-    | empty_is_l : is_l NONEV
-    | cons_is_l l v tl : l ↦ (v,tl) -∗ is_l tl vs -∗ is_l (SOMEV #l) (v :: vs).
+  Inductive is_l : val -> list val → iProp :=
+    | empty_is_l : is_l NONEV []
+    | cons_is_l l v vs tl : l ↦ (v,tl) -∗ is_l tl vs -∗ is_l (SOMEV #l) (v :: vs).
 
   Print is_l_pre.
   Check is_l_pre_mono.

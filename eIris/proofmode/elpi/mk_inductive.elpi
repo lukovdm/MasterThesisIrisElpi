@@ -56,8 +56,8 @@ top-wand-to-sepand X X :- !.
 
 pred mk-constr-body-disj i:term, i:(term -> list indc-decl), o:int, o:(term -> list indc-decl), o:(term -> term).
 mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
-  if-debug (coq.sigma.print),
-  if-debug ((pi x\ print-contructors (Constructors x))),
+  % if-debug (coq.sigma.print),
+  % if-debug ((pi x\ print-contructors (Constructors x))),
   (pi f\ std.length (Constructors f) NConstr),
   % Transform base constructor into shape of a bi prop
   (pi f\ std.map (Constructors f)
@@ -71,14 +71,14 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
   (@pi-decl N FType f\ std.map2 (Constructors f) (ConstrBiTerms f)
                  (x\ y\ r\ sigma ID Y\ x = constructor ID _, std.assert-ok! (coq.elaborate-skeleton y _ Y) "eiris Failed", r = constructor ID (arity Y))
                  (BIConstructors f)),
-  if-debug ((pi f\ coq.say "------ Constructor Bi Terms" {std.map (ConstrBiTerms f) coq.term->string})),
+  % if-debug ((pi f\ coq.say "------ Constructor Bi Terms" {std.map (ConstrBiTerms f) coq.term->string})),
   % connect constructors with bi_or's
   (pi f\ std.fold
     { std.drop-last 1 (ConstrBiTerms f) }
     { std.last (ConstrBiTerms f) }
     (x\ a\ r\ r = {{ bi_or lp:x lp:a }}) 
-    (ConstrBo f)),
-  if-debug (coq.say "------ Constructor body disjunction" {coq.term->string (ConstrBo {{ True }})}).
+    (ConstrBo f)).
+  % if-debug (coq.say "------ Constructor body disjunction" {coq.term->string (ConstrBo {{ True }})}).
 
 
 pred mk-constr-body i:list param, i:term, i:(term -> list indc-decl), o:int, o:(term -> list indc-decl), o:term, o:term.

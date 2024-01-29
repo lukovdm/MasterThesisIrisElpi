@@ -59,7 +59,8 @@ if-debug _ .
 pred print-contructors i:list indc-decl.
 print-contructors [].
 print-contructors [constructor Name Arity | CS] :-
-  coq.say Name "of type" { coq.term->string { coq.arity->term Arity } },
+  coq.say "Printing constructor" Name,
+  coq.say "of type" { coq.term->string { coq.arity->term Arity } },
   print-contructors CS.
 
 pred map-goal i:(term -> term -> prop), i:goal, o:list sealed-goal.

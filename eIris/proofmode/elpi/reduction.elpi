@@ -14,6 +14,7 @@ all-reductions CS :-
 pred pm-reduce i:term, o:term.
 pm-reduce T O :-
   all-reductions Consts,
+  std.assert! ({std.length Consts} > 0) "No reduction rules found",
   std.map Consts (x\r\ r = coq.redflags.const x) Deltas,
   coq.redflags.add coq.redflags.betaiotazeta Deltas RF,
   @redflags! RF => coq.reduction.cbv.norm T O.
