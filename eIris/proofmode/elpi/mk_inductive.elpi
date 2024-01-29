@@ -56,6 +56,7 @@ top-wand-to-sepand X X :- !.
 
 pred mk-constr-body-disj i:term, i:(term -> list indc-decl), o:int, o:(term -> list indc-decl), o:(term -> term).
 mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
+  if-debug (coq.sigma.print),
   if-debug ((pi x\ print-contructors (Constructors x))),
   (pi f\ std.length (Constructors f) NConstr),
   % Transform base constructor into shape of a bi prop
@@ -275,6 +276,7 @@ constr-in-prebody (fun _ _ F) [] (some Fix) Xs Nth Total Res :- !,
   constr-in-prebody (F Fix) [] none Xs Nth Total Res.
 constr-in-prebody (fun _ _ F) [] none [X | Xs] Nth Total Res :- !,
   constr-in-prebody (F X) [] none Xs Nth Total Res.
+constr-in-prebody T [] none [] 0 1 T :- !.
 constr-in-prebody (app [_, _, _, R]) [] none [] 1 2 R :- !.
 constr-in-prebody (app [_, _, L, _]) [] none [] 0 _ L :- !.
 constr-in-prebody (app [_, _, _, R]) [] none [] Nth Total Res :- !,
@@ -310,12 +312,15 @@ mk-constr-lem.proof-2 Unfold2 Ps Nth Total IH :-
   mk-constr-lem.proof-3 Nth Total AppliedIH.
 
 pred mk-constr-lem.proof-3 i:int, i:int, i:ihole.
+mk-constr-lem.proof-3 Nth Total IH :- if-debug (coq.say "mk-constr-lem.proof-3" Nth Total {ihole->string IH}), fail.
+mk-constr-lem.proof-3 0 1 IH :- !,
+  do-iApplyHyp "H" IH [].
 mk-constr-lem.proof-3 1 2 (ihole N H) :- !,
   do-iRight H H', !,
-  do-iApplyHyp "H" (ihole N H') [].
+  mk-constr-lem.proof-3 0 1 (ihole N H').
 mk-constr-lem.proof-3 0 _ (ihole N H) :- !,
   do-iLeft H H', !,
-  do-iApplyHyp "H" (ihole N H') [].
+  mk-constr-lem.proof-3 0 1 (ihole N H').
 mk-constr-lem.proof-3 Nth Total (ihole N H) :- !,
   do-iRight H H', !,
   mk-constr-lem.proof-3 { calc (Nth - 1) } {calc (Total - 1)} (ihole N H').

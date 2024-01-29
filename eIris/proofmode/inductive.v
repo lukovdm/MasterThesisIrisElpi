@@ -10,7 +10,6 @@ From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Import reduction.
 From eIris.proofmode Require Import inductiveDB.
 From eIris.proofmode Require Import base.
-(* From eIris.proofmode Require Import intros apply startProof. *)
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 
 #[arguments(raw)] 
@@ -101,7 +100,7 @@ Elpi Accumulate lp:{{
   create-iInductive Params (parameter ID IK T IND) Fix (parameter ID IK T IND') :-
     coq.id->name {calc (ID ^ "_param")} N,
     @pi-decl N T p\ create-iInductive [(par ID IK T p) | Params] (IND p) Fix (IND' p).
-
+ 
   main [indt-decl I] :- 
     attributes A,
     coq.parse-attributes A [
@@ -125,21 +124,13 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 Elpi Export EI.ind.
 
-(* Implicit Types l : loc.
-
-#[debug]
-EI.ind 
-Inductive is_list `{!heapGS Σ} : val → list val → iProp Σ :=
-  | empty_is_list : is_list NONEV []
-  | cons_is_list l v vs tl : l ↦ (v,tl) -∗ is_list tl vs -∗ is_list (SOMEV #l) (v :: vs). *)
-
-
+ 
 Section Tests.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  (* EI.ind 
+  EI.ind 
   Inductive is_list (q : Qp) : val → list val → iProp :=
     | empty_is_list : is_list q NONEV []
     | cons_is_list l v vs tl : l ↦{#q} (v,tl) -∗ is_list q tl vs -∗ is_list q (SOMEV #l) (v :: vs).
@@ -161,9 +152,9 @@ Section Tests.
   (* Pers islist DfracDiscarded *)
 
   EI.ind 
-  Inductive is_l : val → iProp :=
+  Inductive is_l : val-> list val → iProp :=
     | empty_is_l : is_l NONEV
-    | cons_is_l l v tl : l ↦ (v,tl) -∗ is_l tl -∗ is_l (SOMEV #l).
+    | cons_is_l l v tl : l ↦ (v,tl) -∗ is_l tl vs -∗ is_l (SOMEV #l) (v :: vs).
 
   Print is_l_pre.
   Check is_l_pre_mono.
@@ -192,6 +183,6 @@ Section Tests.
   Print is_P2_list.
   Check is_P2_list_unfold_2.
   Check is_P2_list_unfold_1.
-  Check empty_is_P2_list. *)
+  Check empty_is_P2_list.
 
 End Tests.

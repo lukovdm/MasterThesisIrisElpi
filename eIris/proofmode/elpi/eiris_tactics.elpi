@@ -166,7 +166,7 @@ do-intro-anon (hole Type Proof) C :-
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
-  @pi-decl N T x\ 
+  @pi-decl N T x\  
     coq.typecheck (IntroFProof x) (F x) ok,
     C (hole (F x) (IntroFProof x)).
 
@@ -599,28 +599,32 @@ do-iDestruct _ IP IH C :-
 
 pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
 do-iIntros [IP | _] IH _ :- if-debug (coq.say "do-iIntros: " IP "in" {ihole->string IH}), fail.
-do-iIntros [] IH C :- !, if-debug (coq.say "do-iIntros done"), C IH.
+do-iIntros [] IH C :- !, if-debug (coq.say "do-iIntros done" {ihole->string IH}), C IH.
 do-iIntros [iCoqIntro X | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
   open (coq.ltac.call-ltac1 X) G [GTac], !,
-  open (g\gl\ sigma TacProof\ sigma TacType\ 
+  open (g\gl\ sigma TacProof TacType\ 
           g = (goal _ _ TacType TacProof _), !,
           do-iIntros IPS (ihole N (hole TacType TacProof)) C
        ) GTac _.
 do-iIntros [iSimpl | IPS] (ihole N (hole _ Proof)) C :-
   coq.ltac.collect-goals Proof [G] _,
-  open simpl G [G'], !,
-  open (g\gl\ sigma SimplProof\ sigma SimplType\ 
+  open pm-reduce-goal G [G'], !,
+  open simpl G' [G''], !,
+  open (g\gl\ sigma SimplProof SimplType\ 
           g = (goal _ _ SimplType SimplProof _), !,
           do-iIntros IPS (ihole N (hole SimplType SimplProof)) C
-       ) G' _.
-do-iIntros [iDone | IPS] (ihole N (hole _ Proof)) C :-
-  coq.ltac.collect-goals Proof [G] _,
-  (open done G [G']; G' = G), !,
-  open (g\gl\ sigma DoneProof\ sigma DoneType\ 
-          g = (goal _ _ DoneType DoneProof _), !,
-          do-iIntros IPS (ihole N (hole DoneType DoneProof)) C
-       ) G' _.
+       ) G'' _.
+do-iIntros [iDone | IPS] (ihole N (hole Type Proof)) C :-
+  ((
+    coq.ltac.collect-goals Proof [G] _,
+    open pm-reduce-goal G [G'], !,
+    open (g\gl\ sigma T P\ g = (goal _ _ T P _), if-debug (coq.say "ahhh is on" T P)) G' _, !, % weird hack, without it things don't work. Don't know why
+    open done G' [],
+    if-debug (coq.say "done succeeded")
+    ); 
+    do-iIntros IPS (ihole N (hole Type Proof)) C
+  ).
 do-iIntros [iFresh | IPS] (ihole N H) C :- !,
   increase-ctx-count N NS,
   do-iIntro-ident (iAnon N) (ihole NS H) IH, !, 
@@ -685,5 +689,5 @@ do-iIntros [iList IPS | IPSS] (ihole N H) C :- !,
   do-iDestruct (iAnon N) (iList IPS) IH (ih'\ !,
     do-iIntros IPSS ih' C
   ).
-do-iIntros IPS IH _ :-
-  coq.error "Failed to apply" IPS "in hole" {ihole->string IH}.
+% do-iIntros IPS IH _ :-
+%   coq.error "Failed to apply" IPS "in hole" {ihole->string IH}.

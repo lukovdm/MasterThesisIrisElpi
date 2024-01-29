@@ -52,15 +52,9 @@ unfold-gref (const IP) I O :-
 
 pred do-steps i:ihole.
 do-steps (ihole _ (hole Type _) as IH) :-
-  if-debug (coq.say "\n================= Goal =================" {ihole->string IH} ""),
-  do-steps.conn Type R LF RF,
+  if-debug (coq.say "================= Goal =================" {ihole->string IH} ""),
+  do-steps.conn Type R LF RF, !,
   do-steps.do IH R LF RF.
-
-pred do-steps.open i:goal, o:list sealed-goal.
-do-steps.open (goal _ _ Type Proof _) _ :-
-  pm-reduce Type Type',
-  get-ctx-count Type' N,
-  do-steps (ihole N (hole Type' Proof)).
 
 pred do-steps.conn i:term, o:term, o:term, o:term.
 do-steps.conn Type R LF RF:-
@@ -75,32 +69,22 @@ relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :-
   std.take-last 2 AS [L, R].
 
 pred do-steps.do i:ihole, i:term, i:term, i:term.
-do-steps.do (ihole N (hole _ Proof)) {{ @iRespectful _ }} _ _ :- !,
+do-steps.do IH {{ @iRespectful _ }} _ _ :- !,
   if-debug (coq.say "==>"),
-  list->listterm [ {{ IPure (IGallinaAnon) }}, {{ IPure (IGallinaAnon) }}, {{ IIntuitionistic (IFresh) }} ] Args,
-  coq.ltac.collect-goals Proof [G] _,
-  open (addN N (coq.ltac.call "_iIntros0" [ trm Args ])) G [GIntro], !,
-  open do-steps.open GIntro _.
-do-steps.do (ihole N (hole _ Proof)) {{ @iPointwise_relation _ }} _ _ :- !,
-  if-debug (coq.say ".>"),
-  list->listterm [ {{ IPure (IGallinaAnon) }} ] Args,
-  coq.ltac.collect-goals Proof [G] _,
-  open (addN N (coq.ltac.call "_iIntros0" [ trm Args ])) G [GIntro], !,
-  open do-steps.open GIntro _.
+  do-iIntros [iPure (none), iPure (none), iIntuitionistic iFresh] IH do-steps.
+do-steps.do IH {{ @iPointwise_relation _ }} _ _ :- !,
+  if-debug (coq.say ".>"), !,
+  do-iIntros [iPure (none)] IH do-steps.
 do-steps.do (ihole N H) {{ @iPersistent_relation _ }} _ _ :- !,
   if-debug (coq.say "□>"),
   do-iModIntro H ModH, !,
   do-steps (ihole N ModH).
-do-steps.do (ihole _ (hole _ Proof)) _ F F :-
+do-steps.do IH _ F F :-
+  if-debug (coq.say "Applying wand identity" {coq.term->string F}),
+  do-iIntros [iFresh, iDone] IH (_\ if-debug (coq.say "done failed"), fail).
+do-steps.do IH _ F F :-
   if-debug (coq.say "Applying assumption" {coq.term->string F}),
-  list->listterm [ {{ IFresh }}, {{ IDone }} ] Args,
-  coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
-do-steps.do (ihole _ (hole _ Proof)) _ F F :-
-  if-debug (coq.say "Applying assumption" {coq.term->string F}),
-  list->listterm [ {{ IDone }} ] Args,
-  coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
+  do-iIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
 do-steps.do IH R (app [F | FS]) _ :- 
   std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
@@ -114,11 +98,9 @@ do-steps.do (ihole N (hole Type Proof)) _ (global (const F)) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
   do-steps (ihole N (hole UnfoldedType Proof)).
-do-steps.do (ihole _ (hole _ Proof)) _ _ _ :-
+do-steps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
-  list->listterm [ {{ IDone }} ] Args,
-  coq.ltac.collect-goals Proof [G] _,
-  open (coq.ltac.call "_iIntros0" [ trm Args ]) G [].  % Should have an addN but crashes for some reason
+  do-iIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
 do-steps.do _ T F _ :- !,
   if-debug (coq.say "No case for relation" T "with " F "😢 stopping").
 

@@ -174,20 +174,19 @@ Section Proof.
   Implicit Types l : loc.
 
   EI.ind 
-    Inductive is_list (q : Qp) : val → iProp :=
-      | empty_is_list : is_list q NONEV
-      | cons_is_list l v tl : l ↦{#q} (v,tl) -∗ is_list q tl -∗ is_list q (SOMEV #l).
+  Inductive is_list (q : Qp) : val → iProp :=
+    | empty_is_list : is_list q NONEV
+    | cons_is_list l v tl : l ↦{#q} (v,tl) -∗ is_list q tl -∗ is_list q (SOMEV #l).
       
-  Check is_list_pre.
+  (* Check is_list_pre. *)
 
   Lemma ind_test_1 (q q' : Qp) (v : val) :
     is_list q v ∗ is_list q' v ∗-∗ is_list (q+q') v.
   Proof.
-    Print is_list.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
-      eiInduction "Hq" as "[IH | (%l' & %v' & %tl' & Hl' & IH & %Hy)]"; eiIntros "Hq'".
+      eiInduction "Hq" as "[%Ha | (%l' & %v' & %tl' & Hl' & IH & %Hy)]"; eiIntros "Hq'".
       + by iApply empty_is_list.
       + simplify_eq.
         iApply cons_is_list.
@@ -202,20 +201,14 @@ Section Proof.
     - eiIntros "Hi".
       eiInduction "Hi" as "[%Ha | (%l & %v' & %tl & [Hq Hq'] & [[Hiq Hiq'] _] & %Hy)]".
       + simplify_eq.
-        iSplitL.
-        * iApply empty_is_list.
-          by iPureIntro.
-        * iApply empty_is_list.
-          by iPureIntro.
+        iSplitL; by iApply empty_is_list.
       + iSplitL "Hq Hiq".
         * iApply cons_is_list.
           iExists l, v', tl.
-          iFrame.
-          by iPureIntro.
+          by iFrame.
         * iApply cons_is_list.
           iExists l, v', tl.
-          iFrame.
-          by iPureIntro.
+          by iFrame.
   Qed.
 
   (* Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
