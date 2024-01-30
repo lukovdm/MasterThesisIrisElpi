@@ -563,10 +563,8 @@ do-iDestruct ID (iList IPSS) (ihole N (hole Type Proof)) C :-
   find-hyp ID Type (app [global GREF | _]),
   inductive-unfold GREF U1 _ _ NConstr, !,
   if-debug (coq.say "Destructing ind" {coq.term->string (global GREF)} NConstr),
-
   do-iEvalIn ID (hole Type Proof) IH H,
   do-iApplyLem (global U1) IH [] [],
-  
   do-iDestruct ID (iList IPSS) (ihole N H) C.
 do-iDestruct ID (iList [[iPure PN, IP]]) (ihole N H) C :- !,
   ident-for-pat.default IP ID N HID NS,

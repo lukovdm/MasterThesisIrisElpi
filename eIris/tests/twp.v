@@ -9,23 +9,77 @@ Import uPred.
 From iris.proofmode Require Import base environments proofmode tactics coq_tactics reduction intro_patterns class_instances spec_patterns.
 
 
-From eIris.proofmode Require Import base inductive.
+From eIris.proofmode Require Import base inductive intros.
 
 Section TWP.
 
   Context `{!irisGS_gen hlc Λ Σ}.
 
   EI.ind
-  Inductive twp2 (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
-    | twp2_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp2 s E e1 Φ
-    | twp2_none E e1 Φ : (∀ σ1 ns κs nt,
+  Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
+    | twp_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
+    | twp_none E e1 Φ : (∀ σ1 ns κs nt,
                     state_interp σ1 ns κs nt ={E,∅}=∗
                       ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
                       ∀ κ e2 σ2 efs, ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
                         ⌜κ = []⌝ ∗
                         state_interp σ2 (S ns) κs (length efs + nt) ∗
-                        twp2 s E e2 Φ ∗
-                        [∗ list] ef ∈ efs, twp2 s ⊤ ef fork_post) -∗ ⌜to_val e1 = None⌝ 
-                          -∗ twp2 s E e1 Φ.
+                        twp s E e2 Φ ∗
+                        [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) -∗ ⌜to_val e1 = None⌝ 
+                          -∗ twp s E e1 Φ.
+
+  Notation "'WPE' e @ s ; E [{ Φ } ]" := (twp s E e%E Φ)
+    (at level 20, e, Φ at level 200, only parsing) : bi_scope.
+  Notation "'WPE' e @ E [{ Φ } ]" := (twp NotStuck E e%E Φ)
+    (at level 20, e, Φ at level 200, only parsing) : bi_scope.
+  Notation "'WPE' e @ E ? [{ Φ } ]" := (twp MaybeStuck E e%E Φ)
+    (at level 20, e, Φ at level 200, only parsing) : bi_scope.
+  Notation "'WPE' e [{ Φ } ]" := (twp NotStuck ⊤ e%E Φ)
+    (at level 20, e, Φ at level 200, only parsing) : bi_scope.
+  Notation "'WPE' e ? [{ Φ } ]" := (twp MaybeStuck ⊤ e%E Φ)
+    (at level 20, e, Φ at level 200, only parsing) : bi_scope.
+  Notation "'WPE' e @ s ; E [{ v , Q } ]" := (twp s E e%E (λ v, Q))
+    (at level 20, e, Q at level 200,
+     format "'[hv' 'WPE'  e  '/' @  '[' s ;  '/' E  ']' '/' [{  '[' v ,  '/' Q  ']' } ] ']'") : bi_scope.
+  Notation "'WPE' e @ E [{ v , Q } ]" := (twp NotStuck E e%E (λ v, Q))
+    (at level 20, e, Q at level 200,
+     format "'[hv' 'WPE'  e  '/' @  E  '/' [{  '[' v ,  '/' Q  ']' } ] ']'") : bi_scope.
+  Notation "'WPE' e @ E ? [{ v , Q } ]" := (twp MaybeStuck E e%E (λ v, Q))
+    (at level 20, e, Q at level 200,
+     format "'[hv' 'WPE'  e  '/' @  E  '/' ? [{  '[' v ,  '/' Q  ']' } ] ']'") : bi_scope.
+  Notation "'WPE' e [{ v , Q } ]" := (twp NotStuck ⊤ e%E (λ v, Q))
+    (at level 20, e, Q at level 200,
+     format "'[hv' 'WPE'  e  '/' [{  '[' v ,  '/' Q  ']' } ] ']'") : bi_scope.
+  Notation "'WPE' e ? [{ v , Q } ]" := (twp MaybeStuck ⊤ e%E (λ v, Q))
+    (at level 20, e, Q at level 200,
+     format "'[hv' 'WPE'  e  '/' ? [{  '[' v ,  '/' Q  ']' } ] ']'") : bi_scope.
+  
+  Implicit Types s : stuckness.
+  Implicit Types P : iProp Σ.
+  Implicit Types Φ : val Λ → iProp Σ.
+  Implicit Types v : val Λ.
+  Implicit Types e : expr Λ.
+
+  Lemma twp_strong_mono s1 s2 E1 E2 e Φ Ψ :
+    s1 ⊑ s2 → E1 ⊆ E2 →
+    WPE e @ s1; E1 [{ Φ }] -∗ (∀ v, Φ v ={E2}=∗ Ψ v) -∗ WPE e @ s2; E2 [{ Ψ }].
+  Proof.
+    iIntros (? HE) "H HΦ". iRevert (E2 Ψ HE) "HΦ".
+    eiInduction "H" as "[(%E & %v & %e1 & %Phi' & Hfudp & %Htv & [%Ha %Hb] & %HaPhi)|IH]".
+    iApply twp_ind; first solve_proper.
+    iIntros "!>" (e E1 Φ) "IH"; iIntros (E2 Ψ HE) "HΦ".
+    rewrite !twp_unfold /twp_pre. destruct (to_val e) as [v|] eqn:?.
+    { iApply ("HΦ" with "[> -]"). by iApply (fupd_mask_mono E1 _). }
+    iIntros (σ1 ns κs nt) "Hσ".
+    iMod (fupd_mask_subseteq E1) as "Hclose"; first done.
+    iMod ("IH" with "[$]") as "[% IH]".
+    iModIntro; iSplit; [by destruct s1, s2|]. iIntros (κ e2 σ2 efs Hstep).
+    iMod ("IH" with "[//]") as (?) "(Hσ & IH & IHefs)"; auto.
+    iMod "Hclose" as "_"; iModIntro.
+    iFrame "Hσ". iSplit; first done. iSplitR "IHefs".
+    - iDestruct "IH" as "[IH _]". iApply ("IH" with "[//] HΦ").
+    - iApply (big_sepL_impl with "IHefs"); iIntros "!>" (k ef _) "[IH _]".
+      iApply "IH"; auto.
+  Qed.
 
 End TWP.

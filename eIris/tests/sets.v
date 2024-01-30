@@ -3,6 +3,8 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
 Require Import Coq.Sets.Classical_sets.
 
+From stdpp Require Import gmap numbers countable mapset.
+
 From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
@@ -22,12 +24,98 @@ From eIris.proofmode Require Import base reduction inductive intros.
 
 End SkipQueue. *)
 
-Section Sets.
+Section GSets.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  Print loc.
+  EI.ind
+  Inductive is_set : val -> @gset nat _ nat_countable -> iProp :=
+    | empty_is_set : is_set NONEV ∅
+    | cons_is_set l tl s (e : nat) ss : 
+      l ↦ (#e, tl) -∗ 
+      ⌜s ∖ {[ e ]} = ss⌝ -∗ 
+      is_set tl ss -∗ 
+      is_set (SOMEV #l) s.
+
+  Definition set_add : val :=
+    rec: "set_add" "l" "e" :=
+      match: "l" with
+        NONE => SOME (Alloc("e", NONE))
+        | SOME "hd" =>
+          let: "x" := !"hd" in
+          if: "e" ≠ (Fst "x") then 
+            let: "tl" := "set_add" (Snd "x") "e" in
+            "hd" <- (Fst "x", "tl");;
+            "l"
+          else
+            "l"
+      end.
+
+  Lemma set_add_spec (s : @gset nat _ nat_countable) (e : nat) (hd : val) :
+    {{{ is_set hd s }}}
+      set_add hd (#e)
+    {{{ hd', RET hd'; is_set hd' (s ∪ {[ e ]}) }}}.
+  Proof.
+    eiIntros "%Phi His".
+    iRevert (Phi).
+    eiInduction "His" as "[%Hhd %Hset | (%l & %tl & %s' & %e' & %ss & Hpt & %Hsub & IH & %Hl & %Hs)]"; eiIntros "%Phi Hlater".
+    - wp_rec.
+      simplify_eq.
+      wp_alloc l as "Hl".
+      wp_pures.
+      iModIntro.
+      iApply "Hlater".
+      iApply cons_is_set.
+      iExists l, NONEV, {[ e ]}, e, ∅.
+      iFrame.
+      repeat iSplit; try iPureIntro; try done.
+      + apply set_eq.
+        intros x.
+        split; intros H.
+        * apply elem_of_difference in H as [He Hne].
+          congruence.
+        * by eapply not_elem_of_empty in H.
+      + by iApply empty_is_set.
+      + apply left_id, _.
+    - wp_rec.
+      simplify_eq.
+      wp_load.
+      wp_pures.
+      unfold bool_decide, decide_rel.
+      destruct (val_eq_dec #e #e'); wp_pures.
+      + eiDestruct "IH" as "[_ His]".
+        iModIntro. iApply "Hlater".
+        iApply cons_is_set.
+        iExists l, tl, (s' ∪ {[ e ]}), e, (s' ∖ {[ e ]}). 
+        simplify_eq.
+        iFrame.
+        repeat iSplit; try iPureIntro; try done.
+        rewrite difference_union_distr_l_L difference_diag_L.
+        apply right_id, _.
+      + eiDestruct "IH" as "[IH _]".
+        wp_apply "IH".
+        eiIntros "%hd' His".
+        wp_store.
+        iApply "Hlater".
+        iModIntro.
+        iApply cons_is_set.
+        iExists l, _, (s' ∪ {[ e ]}), _, _.
+        iFrame.
+        repeat iSplit; try iPureIntro; try done.
+        rewrite difference_union_distr_l_L.
+        rewrite (difference_disjoint_L {[ e ]}); [done|].
+        apply disjoint_singleton_r, not_elem_of_singleton.
+        destruct (Nat.eq_dec e e'); try done.
+        simplify_eq.
+  Qed.
+End GSets.
+
+
+Section Sets.
+  Context `{!heapGS Σ}.
+  Notation iProp := (iProp Σ).
+  Implicit Types l : loc.
 
   EI.ind
   Inductive is_set : val -> Ensemble nat -> iProp :=
@@ -98,12 +186,10 @@ Section Sets.
           by eapply Noone_in_empty.
       + by iApply empty_is_set.
       + apply Extensionality_Ensembles.
-        split.
-        * intros x Hi.
-          apply Singleton_intro.
+        split; intros x Hi.
+        * apply Singleton_intro.
           apply Constructive_sets.Add_inv in Hi as [H|H]; try done.
-        * intros x Hi.
-          apply Singleton_inv in Hi.
+        * apply Singleton_inv in Hi.
           simplify_eq.
           apply Add_intro2.
     - wp_rec.
