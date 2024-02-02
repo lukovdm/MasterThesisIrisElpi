@@ -35,14 +35,15 @@ ident-for-pat.default _ _ NT (iAnon NT) NS :-
 
 pred find-hyp i:ident, i:term, o:term.
 find-hyp ID {{ envs_entails (Envs lp:P _ _) _ }} H :-
-  find-hyp.aux ID P H.
+  ident->term ID _ IDT,
+  find-hyp.aux IDT P H.
 find-hyp ID {{ envs_entails (Envs _ lp:S _) _ }} H :-
-  find-hyp.aux ID S H.
-pred find-hyp.aux i:ident, i:term, o:term.
-find-hyp.aux ID {{ Esnoc _ lp:IDT lp:H }} H :-
-  ident->term ID _ IDT, !.
-find-hyp.aux ID {{ Esnoc lp:E _ _ }} OH :-
-  find-hyp.aux ID E OH.
+  ident->term ID _ IDT,
+  find-hyp.aux IDT S H.
+pred find-hyp.aux i:term, i:term, o:term.
+find-hyp.aux IDT {{ Esnoc _ lp:IDT lp:H }} H :- !.
+find-hyp.aux IDT {{ Esnoc lp:E _ _ }} H :- !,
+  find-hyp.aux IDT E H.
 
 
 % Start an Iris proof
@@ -161,8 +162,19 @@ do-intro ID (hole Type Proof) C :-
 
 
 pred do-intro-anon i:hole, i:(hole -> prop).
-do-intro-anon (hole Type Proof) C :-
+do-intro-anon  (hole Type Proof) C :-
   coq.ltac.fresh-id "a" {{ False }} ID,
+  coq.id->name ID N,
+  coq.elaborate-skeleton (fun N _ _) Type Proof ok,
+  Proof = (fun _ T IntroFProof),
+  @pi-decl N T x\  
+    coq.typecheck (IntroFProof x) (F x) ok,
+    C (hole (F x) (IntroFProof x)).
+
+pred do-intro-anon-hint i:string, i:hole, i:(hole -> prop).
+do-intro-anon-hint S (hole Type Proof) C :-
+  coq.ltac.fresh-id S {{ False }} ID,
+  if-debug (coq.say "introducing coq forall with" ID),
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
@@ -493,6 +505,9 @@ do-iOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrR
   coq.typecheck OrLProof OrLType ok,
   coq.typecheck OrRProof OrRType ok.
 
+% Backtrack or not on errors
+macro @set-bt-error! B :- (get-option "bt-error" BT_FAIL_VAL :- !, BT_FAIL_VAL = B).
+macro @bt-error! B :- get-option "bt-error" B.
 
 pred do-iExistDestruct i:ident, i:option string, i:ident, i:hole, i:(hole -> prop).
 do-iExistDestruct ID X HID (hole Type Proof) C :- !,
@@ -503,22 +518,22 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; (open show-goal G1 _, coq.error "iExistDestruct:" ID "not found")),
+  (open pm_reflexivity G1 []; 
+    (open (goal->string G1S) G1 _, if-debug (coq.say "iExistDestruct:" ID "not found" G1S), if (@bt-error! ff) (fail) (coq.error "iExistDestruct:" ID "not found" G1S))
+  ),!,
   coq.ltac.collect-goals Into [G2] _,
-  (open tc_solve G2 []; (open show-goal G2 _, coq.error "iExistDestruct: cannot destruct")),
+  (open tc_solve G2 []; 
+    (open (goal->string G2S) G2 _, if-debug (coq.say "iExistDestruct: cannot destruct" G2S), if (@bt-error! ff) (fail) (coq.error "iExistDestruct: cannot destruct" G2S))
+  ),
 
   coq.typecheck ExistProof RedType ok,
   pm-reduce RedType ExistType,
   if (X = some XN) 
     (do-intro XN (hole ExistType ExistProof) C)
     (
-      coq.ltac.collect-goals ExistProof [G3] _,
-      open (coq.ltac.call "intros_anon" []) G3 [G4],
-      open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
-                g = (goal _ _ AnonRedType AnonProof _), 
-                pm-reduce AnonRedType AnonType,
-                C (hole AnonType AnonProof)
-           ) G4 _
+      Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ lp:NameT _ _ _ _ }},
+      NameT = (fun Name _ _),
+      do-intro-anon-hint {coq.name->id Name} (hole ExistType ExistProof) C
     ).
 
 
@@ -554,6 +569,10 @@ do-iDestruct ID (iPure PID) (ihole N H) C :- !, do-iPure ID PID H (h\ C (ihole N
 do-iDestruct ID (iList [[]]) (ihole _ H) _ :-
   do-iExFalso H H',
   do-iExact ID H'.
+do-iDestruct ID (iList [[iForall | IPSS]]) IH C :-
+  @set-bt-error! ff => do-iDestruct ID (iList [[iPure none, iForall | IPSS]]) IH C.
+do-iDestruct ID (iList [[iForall | IPSS]]) IH C :- !,
+  @set-bt-error! tt => do-iDestruct ID (iList [IPSS]) IH C.
 do-iDestruct ID (iAll) (ihole N (hole Type Proof)) C :-
   find-hyp ID Type (app [global GREF | _]),
   inductive-unfold GREF _ _ _ NConstr, !,
@@ -566,10 +585,10 @@ do-iDestruct ID (iList IPSS) (ihole N (hole Type Proof)) C :-
   do-iEvalIn ID (hole Type Proof) IH H,
   do-iApplyLem (global U1) IH [] [],
   do-iDestruct ID (iList IPSS) (ihole N H) C.
-do-iDestruct ID (iList [[iPure PN, IP]]) (ihole N H) C :- !,
+do-iDestruct ID (iList [[iPure PN, IP | IPS]]) (ihole N H) C :- !,
   ident-for-pat.default IP ID N HID NS,
-  do-iExistDestruct ID PN HID H (h\ do-iDestruct HID IP (ihole NS h) C).
-  % This case now also handles the pure and case with typeclasses,
+  do-iExistDestruct ID PN HID H (h\ do-iDestruct HID (iList [[IP | IPS]]) (ihole NS h) C).
+  % This case now also handles the pure and exists case with typeclasses,
   % however, that is not neccessary as we can just backtrack in here
   % And take the next case if iExistsDestruct fails.
 do-iDestruct ID (iList [[IP, iDrop]]) (ihole N H) C :- !,
@@ -580,17 +599,17 @@ do-iDestruct ID (iList [[iDrop, IP]]) (ihole N H) C :- !,
   ident-for-pat.default IP ID N HID N',
   do-iAndChoiceDestruct ID HID ff H H', !,
   do-iDestruct HID IP (ihole N' H') C.
-do-iDestruct ID (iList [[IP1, IP2]]) (ihole N H) C :-
+do-iDestruct ID (iList [[IP1, IP2 | IPSS]]) (ihole N H) C :-
   ident-for-pat.default IP1 ID N ID1 N',
   ident-for-pat IP2 N' ID2 N'',
   do-iAndDestruct ID ID1 ID2 H H', !,
-  do-iDestruct ID1 IP1 (ihole N'' H') (ih\ do-iDestruct ID2 IP2 ih C).
-do-iDestruct ID (iList [IPSL | IPSSR]) (ihole N H) C :-
+  do-iDestruct ID1 IP1 (ihole N'' H') (ih\ do-iDestruct ID2 (iList [[IP2 | IPSS]]) ih C).
+do-iDestruct ID (iList [IPSL, IPSR | IPSS]) (ihole N H) C :-
   ident-for-pat.default (iList [IPSL]) ID N ID1 N',
-  ident-for-pat (iList IPSSR) N' ID2 N'',
+  ident-for-pat (iList [IPSR]) N' ID2 N'',
   do-iOrDestruct ID ID1 ID2 H HL HR, !,
   do-iDestruct ID1 (iList [IPSL]) (ihole N'' HL) C, !,
-  do-iDestruct ID2 (iList IPSSR) (ihole N'' HR) C.
+  do-iDestruct ID2 (iList [IPSR | IPSS]) (ihole N'' HR) C.
 do-iDestruct _ IP IH C :-
   coq.say "eiDestruct: Skipping " {std.any->string IP}, !,
   C IH.

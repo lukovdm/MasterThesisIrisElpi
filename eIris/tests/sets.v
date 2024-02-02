@@ -11,7 +11,7 @@ From iris.heap_lang Require Import proofmode notation.
 
 From eIris.proofmode Require Import base reduction inductive intros.
 
-(* Section SkipQueue.
+Section SkipQueue.
     Context `{!heapGS Σ}.
     Notation iProp := (iProp Σ).
     Implicit Types l : loc.
@@ -19,10 +19,67 @@ From eIris.proofmode Require Import base reduction inductive intros.
     EI.ind
     Inductive is_skipqueue : val → list val → iProp :=
         | empty_is_skipqueue : is_skipqueue NONEV []
-        | link_is_skipqueue vs l tl : l ↦ (NONEV, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) vs
-        | cons_is_skipqueue v vs tl l : l ↦ (SOMEV v, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) (v :: vs).
+        | link_is_skipqueue v vs l tl : l ↦ (v, #true, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) vs
+        | cons_is_skipqueue v vs tl l : l ↦ (v, #false, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) (v :: vs).
 
-End SkipQueue. *)
+    Definition skipqueue_push : val :=
+      rec: "skipqueue_push" "l" "v" :=
+        match: "l" with
+          NONE => SOME (Alloc("v", #false, NONE))
+          | SOME "hd" =>
+            let: "x" := !"hd" in
+            let: "tl" := "skipqueue_push" (Snd "x") "v" in
+            "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
+            "l"
+        end.
+    
+    Lemma skipqueue_push_spec (vs : list val) (v : val) (hd : val) :
+      {{{ is_skipqueue hd vs }}}
+        skipqueue_push hd v
+      {{{ hd', RET hd'; is_skipqueue hd' (vs ++ [v])}}}.
+    Proof.
+      eiIntros "%Phi His".
+      iRevert (Phi).
+      eiInduction "His" as "[%Ha %Ha0|(%v' & %vs' & %l & %tl & Hl & IH & %Ha & %Ha')|(%v' & %vs' & %l & %tl & Hl & IH & %Ha & %Ha')]"; eiIntros "%Phi Hlater"; simplify_eq.
+      - wp_rec.
+        wp_alloc l as "Hl".
+        wp_pures.
+        iModIntro.
+        iApply "Hlater".
+        iApply cons_is_skipqueue.
+        iExists _, _, _, l.
+        iFrame.
+        repeat iSplit; try iPureIntro; try done.
+        by iApply empty_is_skipqueue.
+      - wp_rec.
+        wp_load.
+        wp_pures.
+        eiDestruct "IH" as "[IH _]".
+        wp_apply "IH".
+        eiIntros "%hd' His".
+        wp_store.
+        iModIntro.
+        iApply "Hlater".
+        iApply link_is_skipqueue.
+        iExists _, _, l, _.
+        iFrame.
+        iSplit; done.
+      - wp_rec.
+        wp_load.
+        wp_pures.
+        eiDestruct "IH" as "[IH _]".
+        wp_apply "IH".
+        eiIntros "%hd' His".
+        wp_store.
+        iModIntro.
+        iApply "Hlater".
+        iApply cons_is_skipqueue.
+        iExists _, _, _, tl.
+        iFrame.
+        iSplit; done.
+    Qed.
+
+End SkipQueue.
 
 Section GSets.
   Context `{!heapGS Σ}.

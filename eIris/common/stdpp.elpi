@@ -72,6 +72,10 @@ type show-goal open-tactic.
 show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
   coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
 
+pred goal->string o:string, i:goal, o:list sealed-goal.
+goal->string S (goal _ _ Type Proof _ as G) [seal G] :-
+  S is "Goal: " ^ {coq.term->string Proof} ^ " : " ^ {coq.term->string Type}.
+
 pred type-depth i:term, o:int.
 type-depth (prod _ _ F) N :- !,
   (pi x\ type-depth (F x) N'),

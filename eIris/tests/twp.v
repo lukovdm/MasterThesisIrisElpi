@@ -65,21 +65,26 @@ Section TWP.
     WPE e @ s1; E1 [{ Φ }] -∗ (∀ v, Φ v ={E2}=∗ Ψ v) -∗ WPE e @ s2; E2 [{ Ψ }].
   Proof.
     iIntros (? HE) "H HΦ". iRevert (E2 Ψ HE) "HΦ".
-    eiInduction "H" as "[(%E & %v & %e1 & %Phi' & Hfudp & %Htv & [%Ha %Hb] & %HaPhi)|IH]".
-    iApply twp_ind; first solve_proper.
-    iIntros "!>" (e E1 Φ) "IH"; iIntros (E2 Ψ HE) "HΦ".
-    rewrite !twp_unfold /twp_pre. destruct (to_val e) as [v|] eqn:?.
-    { iApply ("HΦ" with "[> -]"). by iApply (fupd_mask_mono E1 _). }
-    iIntros (σ1 ns κs nt) "Hσ".
-    iMod (fupd_mask_subseteq E1) as "Hclose"; first done.
-    iMod ("IH" with "[$]") as "[% IH]".
-    iModIntro; iSplit; [by destruct s1, s2|]. iIntros (κ e2 σ2 efs Hstep).
-    iMod ("IH" with "[//]") as (?) "(Hσ & IH & IHefs)"; auto.
-    iMod "Hclose" as "_"; iModIntro.
-    iFrame "Hσ". iSplit; first done. iSplitR "IHefs".
-    - iDestruct "IH" as "[IH _]". iApply ("IH" with "[//] HΦ").
-    - iApply (big_sepL_impl with "IHefs"); iIntros "!>" (k ef _) "[IH _]".
-      iApply "IH"; auto.
-  Qed.
+    eiInduction "H" as "[(%E & %v & %e1 & %Phi' & IH & %Htv & [%Ha %Hb] & %HaPhi)|(%E & %e1 & %Phi' & IH & %Htv & [%Ha %Hb] & %HaPhi)]"; iIntros (E2 Ψ HE) "HΦ"; 
+    simplify_eq.
+    - iApply twp_some.
+      iExists _, _, _, _.
+      iSplitL; [|repeat iSplit; done].
+      iApply ("HΦ" with "[> -]").
+      by iApply (fupd_mask_mono E _).
+    - iApply twp_none.
+      iExists _, _, _.
+      iSplitL; [|repeat iSplit; done].
+      iIntros (σ1 ns κs nt) "Hσ".
+      iMod (fupd_mask_subseteq E) as "Hclose"; first done.
+      iMod ("IH" with "[$]") as "[% IH]".
+      iModIntro; iSplit; [by destruct s1, s2|]. iIntros (κ e2 σ2 efs Hstep).
+      iMod ("IH" with "[//]") as (?) "(Hσ & IH & IHefs)"; auto.
+      iMod "Hclose" as "_"; iModIntro.
+      iFrame "Hσ". iSplit; first done. iSplitR "IHefs".
+      + iDestruct "IH" as "[IH _]". iApply ("IH" with "[//] HΦ").
+      + iApply (big_sepL_impl with "IHefs"); iIntros "!>" (k ef _) "[IH _]".
+        iApply "IH"; auto.
+  Qed. 
 
 End TWP.

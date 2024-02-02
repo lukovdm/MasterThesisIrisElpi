@@ -1,12 +1,13 @@
 From elpi Require Import elpi.
-From iris.proofmode Require Export tactics coq_tactics reduction.
+From iris.proofmode Require Import tactics coq_tactics reduction.
 From iris.prelude Require Import options.
-From iris.bi Require Export bi.
+From iris.bi Require Import bi.
 From iris.algebra Require Import ofe monoid list.
 
 From stdpp Require Import numbers.
 
-From eIris.proofmode Require Import base reduction inductiveDB inductive.
+From eIris.proofmode Require Import base inductiveDB inductive.
+From eIris.proofmode Require Export reduction.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
@@ -36,7 +37,8 @@ Elpi Accumulate lp:{{
       do-iStartProof (hole Type Proof) IH, !,
       do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
       coq.ltac.collect-goals Proof GL SG,
-      all (open pm-reduce-goal) GL GL',
+      all (open show-goal) GL _,
+      all (open pm-reduce-goal) GL GL', !,
       all (open show-goal) GL' _,
       std.append GL' SG GS
     ).
@@ -186,12 +188,14 @@ Section Proof.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
-      eiInduction "Hq" as "[%Ha | (%l' & %v' & %tl' & Hl' & IH & %Hy)]"; eiIntros "Hq'".
-      + by iApply empty_is_list.
-      + simplify_eq.
+        (* Elpi Trace. *)
+        elpi eiInduction "Hq" "[%Ha | * Hl' IH %Hy]". 
+      + eiIntros "Hq'". by iApply empty_is_list.
+      + Elpi Trace Browser.
+        elpi eiIntros debug "Hq'". simplify_eq.
         iApply cons_is_list.
-        iExists l', v', tl'.
-        eiDestruct "Hq'" as "[%Hl | (%l'' & %v'' & %tl'' & Hl & Hilq' & %Hv)]"; simplify_eq.
+        iExists _, _, _.
+        eiDestruct "Hq'" as "[%Hl | * Hl Hilq' %Hv]"; simplify_eq.
         iCombine "Hl' Hl" as "Hl" gives %[_ ?]; simplify_eq.
         iFrame.
         iDestruct "IH" as "[IH _]".
