@@ -162,8 +162,11 @@ do-intro ID (hole Type Proof) C :-
 
 
 pred do-intro-anon i:hole, i:(hole -> prop).
-do-intro-anon  (hole Type Proof) C :-
-  coq.ltac.fresh-id "a" {{ False }} ID,
+do-intro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
+  if-debug (coq.say "pre intro" Type),
+  coq.name->id N' S,
+  coq.ltac.fresh-id S Ty ID,
+  if-debug (coq.say "introducing" S "as" ID ": " Ty),
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
@@ -171,10 +174,12 @@ do-intro-anon  (hole Type Proof) C :-
     coq.typecheck (IntroFProof x) (F x) ok,
     C (hole (F x) (IntroFProof x)).
 
-pred do-intro-anon-hint i:string, i:hole, i:(hole -> prop).
-do-intro-anon-hint S (hole Type Proof) C :-
-  coq.ltac.fresh-id S {{ False }} ID,
-  if-debug (coq.say "introducing coq forall with" ID),
+
+pred do-intro-anon-external-hint i:string, i:hole, i:(hole -> prop).
+do-intro-anon-external-hint S (hole (prod _ Ty _ as Type) Proof) C :-
+  if-debug (coq.say "pre intro" Type),
+  coq.ltac.fresh-id S Ty ID,
+  if-debug (coq.say "introducing" S "as" ID ": " Ty),
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
@@ -524,7 +529,7 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   coq.ltac.collect-goals Into [G2] _,
   (open tc_solve G2 []; 
     (open (goal->string G2S) G2 _, if-debug (coq.say "iExistDestruct: cannot destruct" G2S), if (@bt-error! ff) (fail) (coq.error "iExistDestruct: cannot destruct" G2S))
-  ),
+  ),!,
 
   coq.typecheck ExistProof RedType ok,
   pm-reduce RedType ExistType,
@@ -533,7 +538,9 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
     (
       Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ lp:NameT _ _ _ _ }},
       NameT = (fun Name _ _),
-      do-intro-anon-hint {coq.name->id Name} (hole ExistType ExistProof) C
+      coq.name->id Name S,
+      if (rex.match "^elpi_ctx_entry_" S) (S' = "a") (S = S'), 
+      do-intro-anon-external-hint S' (hole ExistType ExistProof) C
     ).
 
 

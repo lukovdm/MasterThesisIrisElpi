@@ -174,6 +174,7 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
+  (* Implicit Types v : val. *)
 
   EI.ind 
   Inductive is_list (q : Qp) : val → iProp :=
@@ -188,30 +189,28 @@ Section Proof.
     iSplit.
     - eiIntros "[Hq Hq']".
       iRevert "Hq'".
-        (* Elpi Trace. *)
-        elpi eiInduction "Hq" "[%Ha | * Hl' IH %Hy]". 
-      + eiIntros "Hq'". by iApply empty_is_list.
-      + Elpi Trace Browser.
-        elpi eiIntros debug "Hq'". simplify_eq.
+      eiInduction "Hq" as "[%Ha | * Hl' IH %Ha]"; iIntros "Hq'".
+      + by iApply empty_is_list.
+      + simplify_eq.
         iApply cons_is_list.
-        iExists _, _, _.
         eiDestruct "Hq'" as "[%Hl | * Hl Hilq' %Hv]"; simplify_eq.
         iCombine "Hl' Hl" as "Hl" gives %[_ ?]; simplify_eq.
+        iExists _, _, _.
         iFrame.
         iDestruct "IH" as "[IH _]".
         iSplitL.
         * iApply ("IH" with "[$]").
         * by iPureIntro.
     - eiIntros "Hi".
-      eiInduction "Hi" as "[%Ha | (%l & %v' & %tl & [Hq Hq'] & [[Hiq Hiq'] _] & %Hy)]".
+      eiInduction "Hi" as "[%Ha | * [Hq Hq'] [[Hiq Hiq'] _] %Hy]".
       + simplify_eq.
         iSplitL; by iApply empty_is_list.
       + iSplitL "Hq Hiq".
         * iApply cons_is_list.
-          iExists l, v', tl.
+          iExists _, _, _.
           by iFrame.
         * iApply cons_is_list.
-          iExists l, v', tl.
+          iExists _, _, _.
           by iFrame.
   Qed.
 
