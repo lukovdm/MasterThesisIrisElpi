@@ -65,7 +65,7 @@ Section TWP.
     WPE e @ s1; E1 [{ Φ }] -∗ (∀ v, Φ v ={E2}=∗ Ψ v) -∗ WPE e @ s2; E2 [{ Ψ }].
   Proof.
     iIntros (? HE) "H HΦ". iRevert (E2 Ψ HE) "HΦ".
-    eiInduction "H" as "[(%E & %v & %e1 & %Phi' & IH & %Htv & [%Ha %Hb] & %HaPhi)|(%E & %e1 & %Phi' & IH & %Htv & [%Ha %Hb] & %HaPhi)]"; iIntros (E2 Ψ HE) "HΦ"; 
+    eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
     - iApply twp_some.
       iExists _, _, _, _.
@@ -86,5 +86,38 @@ Section TWP.
       + iApply (big_sepL_impl with "IHefs"); iIntros "!>" (k ef _) "[IH _]".
         iApply "IH"; auto.
   Qed. 
+
+  Lemma fupd_twp s E e Φ : (|={E}=> WPE e @ s; E [{ Φ }]) ⊢ WPE e @ s; E [{ Φ }].
+  Proof.
+  Admitted.
+  Lemma twp_fupd s E e Φ : WPE e @ s; E [{ v, |={E}=> Φ v }] ⊢ WPE e @ s; E [{ Φ }].
+  Proof.
+  Admitted.
+
+  Lemma twp_bind K `{!LanguageCtx K} s E e Φ :
+    WPE e @ s; E [{ v, WPE K (of_val v) @ s; E [{ Φ }] }] ⊢ WPE K e @ s; E [{ Φ }].
+  Proof.
+    revert Φ. cut (∀ Φ', WPE e @ s; E [{ Φ' }] -∗ ∀ Φ,
+      (∀ v, Φ' v -∗ WPE K (of_val v) @ s; E [{ Φ }]) -∗ WPE K e @ s; E [{ Φ }]).
+    { iIntros (help Φ) "H". iApply (help with "H"); auto. }
+    iIntros (Φ') "H". 
+    eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (Φ'') "HΦ".
+    - simplify_eq. apply of_to_val in Htv as <-. iApply fupd_twp. by iApply "HΦ".
+    - iApply twp_none.
+      iExists _, (K e1), _.
+      simplify_eq.
+      iSplitL; [|repeat iSplit; try done].
+      2: { iPureIntro. by apply fill_not_val. }
+      iIntros (σ1 ns κs nt) "Hσ". iMod ("IH" with "[$]") as "[% IH]".
+      iModIntro; iSplit.
+      { iPureIntro. unfold reducible_no_obs in *.
+        destruct s; naive_solver eauto using fill_step. }
+      iIntros (κ e2 σ2 efs Hstep).
+      destruct (fill_step_inv e1 σ1 κ e2 σ2 efs) as (e2'&->&?); auto.
+      iMod ("IH" $! κ e2' σ2 efs with "[//]") as (?) "(Hσ & IH & IHefs)".
+      iModIntro. iFrame "Hσ". iSplit; first done. iSplitR "IHefs".
+      + iDestruct "IH" as "[IH _]". by iApply "IH".
+      + by setoid_rewrite and_elim_r.
+  Qed.
 
 End TWP.
