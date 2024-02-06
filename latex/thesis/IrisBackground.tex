@@ -4,118 +4,72 @@
 
 \chapter{Background on Iris}
 
-% Wat is seperatie logica
-% syntax, wetjes en intuitie van semantiek
-% iets over inductieve definities zonder het over oplossing the hebben
-% gebruik is_list als voorbeeld voor hoofdstuk
-
-% waarom is een fixpoint niet genoeg
-% probeer iets te bedenken waarom je ind of iter nodig hebt
-
 \begin{itemize}
-  \item Concept of separation logic
-  \item Any references
-  \item Iris is a framework that supports different separations logics for different languages
-  \item We will show Iris in the context of the language HeapLang
-  \item Notation for thesis: \coqi{This} represents elements in \coq
-  \item Start with introducing the grammar of Iris and HeapLang
-  \item Then we will show the proof rules of Iris and how they are used in with HeapLang
-  \item Then we will show the context of Iris and how it is used in the proof mode
-  \item Then we will show how Iris tactics are constructed using Lemma's about the context
-  \item Then we will show how we can use Elpi to extend the tactics of Iris
-  \item Lastly talk about induction and fix-points in Iris
+  \item Iris is \ldots
+  \item We will use a central example to explain Iris
+  \item We start by defining the example
+  \item Then show a program to proof about
+  \item Show parts of a proof
+  \item Explain why this does not work for more complicated versions
 \end{itemize}
-\quest{Should I introduce HeapLang, as I don't need to actually verify any program in my thesis? But it would be more clear what Iris is if I introduce it.}
 
 \iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Propositions can be seen as predicates over resources, \eg heaps. Thus, there are a number of extra logical connectives such as \coqi{P ∗ Q}, which represents that \coqi{P} and \coqi{Q} split up the resources into two disjoints in which they respectively hold. Moreover, hypotheses in our logic can often be used only once when proving something, they represent resources that we consume when used. To be able to reason in this logic in \coq a tactics' language has been added to \coq called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}.
 
-\section{Grammar}
+\section{Separation logic}
 \begin{itemize}
-  \item Iris grammar is an extension on predicate logic grammar
+  \item We want to be able to reason about memory, heaps
+  \item Use a logic that has extra connectives for talking about memory
+  \item Most important, points to, $\fmapsto$
+  \item Picture of memory with $l\fmapsto x$ next to it
+  \item $l\fmapsto x$ means there is only one location in memory, $l$ and it has value $x$
+  \item $\land$ now no longer works
+  \item introduce $\star$
+  \item Another picture with logic next to it
+  \item These allow us to already describe most memories
 \end{itemize}
-\begin{align*}
-  \type \bnfdef{}        & \sigtype \mid 0 \mid 1 \mid \type \to \type                                                                                                      \\[0.4em]
-  \term, \prop \bnfdef{} & \var \mid \FALSE \mid \TRUE \mid \term =_\type \term \mid \prop \land \prop \mid \prop \lor \prop \mid \prop * \prop \mid \prop \wand \prop \mid \\
-                         & \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \always\prop \mid {\later\prop} \mid \hoare{\prop}{\term}{v.\; \prop}                 \\
-\end{align*}
+
+\section{Writing specifications of programs}
 \begin{itemize}
-  \item Iris is expanded with a few extra connectives
-  \item * is separating conjunction, explain intuition, refer to rule
-  \item $\wand$ is magic wand, explain intuition, refer to rule
-  \item $\always$ is always, explain intuition, refer to rule
-  \item $\later$ is later, explain intuition, refer to rule
-  \item $\hoare{\prop}{\term}{v.\; \prop}$ is a hoare triple, explain intuition, refer to rule
+  \item We will write our programs in heaplang, \ldots
+  \item Start by verifying simple program
+\end{itemize}
+\begin{coqcode}
+Definition swap : val :=
+  λ: "l" "k", let: "x" := !"l" in
+              let: "y" := !"k" in
+              "k" <- "x";;
+              "l" <- "y".
+\end{coqcode}
+\begin{itemize}
+  \item We now want to specify what happens to the memory when the program executes
+  \item Use texan triples, similar to hoare triples
+\end{itemize}
+\begin{coqcode}
+Lemma swap_spec (x y : val) (l k : loc) :
+  {{{ l ↦ x ∗ k ↦ y }}}
+    swap #l #k
+  {{{ v, RET v; l ↦ y ∗ k ↦ x }}}.
+\end{coqcode}
+\begin{itemize}
+  \item Start with a description of the memory before swap, precondition
+  \item program to execute,
+  \item \coqi{#l} transforms a location into a value in heaplang
+  \item describe post condition
 \end{itemize}
 
 \section{Proof rules}
 \begin{itemize}
-  \item We omit any standard proof rules
-  \item We will show the proof rules for the separation logic connectives
+  \item Describe more parts of the logic, like affine and persistent, later and magic wand
 \end{itemize}
-\begin{mathpar}
-  \begin{array}{rMcMl}
-    \TRUE * \prop             & \provesIff & \prop                     \\
-    \prop * \propB            & \proves    & \propB * \prop            \\
-    (\prop * \propB) * \propC & \proves    & \prop * (\propB * \propC)
-  \end{array}
-  \and
-  \infer[$*$-mono]
-  {\prop_1 \proves \propB_1 \and
-    \prop_2 \proves \propB_2}
-  {\prop_1 * \prop_2 \proves \propB_1 * \propB_2}
-  \and
-  \inferB[$\wand$I-E]
-  {\prop * \propB \proves \propC}
-  {\prop \proves \propB \wand \propC}
-\end{mathpar}
+
+\section{Proofs}
 \begin{itemize}
-  \item These are the rules about the separating conjunction is commutative and associative.
-  \item Magic wand is implication with disjunct resources.
-  \item Resources can't be duplicated.
+  \item Maybe show a proof in Coq?
 \end{itemize}
-\begin{mathpar}
-  \inferhref{$\always$-mono}{pers-mono}
-  {\prop \proves \propB}
-  {\always{\prop} \proves \always{\propB}}
-  \and
-  \inferhref{$\always$-E}{pers-elim}
-  {}
-  {\always\prop \proves \prop}
-  \and
-  \begin{array}[c]{rMcMl}
-    \always{\prop} \land \propB & \proves & \always{\prop} * \propB   \\
-    \always{\prop}              & \proves & \always\always\prop       \\
-    \All x. \always{\prop}      & \proves & \always{\All x. \prop}    \\
-    \always{\Exists x. \prop}   & \proves & \Exists x. \always{\prop}
-  \end{array}
-\end{mathpar}
+
+\section{How does Iris actually work}
 \begin{itemize}
-  \item Persistence can only be introduced using the $\always$-mono rule.
-  \item Represents resources that can be duplicated and thus can be used multiple times.
-  \item Persistence can always be eliminated.
-\end{itemize}
-\begin{mathpar}
-  \inferhref{$\later$-mono}{later-mono}
-  {\prop \proves \propB}
-  {\later\prop \proves \later{\propB}}
-  \and
-  \inferhref{$\later$-I}{later-intro}
-  {}
-  {\prop \proves \later\prop}
-  \and
-  \begin{array}[c]{rMcMl}
-    \All x. \later\prop    & \proves & \later{\All x.\prop}                       \\
-    \later\Exists x. \prop & \proves & \later\FALSE \lor {\Exists x.\later\prop}  \\
-    \later\prop            & \proves & \later\FALSE \lor (\later\FALSE \Ra \prop)
-  \end{array}
-  \and
-  \begin{array}[c]{rMcMl}
-    \later{(\prop * \propB)} & \provesIff & \later\prop * \later\propB \\
-    \always{\later\prop}     & \provesIff & \later\always{\prop}       \\
-  \end{array}
-\end{mathpar}
-\begin{itemize}
-  \item Later is used to represent resources that can be used in the future.
+  \item I don't really know yet
 \end{itemize}
 
 \section{Contexts}
@@ -275,11 +229,16 @@ The intro pattern consists of multiple sub intro patterns. Each sub intro patter
   \item \coqi{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
   \item \coqi{"[IPL | IPR]"} represents disjunction elimination. We perform a disjunction elimination on the introduced hypothesis. Then, we apply the two included intro patterns two the two cases created by the disjunction elimination.
   \item \coqi{"[IPL IPR]"} represents separating conjunction elimination. We perform a separating conjunction elimination. Then, we apply the two included intro patterns two the two hypotheses by the separating conjunction elimination.
-  \item \coqi{"[\%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply the included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
+  \item \coqi{"[%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply the included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
 \end{itemize}
 % Add simpl and done here and refrence ssreflect with citation
-Thus, we can break down \coqi{iIntros "\%x [[\%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqi{"\%x"} and then perform the second case, introduce a pure \coq variable for the \coqi{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqi{"[[\%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqi{y} to the \coq context. Lastly, \coqi{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqi{"Hx"} and \coqi{"Hy"}.
+Thus, we can break down \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqi{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqi{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqi{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqi{y} to the \coq context. Lastly, \coqi{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqi{"Hx"} and \coqi{"Hy"}.
 
 There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
 
+
+\section{Inductive predicates}
+\begin{itemize}
+  \item Sometimes you want to define a statement about the memory that has some finite size
+\end{itemize}
 \end{document}

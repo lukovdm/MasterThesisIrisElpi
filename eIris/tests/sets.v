@@ -20,7 +20,7 @@ Section SkipQueue.
     Inductive is_skipqueue : val → list val → iProp :=
         | empty_is_skipqueue : is_skipqueue NONEV []
         | link_is_skipqueue v vs l tl : l ↦ (v, #true, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) vs
-        | cons_is_skipqueue v vs tl l : l ↦ (v, #false, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) (v :: vs).
+        | cons_is_skipqueue v vs tl l : l ↦ (v, #false, tl) -∗ ⌜val_is_unboxed v⌝ -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) (v :: vs).
 
     Definition skipqueue_push : val :=
       rec: "skipqueue_push" "l" "v" :=
@@ -34,13 +34,13 @@ Section SkipQueue.
         end.
     
     Lemma skipqueue_push_spec (vs : list val) (v : val) (hd : val) :
-      {{{ is_skipqueue hd vs }}}
+      {{{ is_skipqueue hd vs ∗ ⌜val_is_unboxed v⌝ }}}
         skipqueue_push hd v
       {{{ hd', RET hd'; is_skipqueue hd' (vs ++ [v])}}}.
     Proof.
-      eiIntros "%Phi His".
+      eiIntros "%Phi [His %Hvub]".
       iRevert (Phi).
-      eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
+      eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl %Heub IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
       - wp_rec.
         wp_alloc l as "Hl".
         wp_pures.
@@ -79,6 +79,77 @@ Section SkipQueue.
         iSplit; done.
     Qed.
 
+    Definition skipqueue_delete_safe : val :=
+      rec: "skipqueue_delete_safe" "l" "v" :=
+        match: "l" with
+          NONE => NONE
+          | SOME "hd" =>
+            let: "x" := !"hd" in
+            (if: Fst (Fst "x") = "v" then
+              let: "tl" := "skipqueue_delete_safe" (Snd "x") "v" in
+              "hd" <- (Fst (Fst "x"), #true, "tl")
+            else
+              let: "tl" := "skipqueue_delete_safe" (Snd "x") "v" in
+              "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl"));;
+            "l"
+        end.
+
+    Lemma skipqueue_delete_safe_spec (vs : list val) (v : val) (hd : val) :
+      {{{ is_skipqueue hd vs ∗ ⌜val_is_unboxed v⌝ }}}
+        skipqueue_delete_safe hd v
+      {{{ hd', RET hd'; is_skipqueue hd' (remove (λ x y, val_eq_dec x y) v vs)}}}.
+    Proof.
+      eiIntros "%Phi [His %Hv]".
+      iRevert (Phi).
+      eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl %Hvub IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
+      - wp_rec.
+        wp_pures.
+        iModIntro.
+        iApply "Hlater".
+        iApply empty_is_skipqueue.
+        iSplit; try done.
+      - wp_rec.
+        wp_load.
+        wp_pures.
+        destruct (val_eq_dec a1 v); simplify_eq.
+        + rewrite bool_decide_eq_true_2; [|done].
+          iDestruct "IH" as "[IH _]".
+          wp_pures.
+          wp_apply "IH".
+          iIntros "%hd' IH".
+          wp_pures.
+          (* wp_alloc l as "Hl". *)
+          admit.
+        + rewrite bool_decide_eq_false_2; [|done].
+          wp_pures.
+          iDestruct "IH" as "[IH _]".
+          wp_apply "IH".
+          iIntros "%hd' IH".
+          wp_pures.
+          (* wp_alloc l as "IH". *)
+          admit.
+      - wp_rec.
+        wp_load.
+        wp_pures.
+        destruct (val_eq_dec a1 v); simplify_eq.
+        + rewrite bool_decide_eq_true_2; [|done].
+          iDestruct "IH" as "[IH _]".
+          wp_pures.
+          wp_apply "IH".
+          iIntros "%hd' IH".
+          wp_pures.
+          (* wp_alloc l as "Hl". *)
+          admit.
+        + rewrite bool_decide_eq_false_2; [|done].
+          wp_pures.
+          iDestruct "IH" as "[IH _]".
+          wp_apply "IH".
+          iIntros "%hd' IH".
+          wp_pures.
+          (* wp_alloc l as "IH". *)
+          admit.
+    Admitted.
+
 End SkipQueue.
 
 Section GSets.
@@ -91,6 +162,7 @@ Section GSets.
     | empty_is_gset : is_gset NONEV ∅
     | cons_is_gset l tl s (e : nat) ss : 
       l ↦ (#e, tl) -∗ 
+      ⌜e ∈ s⌝ -∗
       ⌜s ∖ {[ e ]} = ss⌝ -∗ 
       is_gset tl ss -∗ 
       is_gset (SOMEV #l) s.
@@ -116,7 +188,7 @@ Section GSets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hlater".
+    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hlater".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
@@ -127,6 +199,7 @@ Section GSets.
       iExists l, NONEV, {[ e ]}, e, ∅.
       iFrame.
       repeat iSplit; try iPureIntro; try done.
+      + by apply elem_of_singleton_2.
       + apply set_eq.
         intros x.
         split; intros H.
@@ -148,8 +221,9 @@ Section GSets.
         simplify_eq.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
-        rewrite difference_union_distr_l_L difference_diag_L.
-        apply right_id, _.
+        * by apply elem_of_union_r, elem_of_singleton_2.
+        * rewrite difference_union_distr_l_L difference_diag_L.
+          apply right_id, _.
       + eiDestruct "IH" as "[IH _]".
         wp_apply "IH".
         eiIntros "%hd' His".
@@ -160,11 +234,12 @@ Section GSets.
         iExists l, _, (a1 ∪ {[ e ]}), _, _.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
-        rewrite difference_union_distr_l_L.
-        rewrite (difference_disjoint_L {[ e ]}); [done|].
-        apply disjoint_singleton_r, not_elem_of_singleton.
-        destruct (Nat.eq_dec e a2); try done.
-        simplify_eq.
+        * by apply elem_of_union_l.
+        * rewrite difference_union_distr_l_L.
+          rewrite (difference_disjoint_L {[ e ]}); [done|].
+          apply disjoint_singleton_r, not_elem_of_singleton.
+          destruct (Nat.eq_dec e a2); try done.
+          simplify_eq.
   Qed.
 End GSets.
 
