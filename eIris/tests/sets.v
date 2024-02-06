@@ -181,7 +181,7 @@ Section GSets.
             "l"
       end.
 
-  Lemma gset_add_spec (s : @gset nat _ nat_countable) (e : nat) (hd : val) :
+  Lemma gset_add_spec (s : gset nat) (e : nat) (hd : val) :
     {{{ is_gset hd s }}}
       gset_add hd (#e)
     {{{ hd', RET hd'; is_gset hd' (s ∪ {[ e ]}) }}}.

@@ -25,7 +25,25 @@
   \item $\land$ now no longer works
   \item introduce $\star$
   \item Another picture with logic next to it
-  \item These allow us to already describe most memories
+  \item Describe rules of $\star$
+\end{itemize}
+\begin{mathpar}
+  \begin{array}{rMcMl}
+    \TRUE * \prop             & \provesIff & \prop                     \\
+    \prop * \propB            & \proves    & \propB * \prop            \\
+    \prop * \propB            & \proves    & \prop                     \\
+    (\prop * \propB) * \propC & \proves    & \prop * (\propB * \propC)
+  \end{array}
+  \and
+  \infer[$*$-mono]
+  {\prop_1 \proves \propB_1 \and
+    \prop_2 \proves \propB_2}
+  {\prop_1 * \prop_2 \proves \propB_1 * \propB_2}
+\end{mathpar}
+\begin{itemize}
+  \item This does not include $\prop \proves \prop * \prop$
+  \item This is called affine
+  \item Note about linear logics
 \end{itemize}
 
 \section{Writing specifications of programs}
@@ -34,24 +52,22 @@
   \item Start by verifying simple program
 \end{itemize}
 \begin{coqcode}
-Definition swap : val :=
-  λ: "l" "k", let: "x" := !"l" in
-              let: "y" := !"k" in
-              "k" <- "x";;
-              "l" <- "y".
+Definition copy_singleton : val :=
+  λ: "l", let: "x" := !"l" in
+          SOME (Alloc "x").
 \end{coqcode}
 \begin{itemize}
   \item We now want to specify what happens to the memory when the program executes
   \item Use texan triples, similar to hoare triples
 \end{itemize}
 \begin{coqcode}
-Lemma swap_spec (x y : val) (l k : loc) :
-  {{{ l ↦ x ∗ k ↦ y }}}
-    swap #l #k
-  {{{ v, RET v; l ↦ y ∗ k ↦ x }}}.
+Lemma singleton_spec (x : val) (l : loc) :
+  {{{ l ↦ (x, NONE) }}}
+    singleton #l
+  {{{ v, RET v; v ↦ (x, NONE) ∗ l ↦ (x, NONE) }}}.
 \end{coqcode}
 \begin{itemize}
-  \item Start with a description of the memory before swap, precondition
+  \item Start with a description of the memory before copy singleton, precondition
   \item program to execute,
   \item \coqi{#l} transforms a location into a value in heaplang
   \item describe post condition
@@ -59,7 +75,7 @@ Lemma swap_spec (x y : val) (l k : loc) :
 
 \section{Proof rules}
 \begin{itemize}
-  \item Describe more parts of the logic, like affine and persistent, later and magic wand
+  \item Describe more parts of the logic, like persistent, later and magic wand
 \end{itemize}
 
 \section{Proofs}
