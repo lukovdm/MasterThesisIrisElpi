@@ -12,144 +12,158 @@ From iris.heap_lang Require Import proofmode notation.
 From eIris.proofmode Require Import base reduction inductive intros.
 
 Section SkipQueue.
-    Context `{!heapGS Σ}.
-    Notation iProp := (iProp Σ).
-    Implicit Types l : loc.
+  Context `{!heapGS Σ}.
+  Notation iProp := (iProp Σ).
+  Implicit Types l : loc.
 
-    EI.ind
-    Inductive is_skipqueue : val → list val → iProp :=
-        | empty_is_skipqueue : is_skipqueue NONEV []
-        | link_is_skipqueue v vs l tl : l ↦ (v, #true, tl) -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) vs
-        | cons_is_skipqueue v vs tl l : l ↦ (v, #false, tl) -∗ ⌜val_is_unboxed v⌝ -∗ is_skipqueue tl vs -∗ is_skipqueue (SOMEV #l) (v :: vs).
+  EI.ind
+  Inductive is_MLL : val → list val → iProp :=
+      | empty_is_MLL : is_MLL NONEV []
+      | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
+      | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-    Definition skipqueue_push : val :=
-      rec: "skipqueue_push" "l" "v" :=
-        match: "l" with
-          NONE => SOME (Alloc("v", #false, NONE))
-          | SOME "hd" =>
-            let: "x" := !"hd" in
-            let: "tl" := "skipqueue_push" (Snd "x") "v" in
-            "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
-            "l"
-        end.
-    
-    Lemma skipqueue_push_spec (vs : list val) (v : val) (hd : val) :
-      {{{ is_skipqueue hd vs ∗ ⌜val_is_unboxed v⌝ }}}
-        skipqueue_push hd v
-      {{{ hd', RET hd'; is_skipqueue hd' (vs ++ [v])}}}.
-    Proof.
-      eiIntros "%Phi [His %Hvub]".
-      iRevert (Phi).
-      eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl %Heub IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
-      - wp_rec.
-        wp_alloc l as "Hl".
+  Definition MLL_push : val :=
+    rec: "MLL_push" "l" "v" :=
+      match: "l" with
+        NONE => SOME (Alloc("v", #false, NONE))
+        | SOME "hd" =>
+          let: "x" := !"hd" in
+          let: "tl" := "MLL_push" (Snd "x") "v" in
+          "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
+          "l"
+      end.
+  
+  Lemma MLL_push_spec (vs : list val) (v : val) (hd : val) :
+    [[{ is_MLL hd vs  }]]
+      MLL_push hd v
+    [[{ hd', RET hd'; is_MLL hd' (vs ++ [v]) }]].
+  Proof.
+    eiIntros "%Phi His".
+    iRevert (Phi).
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
+    - wp_rec.
+      wp_alloc l as "Hl".
+      wp_pures.
+      iModIntro.
+      iApply "Hlater".
+      iApply cons_is_MLL.
+      iExists _, _, _, l.
+      iFrame.
+      repeat iSplit; try iPureIntro; try done.
+      by iApply empty_is_MLL.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      eiDestruct "IH" as "[IH _]".
+      wp_apply "IH".
+      eiIntros "%hd' His".
+      wp_store.
+      iModIntro.
+      iApply "Hlater".
+      iApply mark_is_MLL.
+      iExists _, _, l, _.
+      iFrame.
+      iSplit; done.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      eiDestruct "IH" as "[IH _]".
+      wp_apply "IH".
+      eiIntros "%hd' His".
+      wp_store.
+      iModIntro.
+      iApply "Hlater".
+      iApply cons_is_MLL.
+      iExists _, _, _, _.
+      iFrame.
+      iSplit; done.
+  Qed.
+
+  Definition MLL_delete : val :=
+    rec: "MLL_delete" "l" "i" :=
+      match: "l" with
+        NONE => NONE
+        | SOME "hd" =>
+          let: "x" := !"hd" in
+          (if: (Snd (Fst "x") = #false) && ("i" = #0) then
+            "hd" <- (Fst (Fst "x"), #true, Snd "x")
+          else
+            if: Snd (Fst "x") = #false then
+              let: "tl" := "MLL_delete" (Snd "x") ("i" - #1) in
+              "hd" <- (Fst (Fst "x"), #false, "tl")
+            else
+              let: "tl" := "MLL_delete" (Snd "x") "i" in
+              "hd" <- (Fst (Fst "x"), #true, "tl"));;
+          "l"
+      end.
+
+  Lemma MLL_delete_spec (vs : list val) (i : nat) (hd : val) :
+    [[{ is_MLL hd vs }]]
+      MLL_delete hd #i
+    [[{ hd', RET hd'; is_MLL hd' (firstn i vs ++ skipn (i + 1) vs) }]].
+  Proof.
+    eiIntros "%Phi His".
+    iRevert (Phi i).
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hlater"; simplify_eq.
+    - wp_rec.
+      wp_pures.
+      iModIntro.
+      iApply "Hlater".
+      iApply empty_is_MLL.
+      iSplit; [done|].
+      iPureIntro.
+      by rewrite take_nil drop_nil.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      iDestruct "IH" as "[IH _]".
+      wp_apply "IH" as (hd') "IH".
+      wp_pures.
+      wp_store.
+      iModIntro.
+      iApply "Hlater".
+      iApply mark_is_MLL.
+      iExists _, _, _, _.
+      iFrame.
+      iSplit; done.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      destruct (Nat.eq_dec i 0); simplify_eq.
+      + rewrite bool_decide_eq_true_2; [|done].
         wp_pures.
-        iModIntro.
-        iApply "Hlater".
-        iApply cons_is_skipqueue.
-        iExists _, _, _, l.
-        iFrame.
-        repeat iSplit; try iPureIntro; try done.
-        by iApply empty_is_skipqueue.
-      - wp_rec.
-        wp_load.
-        wp_pures.
-        eiDestruct "IH" as "[IH _]".
-        wp_apply "IH".
-        eiIntros "%hd' His".
         wp_store.
         iModIntro.
         iApply "Hlater".
-        iApply link_is_skipqueue.
-        iExists _, _, l, _.
-        iFrame.
-        iSplit; done.
-      - wp_rec.
-        wp_load.
-        wp_pures.
-        eiDestruct "IH" as "[IH _]".
-        wp_apply "IH".
-        eiIntros "%hd' His".
-        wp_store.
-        iModIntro.
-        iApply "Hlater".
-        iApply cons_is_skipqueue.
+        iApply mark_is_MLL.
         iExists _, _, _, _.
         iFrame.
-        iSplit; done.
-    Qed.
-
-    Definition skipqueue_delete_safe : val :=
-      rec: "skipqueue_delete_safe" "l" "v" :=
-        match: "l" with
-          NONE => NONE
-          | SOME "hd" =>
-            let: "x" := !"hd" in
-            (if: Fst (Fst "x") = "v" then
-              let: "tl" := "skipqueue_delete_safe" (Snd "x") "v" in
-              "hd" <- (Fst (Fst "x"), #true, "tl")
-            else
-              let: "tl" := "skipqueue_delete_safe" (Snd "x") "v" in
-              "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl"));;
-            "l"
-        end.
-
-    Lemma skipqueue_delete_safe_spec (vs : list val) (v : val) (hd : val) :
-      {{{ is_skipqueue hd vs ∗ ⌜val_is_unboxed v⌝ }}}
-        skipqueue_delete_safe hd v
-      {{{ hd', RET hd'; is_skipqueue hd' (remove (λ x y, val_eq_dec x y) v vs)}}}.
-    Proof.
-      eiIntros "%Phi [His %Hv]".
-      iRevert (Phi).
-      eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl %Hvub IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
-      - wp_rec.
+        iDestruct "IH" as "[_ IH]".
+        iSplit; [|done].
+        by rewrite take_0 skipn_cons drop_0.
+      + rewrite bool_decide_eq_false_2.
+        2: {
+          rewrite <- Nat2Z.inj_0.
+          intros H.
+          simplify_eq.
+        }
         wp_pures.
+        iDestruct "IH" as "[IH _]".
+        rewrite <- (Z2Nat.id 1%Z); [|done].
+        rewrite <- Nat2Z.inj_sub; [|lia].
+        wp_apply "IH" as (hd') "IH".
+        wp_store.
         iModIntro.
         iApply "Hlater".
-        iApply empty_is_skipqueue.
-        iSplit; try done.
-      - wp_rec.
-        wp_load.
-        wp_pures.
-        destruct (val_eq_dec a1 v); simplify_eq.
-        + rewrite bool_decide_eq_true_2; [|done].
-          iDestruct "IH" as "[IH _]".
-          wp_pures.
-          wp_apply "IH".
-          iIntros "%hd' IH".
-          wp_pures.
-          (* wp_alloc l as "Hl". *)
-          admit.
-        + rewrite bool_decide_eq_false_2; [|done].
-          wp_pures.
-          iDestruct "IH" as "[IH _]".
-          wp_apply "IH".
-          iIntros "%hd' IH".
-          wp_pures.
-          (* wp_alloc l as "IH". *)
-          admit.
-      - wp_rec.
-        wp_load.
-        wp_pures.
-        destruct (val_eq_dec a1 v); simplify_eq.
-        + rewrite bool_decide_eq_true_2; [|done].
-          iDestruct "IH" as "[IH _]".
-          wp_pures.
-          wp_apply "IH".
-          iIntros "%hd' IH".
-          wp_pures.
-          (* wp_alloc l as "Hl". *)
-          admit.
-        + rewrite bool_decide_eq_false_2; [|done].
-          wp_pures.
-          iDestruct "IH" as "[IH _]".
-          wp_apply "IH".
-          iIntros "%hd' IH".
-          wp_pures.
-          (* wp_alloc l as "IH". *)
-          admit.
-    Admitted.
-
+        iApply cons_is_MLL.
+        iExists _, _, _, _.
+        iFrame.
+        repeat iSplit; try done.
+        iPureIntro.
+        rewrite Z2Nat.inj_pos Pos2Nat.inj_1.
+        apply Nat.neq_0_r in n as [m ->].
+        by rewrite firstn_cons /= Nat.sub_0_r.
+  Qed.
 End SkipQueue.
 
 Section GSets.

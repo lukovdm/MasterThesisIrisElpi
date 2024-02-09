@@ -2,20 +2,24 @@
 
 \begin{document}
 
-\chapter{Background on Iris}
+\chapter{Background on separation logic}
 
-\begin{itemize}
-  \item Iris is \ldots
-  \item We will use a central example to explain Iris
-  \item We start by defining the example
-  \item Then show a program to proof about
-  \item Show parts of a proof
-  \item Explain why this does not work for more complicated versions
-\end{itemize}
+In this chapter we give a background on separation logic by specifying and proving the correctness of a program on marked linked lists (MLLs), as seen in \cref*{ch:introduction}.
 
-\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Propositions can be seen as predicates over resources, \eg heaps. Thus, there are a number of extra logical connectives such as \coqi{P ∗ Q}, which represents that \coqi{P} and \coqi{Q} split up the resources into two disjoints in which they respectively hold. Moreover, hypotheses in our logic can often be used only once when proving something, they represent resources that we consume when used. To be able to reason in this logic in \coq a tactics' language has been added to \coq called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}.
+We will specify and proof deletion of an index in a marked linked list step by step. Thus, we will proof that delete defined in \cref*{sec:proofmll}, conforms to the specification below.
+\begin{align*}
+  \hoare{\textlog{isMLL}\, \langv{hd}\, \langv{vs}}{\operatorname{delete}\, \langv{hd}\; \langv{i}}{\textlog{isMLL}\, \langv{hd}\; (\textlog{remove}\, \langv{i}\, \langv{vs})}
+\end{align*}
+
+We will start by looking at separation as we will use it in the rest of this thesis in \cref*{sec:seplogic}. Next we show how to use separation logic to create hoare triples in the form of weakest preconditions to give a specification of a program in \cref*{sec:hoare}. Then, we will focus on how to create predicates that represent recursive data structures using fixpoints in \cref*{sec:represpreds}. Lastly we will finish the specification of a program manipulating marked linked lists in \cref*{sec:proofmll}.
 
 \section{Separation logic}
+\label{sec:seplogic}
+\begin{align*}
+  \type \bnfdef{}        & \sigtype \mid 0 \mid 1 \mid \type \to \type                                                                                                      \\[0.4em]
+  \term, \prop \bnfdef{} & \var \mid \FALSE \mid \TRUE \mid \term =_\type \term \mid \prop \land \prop \mid \prop \lor \prop \mid \prop * \prop \mid \prop \wand \prop \mid \\
+                         & \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \always\prop \mid {\later\prop} \mid \hoare{\prop}{\term}{v.\; \prop}                 \\
+\end{align*}
 \begin{itemize}
   \item We want to be able to reason about memory, heaps
   \item Use a logic that has extra connectives for talking about memory
@@ -23,15 +27,14 @@
   \item Picture of memory with $l\fmapsto x$ next to it
   \item $l\fmapsto x$ means there is only one location in memory, $l$ and it has value $x$
   \item $\land$ now no longer works
-  \item introduce $\star$
+  \item introduce *
   \item Another picture with logic next to it
-  \item Describe rules of $\star$
+  \item Describe rules of *
 \end{itemize}
 \begin{mathpar}
   \begin{array}{rMcMl}
     \TRUE * \prop             & \provesIff & \prop                     \\
     \prop * \propB            & \proves    & \propB * \prop            \\
-    \prop * \propB            & \proves    & \prop                     \\
     (\prop * \propB) * \propC & \proves    & \prop * (\propB * \propC)
   \end{array}
   \and
@@ -42,11 +45,10 @@
 \end{mathpar}
 \begin{itemize}
   \item This does not include $\prop \proves \prop * \prop$
-  \item This is called affine
-  \item Note about linear logics
 \end{itemize}
 
 \section{Writing specifications of programs}
+\label{sec:hoare}
 \begin{itemize}
   \item We will write our programs in heaplang, \ldots
   \item Start by verifying simple program
@@ -58,12 +60,12 @@ Definition copy_singleton : val :=
 \end{coqcode}
 \begin{itemize}
   \item We now want to specify what happens to the memory when the program executes
-  \item Use texan triples, similar to hoare triples
+  \item Use hoare triples
 \end{itemize}
 \begin{coqcode}
-Lemma singleton_spec (x : val) (l : loc) :
+Lemma copy_singleton_spec (x : val) (l : loc) :
   {{{ l ↦ (x, NONE) }}}
-    singleton #l
+    copy_singleton #l
   {{{ v, RET v; v ↦ (x, NONE) ∗ l ↦ (x, NONE) }}}.
 \end{coqcode}
 \begin{itemize}
@@ -73,188 +75,26 @@ Lemma singleton_spec (x : val) (l : loc) :
   \item describe post condition
 \end{itemize}
 
-\section{Proof rules}
+\section{Representation predicates}
+\label{sec:represpreds}
 \begin{itemize}
   \item Describe more parts of the logic, like persistent, later and magic wand
 \end{itemize}
 
-\section{Proofs}
-\begin{itemize}
-  \item Maybe show a proof in Coq?
-\end{itemize}
+\section{Proof of delete in MLL}
+\begin{align*}
+  \RecV {delete}(\langv{l}, \langv{i}\,)=\  & \Match \langv{l}\, with                                                                           \\
+                                            & \quad \None => \None |                                                                            \\
+                                            & \quad \Some \langv{hd} =>                                                                         \\
+                                            & \quad\quad \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \langv{hd} in                          \\
+                                            & \quad\quad \If \langv{mark} = \False \land \langv{i} = 0 then                                     \\
+                                            & \quad\quad\quad \langv{hd} \gets (\lvar, \True, \langv{tl})                                       \\
+                                            & \quad\quad \Else \If \langv{mark} = \False then                                                   \\
+                                            & \quad\quad\quad \langv{hd} <- (\lvar, \False, \operatorname{delete}\,\langv{tl}\ (\langv{i} - 1)) \\
+                                            & \quad\quad \Else                                                                                  \\
+                                            & \quad\quad\quad \langv{hd} <- (\lvar, \True, \operatorname{delete}\,\langv{tl}\ (\langv{i}))      \\
+                                            & end
+\end{align*}
+\label{sec:proofmll}
 
-\section{How does Iris actually work}
-\begin{itemize}
-  \item I don't really know yet
-\end{itemize}
-
-\section{Contexts}
-\begin{itemize}
-  \item Iris uses a named context instead of the entailment
-  \item \coqi{env A} is a list of pairs from identifiers to \coqi{A}.
-\end{itemize}
-\begin{coqcode}
-  Inductive ident :=
-    | IAnon : positive → ident
-    | INamed :> string → ident.
-
-  Record envs (PROP : bi) := Envs {
-    env_persistent : env PROP;
-    env_spatial : env PROP;
-    env_counter : positive;
-  }.
-\end{coqcode}
-\todoo{Explain \mProp somewhere or just use \iProp}
-\todoo{I am simplifying the environments here, should I do that?}
-\begin{itemize}
-  \item Identifiers are either anonymous or named
-  \item Environments are maps from identifiers to values
-  \item The final context is two environments of propositions and a counter
-  \item The first environment is the persistent context
-  \item The second environment is the spatial context
-  \item The two environments can't have overlapping identifiers
-  \item The counter is used to always be able to generate a fresh anonymous identifier
-  \item Semantics of the contexts is
-\end{itemize}
-\begin{coqcode}
-  Definition of_envs {PROP : bi} 
-      (Γp Γs : env PROP) : PROP :=
-    (□ [∧] Γp ∧ [∗] Γs)%I.
-\end{coqcode}
-\quest{Should I differentiate between $\always$ and \coqi{<pers>}}
-\begin{itemize}
-  \item The persistent environment is combined with $\land$ and surrounded by a $\always$.
-  \item The spatial environment is combined with ∗
-  \item We can now write our entailment as
-\end{itemize}
-\begin{coqcode}
-  Definition envs_entails {PROP : bi} 
-      (Δ : envs PROP) (Q : PROP) : Prop :=
-    of_envs (env_intuitionistic Δ) (env_spatial Δ) ⊢ Q.
-\end{coqcode}
-\begin{itemize}
-  \item This is represented in the proof state as
-\end{itemize}
-\begin{coqcode}
-  P, Q, R: iProp
-  ============
-  "HP" : P
-  ------------□
-  "HR" : Q
-  ------------∗
-  R
-\end{coqcode}
-\begin{itemize}
-  \item \coqi{P} is a persistent proposition
-  \item \coqi{Q} is a spatial proposition
-  \item We need to proof \coqi{R}
-\end{itemize}
-
-\section{Tactics}
-\begin{itemize}
-  \item The proof rules are hard to use with the context
-  \item Define Lemma's that work with the context
-  \item These allow us to define our tactics easily
-\end{itemize}
-\begin{coqcode}
-  Lemma tac_wand_intro Δ i P Q :
-    match envs_app false (Esnoc Enil i P) Δ with
-    | None => False
-    | Some Δ' => envs_entails Δ' Q
-    end →
-    envs_entails Δ (P -∗ Q).
-\end{coqcode}
-\begin{itemize}
-  \item Introduces a magic wand
-  \item Add introduced proposition to the spatial context
-  \item The condition we need to satisfy is a Coq function that resolves to Q with P added to the context
-  \item If \coqi{i} already exists in the context, we have to proof False
-  \item Tactics now just process the arguments and call necessary Lemma's
-\end{itemize}
-The tactics the IPM adds are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris contexts. In the next section we will show how the \iris variant of the \coqi{intros} tactic works.
-
-\section[iIntros example]{\coqi{iIntros} example}
-\coqi{iIntros} is based on the \coq \coqi{intros} tactic. The \coq \coqi{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqi{iIntros} tactic, but adopted to the \iris contexts. Also, a few expansions, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, were added to perform other common initial proof steps such as \coqi{simpl}, \coqi{done} and others. We will show a few examples of how \coqi{iIntros} can be used to help prove lemmas.
-
-We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources.
-
-\begin{minipage}{0.4\textwidth}
-  \begin{prooftree}
-    \AxiomC{$P\ ∗\ Q \vdash R$}
-    \RightLabel{$\mathrel{\rule[0.5ex]{1em}{0.55pt}∗}$-Intro}
-    \UnaryInfC{$P \vdash Q \mathrel{\rule[0.5ex]{1em}{0.55pt}∗} R$}
-  \end{prooftree}
-\end{minipage}
-%
-\begin{minipage}{0.4\textwidth}
-  \begin{prooftree}
-    \AxiomC{$P \land Q \vdash R$}
-    \RightLabel{$\to$-Intro}
-    \UnaryInfC{$P \vdash Q \to R$}
-  \end{prooftree}
-\end{minipage}
-
-Thus, where a normal implication introduction adds the left-hand side to the \coq context, the magic wand adds the left-hand side to the spatial resource context.
-\todoo{Rewrite when I have a solid explanation of the \iris contexts}
-
-\begin{coqcode}
-  P, R: iProp
-  ============
-  ------------∗
-  P -∗ R -∗ P
-\end{coqcode}
-When using \coqi{iIntros "HP HR"}, the proof state is transformed into the following state.
-\begin{coqcode}
-  P, R: iProp
-  ============
-  "HP" : P
-  "HR" : R
-  ------------∗
-  P
-\end{coqcode}
-We have introduced the two separation logic propositions into the spatial context. This does not only work on the magic wand, we can also use this to introduce more complicated statements. Take the following proof state,
-\begin{coqcode}
-  P: nat → iProp
-  ==============================================
-  ----------------------------------------------∗
-  ∀ x : nat, (∃ y : nat, P x ∗ P y) ∨ P 0 -∗ P 1
-\end{coqcode}
-%Universal quantification existensial quantification
-It consists of a universal quantification, an existential quantification, a conjunction and a disjunction. We can again use one application of \coqi{iIntros} to introduce and eliminate the premise. \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} takes the proof to the following state of two goals
-\begin{coqcode}
-  (1/2)
-  P: nat → iProp
-  x, y: nat
-  ==================
-  "Hx" : P x
-  "Hy" : P y
-  ------------------∗
-  P 1
-
-  (2/2)
-  P: nat → iProp
-  x: nat
-  ==================
-  "H0" : P 0
-  ------------------∗
-  P 1
-\end{coqcode}
-The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a forall introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. They can have the following interpretations:
-\begin{itemize}
-  \item \coqi{"H"} represents renaming a hypothesis. The name given is used as the name of the hypothesis in the spatial context.
-  \item \coqi{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
-  \item \coqi{"[IPL | IPR]"} represents disjunction elimination. We perform a disjunction elimination on the introduced hypothesis. Then, we apply the two included intro patterns two the two cases created by the disjunction elimination.
-  \item \coqi{"[IPL IPR]"} represents separating conjunction elimination. We perform a separating conjunction elimination. Then, we apply the two included intro patterns two the two hypotheses by the separating conjunction elimination.
-  \item \coqi{"[%x IP]"} represents existential elimination. If first element of a separating conjunction pattern is a pure elimination we first try to eliminate an exists in the hypothesis and apply the included intro pattern on the resulting hypothesis. If that does not succeed we do a conjunction elimination.
-\end{itemize}
-% Add simpl and done here and refrence ssreflect with citation
-Thus, we can break down \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqi{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqi{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqi{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqi{y} to the \coq context. Lastly, \coqi{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqi{"Hx"} and \coqi{"Hy"}.
-
-There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
-
-
-\section{Inductive predicates}
-\begin{itemize}
-  \item Sometimes you want to define a statement about the memory that has some finite size
-\end{itemize}
 \end{document}
