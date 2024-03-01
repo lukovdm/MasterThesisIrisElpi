@@ -93,7 +93,7 @@ Elpi Accumulate Db induction.db.
 Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
-
+ 
   pred do-iInduction i:ident, i:intro_pat, i:ihole, o:(ihole -> prop).
   do-iInduction ID IP (ihole _ (hole Type _) as IH) C :-
     find-hyp ID Type (app [global GREF | Args]),

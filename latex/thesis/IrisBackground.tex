@@ -4,32 +4,163 @@
 
 \chapter{Background on separation logic}
 
-In this chapter we give a background on separation logic by specifying and proving the correctness of a program on marked linked lists (MLLs), as seen in \cref*{ch:introduction}.
+In this chapter we give a background on separation logic by specifying and proving the correctness of a program on marked linked lists (MLLs), as seen in \cref*{ch:introduction}. First we will setup the example we will discuss in this chapter in \cref*{sec:irissetup}. Next, we will be looking at separation logic as we will use it in the rest of this thesis in \cref*{sec:seplogic}. Then, we show how to give specifications using Hoare triples and weakest preconditions in \cref*{sec:Hoare}. Next, we will show how we can create a predicate used to represent a datastructure for our example in \cref*{sec:represpreds}. Lastly, we will finish the specification and proof of a program manipulating marked linked lists in \cref*{sec:proofmll}.
 
-We will specify and proof deletion of an index in a marked linked list step by step. Thus, we will proof that delete defined in \cref*{sec:proofmll}, conforms to the specification below.
+\section{Setup}
+\label{sec:irissetup}
+We will be defining a program that deletes an element at an index in a MLL as our example for this chapter. This program is written in HeapLang, a higher order, untyped, ML-like language. HeapLang supports many concepts around both concurrency and higher-order heaps (storing closures on the heap), however, we won't need any of these features. It can thus be treated as a basic ML-like language. The syntax together with any syntactic sugar can be found in \cref*{fig:heaplangsyntax}. For more information about HeapLang one can reference the Iris technical reference \cite*{iristeamIrisReference2023}.
+
+\begin{figure}[ht]
+  \begin{center}
+    \begin{align*}
+      \val,\valB \in \Val \bnfdef{}       &
+      z \mid
+      \True \mid \False \mid
+      \TT \mid
+      \poison \mid
+      \loc \mid                     \hspace*{2cm} (z \in \integer, \loc \in \Loc)                                        \\&
+      (\val,\valB)_\valForm \mid
+      \InlV(\val) \mid
+      \InrV(\val)                                                                                                        \\
+      \expr \in \Expr \bnfdef{}           &
+      \val \mid
+      \lvar \mid
+      \expr_1(\expr_2) \mid
+      {}
+      \HLOp_1 \expr \mid
+      \expr_1 \HLOp_2 \expr_2 \mid                                                                                       \\ &
+      \If \expr then \expr_1 \Else \expr_2 \mid
+      {}                                                                                                                 \\ &
+      (\expr_1,\expr_2)_\exprForm \mid
+      \Fst(\expr) \mid
+      \Snd(\expr) \mid
+      {}                                                                                                                 \\ &
+      \InlE(\expr) \mid
+      \InrE(\expr) \mid                                                                                                  \\ &
+      \Match \expr with \Inl(\lvar) => \expr_1 | \Inr(\lvarB) => \expr_2 end \mid
+      {}                                                                                                                 \\ &
+      \Alloc(\expr_1,\expr_2) \mid
+      \deref \expr \mid
+      \expr_1 \gets \expr_2                                                                                              \\
+      \HLOp_1 \bnfdef{}                   & - \mid \ldots ~~\text{(list incomplete)}                                     \\
+      \HLOp_2 \bnfdef{}                   & + \mid - \mid \Ptradd \mid \mathop{=} \mid \ldots ~~\text{(list incomplete)}
+      \\\\
+      \Let \lvar = \expr in \expr' \eqdef & (\Lam \lvar. \expr')(\expr)                                                  \\
+      \None \eqdef                        & \InlV(\TT)                                                                   \\
+      \Some \val \eqdef                   & \InrV(\val)                                                                  \\
+      \expr; \expr' \eqdef{}              & \Let \any = \expr in \expr'
+    \end{align*}
+    \caption{Fragment of the syntax of HeapLang as used in the examples with at the bottom syntactic sugar being used}
+    \label{fig:heaplangsyntax}
+  \end{center}
+\end{figure}
+
+The program we will be using as an example will delete an index out of the list by marking that node, thus logically deleting it.
 \begin{align*}
-  \hoare{\textlog{isMLL}\, \langv{hd}\, \langv{vs}}{\operatorname{delete}\, \langv{hd}\; \langv{i}}{\textlog{isMLL}\, \langv{hd}\; (\textlog{remove}\, \langv{i}\, \langv{vs})}
+  \operatorname{delete}\,\loc\,\langv{i} :=\  & \MatchML{\loc\,}with{\None}=>{()}|{\Some \langv{hd}}=>{
+  \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \langv{hd} in                                                                                                                   \\
+                                              &                                                         & \phantom{\Ra}\ \If \langv{mark} = \False\ \&\&\ \langv{i} = 0 then      \\
+                                              &                                                         & \phantom{\Ra}\ \quad \langv{hd} \gets (\lvar, \True, \langv{tl})        \\
+                                              &                                                         & \phantom{\Ra}\ \Else \If \langv{mark} = \False then                     \\
+                                              &                                                         & \phantom{\Ra}\ \quad \operatorname{delete}\,\langv{tl}\ (\langv{i} - 1) \\
+                                              &                                                         & \phantom{\Ra}\ \Else                                                    \\
+                                              &                                                         & \phantom{\Ra}\ \quad \operatorname{delete}\,\langv{tl}\ \langv{i}
+  }end{}
 \end{align*}
+The program is a function called $\textlog{delete}$, the function has two arguments. The first argument $\loc$ is either $\None$, for the empty list, or $\Some \langv{hd}$ where $\langv{hd}$ is a pointer to a MLL. HeapLang has no null pointers, thus we use $\None$ as the null pointer. The second argument is the index in the MLL to delete. The first step this recursive function does in check whether the list we are deleting from is empty or not. We thus match $\loc$ on either $\None$, the MLL is empty, or on $\Some\,\langv{hd}$, where $\langv{hd}$ becomes the pointer to the MLL and the MLL contains some nodes. If the list is empty, we are done and return unit. If the list is not empty, we load the first node and save it in the three variables $\lvar$, $\langv{mark}$ and $\langv{tl}$. Now, $\lvar$ contains the first element of the list, $\langv{mark}$ tells us whether the element is marked, thus logically deleted, and $\langv{tl}$ contains the reference to the tail of the list. We now have three different options for our list.
+\begin{itemize}
+  \item If our index is zero and the element is not marked, thus logically deleted, we want to delete it. We write to the $\langv{hd}$ pointer our node, but with the mark bit set to $\True$, thus logically deleting it.
+  \item If the mark bit is $\False$, but the index to delete, $\langv{i}$, is not zero. The current node has not been deleted, and thus we  we want to decrease $\langv{i}$ by one and recursively call our function $\operatorname{f}$ on the tail of the list.
+  \item Lastly if the mark bit is set to $\True$, we want to ignore this node and continue to the next one. We thus call our recursive function $\operatorname{f}$ without decreasing $\langv{i}$.
+\end{itemize}
+$\operatorname{delete}\, \loc\, 1$ will thus apply the transformation below.
+\begin{center}
+  \begin{tikzpicture}
+    \begin{scope}
+      \node [MLL] (x0) at (0,0) {$\val_0$};
+      \node [MLL, marked] (x1) at (3,0) {$\val_1$};
+      \node [MLL] (x2) at (6,0) {$\val_2$};
+      \node [MLL, null] (x3) at (9,0) {$\val_3$};
 
-We will start by looking at separation as we will use it in the rest of this thesis in \cref*{sec:seplogic}. Next we show how to use separation logic to create hoare triples in the form of weakest preconditions to give a specification of a program in \cref*{sec:hoare}. Then, we will focus on how to create predicates that represent recursive data structures using fixpoints in \cref*{sec:represpreds}. Lastly we will finish the specification of a program manipulating marked linked lists in \cref*{sec:proofmll}.
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x0.three) edge [bend left] (x1.west);
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
+
+      \node (l) [above=of x0.west] {$\loc$};
+      \path[->,thick] (l) edge ([yshift=.1cm]x0.north west);
+    \end{scope}
+    \path[->,thick] (4.5,-1) edge[double,double distance=2pt] node[right] {$\operatorname{delete}\, \loc\, 1$} (4.5,-2);
+    \begin{scope}[yshift=-3cm]
+      \node [MLL] (x0) at (0,0) {$\val_0$};
+      \node [MLL, marked] (x1) at (3,0) {$\val_1$};
+      \node [MLL, marked] (x2) at (6,0) {$\val_2$};
+      \node [MLL, null] (x3) at (9,0) {$\val_3$};
+
+      \path[p->,thick] ([yshift=1pt,xshift=1pt]x0.three) edge [bend left] (x1.west);
+      \path[p->,thick] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
+      \path[p->,thick] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
+
+      \node (l) [above=of x0.west] {$\loc$};
+      \path[->,thick] (l) edge ([yshift=.1cm]x0.north west);
+    \end{scope}
+  \end{tikzpicture}
+\end{center}
+A tuple is shown here as three boxes next to each other, the first box contains a value. The second box is a boolean, it is true, thus marked, if it is crossed out. The third box is a pointer, denoted by either a cross, a null pointer, or a circle with an arrow pointing to the next node.
+
+When thinking about it in terms of lists, $\operatorname{delete}\, \loc\, 1$ deletes from the list $[\val_0, \val_2, \val_3]$ the element $\val_2$, thus resulting in the list $[\val_0, \val_3]$.
+In the next section we will show how separation logic can be used to reason about sections of memory, such as shown above.
 
 \section{Separation logic}
 \label{sec:seplogic}
+\begin{itemize}
+  \item Separation logic is a logic that allows us to represent the state of memory in a higher order predicate logic
+  \item The syntax is
+\end{itemize}
+\todoo{What are $\expr$ and $\val$}
 \begin{align*}
-  \type \bnfdef{}        & \sigtype \mid 0 \mid 1 \mid \type \to \type                                                                                                      \\[0.4em]
-  \term, \prop \bnfdef{} & \var \mid \FALSE \mid \TRUE \mid \term =_\type \term \mid \prop \land \prop \mid \prop \lor \prop \mid \prop * \prop \mid \prop \wand \prop \mid \\
-                         & \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \always\prop \mid {\later\prop} \mid \hoare{\prop}{\term}{v.\; \prop}                 \\
+  \prop \in \iProp \bnfdef{} & \FALSE \mid \TRUE \mid \prop \land \prop \mid \prop \lor \prop \mid \prop \Ra \prop \mid \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \\
+                             & \loc \fmapsto \val \mid \prop * \prop \mid \prop \wand \prop \mid \always\prop \mid \wpre\expr{\pred}                                               \\
 \end{align*}
 \begin{itemize}
-  \item We want to be able to reason about memory, heaps
-  \item Use a logic that has extra connectives for talking about memory
-  \item Most important, points to, $\fmapsto$
-  \item Picture of memory with $l\fmapsto x$ next to it
-  \item $l\fmapsto x$ means there is only one location in memory, $l$ and it has value $x$
-  \item $\land$ now no longer works
-  \item introduce *
-  \item Another picture with logic next to it
-  \item Describe rules of *
+  \item We will sometimes write $\wpre\expr{\pred}$ as $\wpre\expr{\Ret\val. \prop}$ where $\pred$ is a predicate that takes a value
+  \item It contains the normal higher order predicate logic connectives on the first line
+  \item The first two connectives on the second line will be discussed in this section
+  \item The last three connectives on the second line will be discussed in \cref*{sec:Hoare}
+  \item We start with points to, $\fmapsto$
+\end{itemize}
+\begin{center}
+  \begin{tikzpicture}
+    \node[memnode] (x) at (0,0) {$\val$};
+    \node (l) [above=of x.west] {$\loc$};
+
+    \path[->, thick] (l) edge ([yshift=.1cm]x.north west);
+    \node (logic) at (3,0.8) {$\loc\fmapsto\val$};
+  \end{tikzpicture}
+\end{center}
+\begin{itemize}
+  \item Picture of memory with $\loc\fmapsto \val$ next to it
+  \item $\loc\fmapsto\val$ means there is a location in memory, $l$, and it has value $\val$
+  \item $\land$ now no longer works as expected
+  \item introduce ∗
+\end{itemize}
+\begin{center}
+  \begin{tikzpicture}
+    \node[memnode] (x) at (0,0) {$\val$};
+    \node (l) [above=of x.west] {$\loc$};
+
+    \path[->, thick] (l) edge ([yshift=.1cm]x.north west);
+    \path (0.5,-.8) edge[dashed] node[fill=white] {\large$*$} (0.5,1.8);
+    \begin{scope}[xshift=1.2cm]
+      \node[memnode] (y) at (0,0) {$\valB$};
+      \node (k) [above=of y.west] {$\locB$};
+
+      \path[->, thick] (k) edge ([yshift=.1cm]y.north west);
+    \end{scope}
+    \node (logic) at (4,0.8) {$\loc\fmapsto\val\ ∗\ \locB\fmapsto\valB$};
+  \end{tikzpicture}
+\end{center}
+\begin{itemize}
+  \item Describe rules of $*$
 \end{itemize}
 \begin{mathpar}
   \begin{array}{rMcMl}
@@ -48,53 +179,247 @@ We will start by looking at separation as we will use it in the rest of this the
 \end{itemize}
 
 \section{Writing specifications of programs}
-\label{sec:hoare}
+\label{sec:Hoare}
 \begin{itemize}
-  \item We will write our programs in heaplang, \ldots
-  \item Start by verifying simple program
+  \item We will discuss how to specify the actions of a program
+  \item $\operatorname{delete}$ will be the example
+  \item The goal will be total correctness
+  \item Guarantee that given some preconditions in separation logic hold, the program will terminate and some postconditions in separation logic hold and $\expr$ is safe
+  \item Typically use Hoare triples
 \end{itemize}
-\begin{coqcode}
-Definition copy_singleton : val :=
-  λ: "l", let: "x" := !"l" in
-          SOME (Alloc "x").
-\end{coqcode}
+\[\hoare{\prop}{\expr}{\pred}\]
 \begin{itemize}
-  \item We now want to specify what happens to the memory when the program executes
-  \item Use hoare triples
+  \item Given that $\prop$ holds
+  \item $\expr$ terminates
+  \item returns $\val$
+  \item $\pred(\val)$ now holds
+  \item We often write $\hoare{\prop}{\expr}{\Ret\val. \propB}$, thus leaving out a $\lambda$
+  \item We can also write a value for $\val$ to express that the returned value is that value
+  \item Thus the specification of $\loc\gets\valB$ becomes
 \end{itemize}
-\begin{coqcode}
-Lemma copy_singleton_spec (x : val) (l : loc) :
-  {{{ l ↦ (x, NONE) }}}
-    copy_singleton #l
-  {{{ v, RET v; v ↦ (x, NONE) ∗ l ↦ (x, NONE) }}}.
-\end{coqcode}
+\begin{align*}
+  \hoare{\loc\fmapsto\val}{\loc\gets\valB}{().\ \loc\fmapsto\valB}
+\end{align*}
 \begin{itemize}
-  \item Start with a description of the memory before copy singleton, precondition
-  \item program to execute,
-  \item \coqi{#l} transforms a location into a value in heaplang
-  \item describe post condition
+  \item The precondition of our specification is that there is a location $\loc$ that has value $\val$
+  \item Then, $\loc\gets\valB$ return unit
+  \item New state of memory is $\loc\fmapsto\valB$
+  \item The Hoare triple of $\operatorname{delete}$ is
 \end{itemize}
+\begin{align*}
+  \hoare{\textlog{isMLL}\, \langv{hd}\, \vect{\val}}{\operatorname{delete}\, \langv{hd}\; i }{().\ \textlog{isMLL}\, \langv{hd}\; (\textlog{remove}\, i\, \vect{v})}
+\end{align*}
+\begin{itemize}
+  \item This uses a predicate we will talk more about in \cref*{sec:represpreds}
+  \item It tells is that the MLL in memory at $\langv{hd}$ is represented by the list of value $\vect{v}$
+  \item remove is the function on mathematical lists that removes the element at index $i$ from the list $\vect{v}$
+\end{itemize}
+\paragraph{WP} \todoo{better title}
+\todoo{Explain why Hoare does not work, but wp does}
+\begin{align*}
+  \hoare{P}{e}{\var.\ Q} \eqdef \always (P \wand \wpre{e}{\Ret\var. Q})
+\end{align*}
+\begin{itemize}
+  \item Explain wand
+  \item Add picture
+\end{itemize}
+\begin{align*}
+  \inferB[$\wand$I-E]
+  {\prop * \propB \proves \propC}
+  {\prop \proves \propB \wand \propC}
+\end{align*}
+\begin{itemize}
+  \item Explain persistent
+  \item add picture
+\end{itemize}
+\begin{align*}
+  \inferhref{$\always$-mono}{pers-mono}
+  {\prop \proves \propB}
+  {\always{\prop} \proves \always{\propB}}
+\end{align*}
+\begin{itemize}
+  \item Explain total wp
+\end{itemize}
+\begin{figure}[htbp]
+  Structural rules.
+  \begin{mathpar}
+    \infer[wp-value]
+    {}{\pred(\val) \proves \wpre{\val}{\pred}}
 
+    \infer[wp-mono]
+    {\forall v. \Phi(v) \proves \Psi(v)}
+    {\wpre{e}{\Phi} \proves \wpre{e}{\Psi}}
+
+    \infer[wp-frame]
+    {}{\propB * \wpre\expr{\Ret\var.\prop} \proves \wpre\expr{\Ret\var.\propB*\prop}}
+
+    \infer[wp-bind]
+    {}
+    {\wpre\expr{\Ret\var. \wpre{\lctx[\var]}{\pred}} \proves \wpre{\lctx[\expr]}{\pred}}
+  \end{mathpar}
+  Rules for basic language constructs.
+  \begin{mathpar}
+    \inferH{wp-alloc}
+    { }
+    {\All \loc. \loc \fmapsto \val \wand {\pred(\loc)} \proves \wpre{\Alloc(\val)}{\pred}}
+    \and
+    \inferH{wp-load}
+    { }
+    {\loc \fmapsto \val *\loc \fmapsto \val \wand \pred(\val)\proves \wpre{\deref \loc}{\pred}}
+    \and
+    \inferH{wp-store}
+    { }
+    {\loc \fmapsto \val * \loc \fmapsto \valB \wand \pred\TT \proves \wpre{(\loc \gets \valB)}{\pred}}
+    \and
+    \inferH{wp-pure}
+    {\expr \purered \expr' \and \wpre{\expr'}{\pred}}
+    {\wpre{\expr}{\pred}}
+  \end{mathpar}
+  Pure reductions.
+  \begin{mathpar}
+    (\textlog{f}\,\lvar := \expr) \val \purered \expr[\val/\lvar][\textlog{f}\,\lvar := \expr/\textlog{f}]
+    \and
+    \If\True then \expr_1 \Else \expr_2 \purered \expr_1
+    \and
+    \If\False then \expr_1 \Else \expr_2 \purered \expr_2
+    \and
+    \Fst(\val_1,\val_2) \purered \val_1
+    \and
+    \Snd(\val_1,\val_2) \purered \val_2
+    \and
+    \infer
+    {\HLOp_1 \val = \valB}
+    {\HLOp_1 \val \purered \valB}
+    \and
+    \infer
+    {\val_1 \HLOp_2 \val_2 = \val_3}
+    {\val_1 \HLOp_2 \val_2 \purered \val_3}
+    \and
+    \MatchML\InlV\val with \Inl\lvar => \expr_1 | \Inr\lvar => \expr_2 end{} \purered \expr_1[\val/\lvar]
+    \and
+    \MatchML\InrV\val with \Inl\lvar => \expr_1 | \Inr\lvar => \expr_2 end{} \purered \expr_2[\val/\lvar]
+  \end{mathpar}
+  \caption{Rules for the weakest precondition assertion.}
+  \label{fig:wp-rules}
+\end{figure}
+\begin{align*}
+  \loc \fmapsto v \ast (\loc\fmapsto w \wand \Phi(v) \proves \wpre{(\loc\gets w)}{\Phi})
+\end{align*}
+\quest{The $\later$ has shown up again}
 \section{Representation predicates}
 \label{sec:represpreds}
+The goal in specifying programs is to connect the world in which the program lives to the mathematical world. In the mathematical world we are able to create proves and by linking the program world to the mathematical world we can prove properties of the program. \todoo{Maybe move the first part of this section to an earlier section}
+
+We have shown in the previous two sections how one can represent simple states of memory in a logic and reason about it together with the program. However, this does not easily scale to more complicated data types, especially recursive datatypes. One such datatype is the MLL. We want to connect a MLL in memory to a mathematical list. In \cref*{sec:Hoare} we used the predicate $\textlog{isMLL}\, \langv{hd}\, \vect{v}$, which tells us that the in the memory starting at $\langv{hd}$ we can find a MLL that represents the list $\vect{v}$. In this section we will show how such a predicate can be made.
+
 \begin{itemize}
-  \item Describe more parts of the logic, like persistent, later and magic wand
+  \item We need an inductive predicate to reason about a recursive structure
+  \item For $\textlog{isMLL}\,(\Some\loc)\,[x_0,x_2,x_3]$ look below
+\end{itemize}
+\begin{center}
+  \begin{tikzpicture}
+    \begin{scope}
+      \node [MLL] (x0) at (0,0) {$x_0$};
+      \node [MLL, marked] (x1) at (3,0) {$x_1$};
+      \node [MLL] (x2) at (6,0) {$x_2$};
+      \node [MLL, null] (x3) at (9,0) {$x_3$};
+
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x0.three) edge [bend left] (x1.west);
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
+      \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
+
+      \node (l) [above=of x0.west] {$l$};
+      \path[->,thick] (l) edge ([yshift=.1cm]x0.north west);
+    \end{scope}
+  \end{tikzpicture}
+\end{center}
+\begin{itemize}
+  \item Our end goal should work like below
+  \item this does not work because it is not necessarily finite? \quest{This is correct right, and is Coq the reason why it has to be finite?}
 \end{itemize}
 
-\section{Proof of delete in MLL}
 \begin{align*}
-  \RecV {delete}(\langv{l}, \langv{i}\,)=\  & \Match \langv{l}\, with                                                                           \\
-                                            & \quad \None => \None |                                                                            \\
-                                            & \quad \Some \langv{hd} =>                                                                         \\
-                                            & \quad\quad \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \langv{hd} in                          \\
-                                            & \quad\quad \If \langv{mark} = \False \land \langv{i} = 0 then                                     \\
-                                            & \quad\quad\quad \langv{hd} \gets (\lvar, \True, \langv{tl})                                       \\
-                                            & \quad\quad \Else \If \langv{mark} = \False then                                                   \\
-                                            & \quad\quad\quad \langv{hd} <- (\lvar, \False, \operatorname{delete}\,\langv{tl}\ (\langv{i} - 1)) \\
-                                            & \quad\quad \Else                                                                                  \\
-                                            & \quad\quad\quad \langv{hd} <- (\lvar, \True, \operatorname{delete}\,\langv{tl}\ (\langv{i}))      \\
-                                            & end
+  \textlog{isMLL}\, \langv{hd}\, \vect{v} & =
+  \begin{cases}
+    \vect{v} = []                                   & \text{if } \langv{hd} = \None                                        \\
+    \textlog{isMLL}\, \langv{tl}\, \vect{v}         & \text{if } \langv{hd} = \Some l * l \fmapsto (v, \True, \langv{tl})  \\
+    \textlog{isMLL}\, \langv{tl}\, ([v] + \vect{v}) & \text{if } \langv{hd} = \Some l * l \fmapsto (v, \False, \langv{tl})
+  \end{cases}
 \end{align*}
+\begin{itemize}
+  \item We first turn our desired predicate into a functor
+  \item It transforms a predicate $\pred$ into a predicate that applies $\pred$ to the tail of the MLL if it exists \todoo{write more correct}
+\end{itemize}
+
+\begin{align*}
+  \textlog{isMLLPre}\, \pred\, \langv{hd}\, \vect{v} & \eqdef
+  \begin{cases}
+    \vect{v} = []                         & \text{if } \langv{hd} = \None                                        \\
+    \pred\, \langv{tl}\, \vect{v}         & \text{if } \langv{hd} = \Some l * l \fmapsto (v, \True, \langv{tl})  \\
+    \pred\, \langv{tl}\, ([v] + \vect{v}) & \text{if } \langv{hd} = \Some l * l \fmapsto (v, \False, \langv{tl})
+  \end{cases}
+\end{align*}
+\begin{itemize}
+  \item This gets rid of the possible infinite nature of the statement
+  \item but not strong enough
+  \item we want to find a $\pred$ such that
+\end{itemize}
+\begin{align*}
+  \All \langv{hd}\, \vect{v}. \textlog{isMLLPre}\, \pred\, \langv{hd}\, \vect{v} \wandIff \pred\, \langv{hd}\, \vect{v}
+\end{align*}
+\begin{itemize}
+  \item This is the fixpoint of $\textlog{isMLLPre}$
+  \item Use Knaster-Tarski Fixpoint Theorem to find this fixpoint \cite*{tarskiLatticetheoreticalFixpointTheorem1955}
+  \item Specialized to the lattice on predicates
+\end{itemize}
+\begin{theorem}[Knaster-Tarski Fixpoint Theorem]
+  \label{thm:tarski}
+  Let $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$ be a monotone predicate, then
+  \[\lfp\, \hopred\, \var \eqdef \All \Phi. (\All \var. \hopred\, \pred\, \var \wand \pred\, \var) \wand \pred \, \var\]
+  defines the least fixpoint of $\hopred$
+\end{theorem}
+\quest{Where to introduce $\iProp$?}
+\begin{itemize}
+  \item Monotone is defined as
+\end{itemize}
+\begin{definition}[Monotone predicate]
+  Any $\hopred$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
+  \[\always(\All \var. \pred\var \wand \predB\var) \wand \All \var. \hopred\pred\var \wand \hopred\pred\var\]
+\end{definition}
+\begin{itemize}
+  \item In general $\hopred$ is monotone if all occurrences of its $\pred$ are positive
+  \item This is the case for $\textlog{isMLL}$
+  \item We can expand \cref*{thm:tarski} to predicates of type $\hopred\colon (\sigax \to B \to \iProp) \to (\sigax \to B \to \iProp)$
+  \item Thus the fixpoint exists and is
+\end{itemize}
+\begin{align*}
+  \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v} & = \All \Phi. (\All \langv{hd}'\, \vect{v}'. \textlog{isMLLPre}\, \pred\, \langv{hd}'\, \vect{v}' \wand \pred\, \langv{hd}'\, \vect{v}') \wand \Phi \, \langv{hd}\, \vect{v}
+\end{align*}
+\begin{itemize}
+  \item We can now redefine $\textlog{isMLL}$ as
+\end{itemize}
+\begin{align*}
+  \textlog{isMLL}\, \langv{hd}\, \vect{v} \eqdef \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v}
+\end{align*}
+\begin{itemize}
+  \item Using the least fixpoint we can now define some additional lemmas
+\end{itemize}
+\begin{lemma}[$\lfp\, \hopred$ is the least fixpoint on $\hopred$]
+  Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+  \[\All\var.\hopred\,(\lfp\,\hopred)\,\var \wandIff \lfp\,\hopred\,\var\]
+\end{lemma}
+\begin{lemma}[least fixpoint induction principle]
+  Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+  \[\always(\All\var.\hopred\,\pred\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
+\end{lemma}
+\begin{lemma}[least fixpoint strong induction principle]
+  Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+  \[\always(\All\var.\hopred\,(\Lam\varB. \pred\,\varB \land \lfp\,\hopred\,\varB)\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
+\end{lemma}
+\todoo{Maybe on $\textlog{isMLL}$ example}
+
+
+\section{Proof of delete in MLL}
 \label{sec:proofmll}
 
 \end{document}

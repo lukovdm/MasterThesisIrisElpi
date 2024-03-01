@@ -89,10 +89,11 @@ Section TWP.
 
   Lemma fupd_twp s E e Φ : (|={E}=> WPE e @ s; E [{ Φ }]) ⊢ WPE e @ s; E [{ Φ }].
   Proof.
-  Admitted.
+    iIntros "H".
+    rewrite twp_unfold /=.
+    Admitted.
   Lemma twp_fupd s E e Φ : WPE e @ s; E [{ v, |={E}=> Φ v }] ⊢ WPE e @ s; E [{ Φ }].
-  Proof.
-  Admitted.
+  Proof. iIntros "H". iApply (twp_strong_mono with "H"); auto. Qed.
 
   Lemma twp_bind K `{!LanguageCtx K} s E e Φ :
     WPE e @ s; E [{ v, WPE K (of_val v) @ s; E [{ Φ }] }] ⊢ WPE K e @ s; E [{ Φ }].

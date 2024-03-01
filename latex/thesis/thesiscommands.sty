@@ -8,18 +8,28 @@
 \usepackage{amssymb}
 \usepackage{wasysym}
 
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{letltxmacro}
+
+\LetLtxMacro\amsproof\proof
+\LetLtxMacro\amsendproof\endproof
+
+\let\leftbar\@undefined
+\let\endleftbar\@undefined
+\usepackage{thmtools}
+\usepackage{thm-listof}
+\usepackage{xcolor}
+
+\AtBeginDocument{%
+    \LetLtxMacro\proof\amsproof
+    \LetLtxMacro\endproof\amsendproof
+}
+
 \usepackage{bussproofs}
 
 \usepackage{tikz}
-\usetikzlibrary{arrows,shapes.geometric,backgrounds,positioning,calc,matrix}
-\tikzset{
-    basic box/.style = {
-            shape = rectangle,
-            draw  = #1,
-            fill  = #1!25,
-            rounded corners
-        },
-}
+\usetikzlibrary{arrows,shapes.geometric,backgrounds,positioning,calc,matrix,chains,arrows.meta}
 
 \usemintedstyle{default}
 
@@ -49,7 +59,6 @@
 \newcommand{\coq}{Coq\xspace}
 
 % Todo notes
-\setlength {\marginparwidth }{2cm}
 \usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny]{todonotes}
 
 \newcommand{\quest}[1]{\todo[color=blue!20]{Question: #1}}
@@ -67,3 +76,83 @@
 % The capital M stands for THICKMuskip. The smaller medmuskip would be
 % right for mathbin-style spacing.
 \newcolumntype{M}{@{\mskip\thickmuskip}}
+
+%%%%%%%%%%% math things %%%%%%%%%%%%%%%%%%
+
+\usepackage{esvect}
+
+\newcommand{\vect}[1]{%
+    \vv{#1}%
+}
+
+\newcommand{\lfp}{\ensuremath{\textlog{lfp}}}
+\newcommand{\hopred}{\ensuremath{\textlog{F}}}
+
+\newcommand{\purered}{\longrightarrow_{\text{pure}}}
+
+%%%%%%%%%%%%%%%%%% Theorems %%%%%%%%%%%%%%%%%%
+\declaretheorem[within=chapter, thmbox=M]{theorem}
+\declaretheorem[sibling=theorem, thmbox=M]{lemma}
+\declaretheorem[sibling=theorem, thmbox=M]{corollary}
+\declaretheorem[numbered=no, style=remark]{remark}
+
+\declaretheorem[sibling=theorem, thmbox={style=S,bodystyle=\normalfont\noindent}]{example}
+\declaretheorem[sibling=theorem, thmbox={style=M,bodystyle=\normalfont\noindent}]{definition}
+
+\makeatletter
+\newcommand{\cutthmoff}{\thmbox@cutfalse}
+\newcommand{\cutthmon}{\thmbox@cuttrue}
+\makeatother
+
+%%%%%%%%%%% Tikz commands %%%%%%%%%%%%%%%%%%%
+\edef\sizetape{0.7cm}
+\tikzset{
+    basic box/.style = {
+            shape = rectangle,
+            draw  = #1,
+            fill  = #1!25,
+            rounded corners
+        },
+    memnode/.style={
+            rectangle,
+            minimum height=.6cm,
+            draw,
+            rounded corners
+        },
+    MLL/.style={
+            rectangle split,
+            rectangle split horizontal,
+            rectangle split empty part width=.5,
+            rectangle split ignore empty parts=false,
+            rectangle split parts=3,
+            rounded corners,
+            draw,
+            anchor=center
+        },
+    marked/.style={
+            append after command={
+                    [every edge/.append style={
+                                    thick,
+                                    black,
+                                    shorten >=\pgflinewidth,
+                                    shorten <=\pgflinewidth,
+                                }]
+                    (\tikzlastnode.one split north) edge (\tikzlastnode.two split south)
+                    (\tikzlastnode.one split south) edge (\tikzlastnode.two split north)
+                }
+        },
+    null/.style={
+            append after command={
+                    [every edge/.append style={
+                                    thick,
+                                    black,
+                                    shorten >=.2cm,
+                                    shorten <=.2cm,
+                                }]
+                    (\tikzlastnode.two split north) edge (\tikzlastnode.south east)
+                    (\tikzlastnode.two split south) edge (\tikzlastnode.north east)
+                }
+        },
+    >/.tip = Latex,
+    p/.tip = Circle
+}

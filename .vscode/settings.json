@@ -955,7 +955,8 @@
   "coqtop.args": ["-bt"],
   "ltex.latex.environments": {
     "elpicode": "ignore",
-    "coqcode": "ignore"
+    "coqcode": "ignore",
+    "mathpar": "ignore"
   },
   "ltex.latex.commands": {
     "elpii": "dummy",
@@ -963,6 +964,7 @@
     "coq": "dummy",
     "elpi": "dummy",
     "iris": "dummy",
-    "ce": "dummy"
+    "ce": "dummy",
+    "cref*": "default"
   }
 }

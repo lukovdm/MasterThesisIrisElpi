@@ -4,10 +4,9 @@
 \usepackage{url}
 
 \usepackage{fontspec}
-\setmonofont{Hack}
+\setmonofont{Hack}  
 
 \usepackage{graphicx}
-\usepackage{amsthm}
 \usepackage{listings}
 \usepackage[a4paper]{geometry}
 \usepackage[style=alphabetic]{biblatex}
@@ -17,14 +16,14 @@
 \usepackage[hidelinks]{hyperref}
 
 \usepackage{array}
-\usepackage{thesiscommands}
+\setlength {\marginparwidth }{2cm}
 \usepackage{mathpartir}
 \usepackage{pftools}
 \usepackage{iris}
 \usepackage{heaplang}
+\usepackage{thesiscommands}
 
 \usepackage[noabbrev]{cleveref}
-
 
 \allowdisplaybreaks
      
@@ -42,6 +41,7 @@
 
 \addbibresource{iris-elpi.bib}
 
+\setlength {\marginparwidth }{4cm}
 \begin{document}
 \renewcommand{\sectionautorefname}{Section}
 \renewcommand{\subsectionautorefname}{Section}
@@ -109,10 +109,10 @@ Lijstje van je contributies, ik heb x y en z gedaan en verwijzen naar hoofdstuk
 \end{coqcode}
 
 \subfile{IrisBackground}
-\subfile{Showcase}
+\subfile{Fixpoints}
 
 \subfile{ElpiTactics} %Iris Proofmode in Elpi
-\subfile{Fixpoints}
+
 % \subfile{Induction}
 \subfile{ElpiImplementation}
 

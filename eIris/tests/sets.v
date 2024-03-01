@@ -22,85 +22,114 @@ Section SkipQueue.
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-  Definition MLL_push : val :=
-    rec: "MLL_push" "l" "v" :=
+  Definition MLL_insert : val :=
+    rec: "MLL_insert" "l" "i" "v" :=
       match: "l" with
-        NONE => SOME (Alloc("v", #false, NONE))
+          NONE => SOME (Alloc("v", #false, NONE))
         | SOME "hd" =>
-          let: "x" := !"hd" in
-          let: "tl" := "MLL_push" (Snd "x") "v" in
-          "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
-          "l"
+            let: "x" := !"hd" in
+            if: ("i" = #0) then
+              SOME (Alloc("v", #false, SOME "hd"))
+            else if: Snd (Fst "x") = #false then
+              let: "tl" := "MLL_insert" (Snd "x") ("i" - #1) "v" in
+              "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
+              "l"
+            else
+              let: "tl" := "MLL_insert" (Snd "x") "i" "v" in
+              "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
+              "l"
       end.
   
-  Lemma MLL_push_spec (vs : list val) (v : val) (hd : val) :
-    [[{ is_MLL hd vs  }]]
-      MLL_push hd v
-    [[{ hd', RET hd'; is_MLL hd' (vs ++ [v]) }]].
+  Lemma MLL_insert_spec (vs : list val) (v : val) (i : nat) (hd : val) :
+    [[{ is_MLL hd vs }]]
+      MLL_insert hd #i v
+    [[{ hd', RET hd'; is_MLL hd' (take i vs ++ v :: drop i vs) }]].
   Proof.
     eiIntros "%Phi His".
-    iRevert (Phi).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi Hlater"; simplify_eq.
+    iRevert (Phi i).
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hlater"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".
       wp_pures.
       iModIntro.
       iApply "Hlater".
       iApply cons_is_MLL.
-      iExists _, _, _, l.
       iFrame.
-      repeat iSplit; try iPureIntro; try done.
-      by iApply empty_is_MLL.
+      iExists _.
+      repeat iSplit; try done.
+      1: by iApply empty_is_MLL.
+      by rewrite take_nil drop_nil.
     - wp_rec.
       wp_load.
       wp_pures.
-      eiDestruct "IH" as "[IH _]".
-      wp_apply "IH".
-      eiIntros "%hd' His".
-      wp_store.
-      iModIntro.
-      iApply "Hlater".
-      iApply mark_is_MLL.
-      iExists _, _, l, _.
-      iFrame.
-      iSplit; done.
+      case_bool_decide; simplify_eq.
+      + assert (i = 0) as -> by lia.
+        wp_alloc k as "Hk".
+        wp_pures.
+        iModIntro.
+        iApply "Hlater".
+        iApply cons_is_MLL.
+        iFrame; iExists _; repeat iSplit; try done.
+        rewrite drop_0.
+        eiDestruct "IH" as "[_ IH]".
+        iApply mark_is_MLL.
+        by iFrame.
+      + wp_pures.
+        eiDestruct "IH" as "[IH _]".
+        wp_apply "IH".
+        eiIntros "%hd' His".
+        wp_store.
+        iModIntro.
+        iApply "Hlater".
+        iApply mark_is_MLL.
+        by iFrame.
     - wp_rec.
       wp_load.
       wp_pures.
-      eiDestruct "IH" as "[IH _]".
-      wp_apply "IH".
-      eiIntros "%hd' His".
-      wp_store.
-      iModIntro.
-      iApply "Hlater".
-      iApply cons_is_MLL.
-      iExists _, _, _, _.
-      iFrame.
-      iSplit; done.
+      case_bool_decide; simplify_eq.
+      + assert (i = 0) as -> by lia.
+        wp_alloc k as "Hk".
+        wp_pures.
+        iModIntro.
+        iApply "Hlater".
+        iApply cons_is_MLL.
+        iFrame; iExists _; repeat iSplit; try done.
+        rewrite drop_0.
+        eiDestruct "IH" as "[_ IH]".
+        iApply cons_is_MLL.
+        by iFrame.
+      + wp_pures.
+        eiDestruct "IH" as "[IH _]".
+        destruct i as [|i]; first done.
+        replace (S i - 1)%Z with (Z.of_nat i) by lia.
+        wp_apply "IH".
+        eiIntros "%hd' His".
+        wp_store.
+        iModIntro.
+        iApply "Hlater".
+        iApply cons_is_MLL.
+        iFrame.
+        iSplit; done.
   Qed.
 
   Definition MLL_delete : val :=
     rec: "MLL_delete" "l" "i" :=
       match: "l" with
-        NONE => NONE
+        NONE => #()
         | SOME "hd" =>
           let: "x" := !"hd" in
-          (if: (Snd (Fst "x") = #false) && ("i" = #0) then
+          if: (Snd (Fst "x") = #false) && ("i" = #0) then
             "hd" <- (Fst (Fst "x"), #true, Snd "x")
+          else if: Snd (Fst "x") = #false then
+            "MLL_delete" (Snd "x") ("i" - #1)
           else
-            if: Snd (Fst "x") = #false then
-              let: "tl" := "MLL_delete" (Snd "x") ("i" - #1) in
-              "hd" <- (Fst (Fst "x"), #false, "tl")
-            else
-              let: "tl" := "MLL_delete" (Snd "x") "i" in
-              "hd" <- (Fst (Fst "x"), #true, "tl"));;
-          "l"
+            "MLL_delete" (Snd "x") "i"
       end.
 
   Lemma MLL_delete_spec (vs : list val) (i : nat) (hd : val) :
     [[{ is_MLL hd vs }]]
       MLL_delete hd #i
-    [[{ hd', RET hd'; is_MLL hd' (firstn i vs ++ skipn (i + 1) vs) }]].
+    [[{ RET #(); is_MLL hd (delete i vs) }]].
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
@@ -109,18 +138,12 @@ Section SkipQueue.
       wp_pures.
       iModIntro.
       iApply "Hlater".
-      iApply empty_is_MLL.
-      iSplit; [done|].
-      iPureIntro.
-      by rewrite take_nil drop_nil.
+      by iApply empty_is_MLL.
     - wp_rec.
       wp_load.
       wp_pures.
       iDestruct "IH" as "[IH _]".
-      wp_apply "IH" as (hd') "IH".
-      wp_pures.
-      wp_store.
-      iModIntro.
+      wp_apply "IH" as "?".
       iApply "Hlater".
       iApply mark_is_MLL.
       iExists _, _, _, _.
@@ -129,8 +152,8 @@ Section SkipQueue.
     - wp_rec.
       wp_load.
       wp_pures.
-      destruct (Nat.eq_dec i 0); simplify_eq.
-      + rewrite bool_decide_eq_true_2; [|done].
+      case_bool_decide; simplify_eq.
+      + assert (i = 0) as -> by lia.
         wp_pures.
         wp_store.
         iModIntro.
@@ -139,31 +162,18 @@ Section SkipQueue.
         iExists _, _, _, _.
         iFrame.
         iDestruct "IH" as "[_ IH]".
-        iSplit; [|done].
-        by rewrite take_0 skipn_cons drop_0.
-      + rewrite bool_decide_eq_false_2.
-        2: {
-          rewrite <- Nat2Z.inj_0.
-          intros H.
-          simplify_eq.
-        }
-        wp_pures.
+        by iFrame.
+      + wp_pures.
         iDestruct "IH" as "[IH _]".
-        rewrite <- (Z2Nat.id 1%Z); [|done].
-        rewrite <- Nat2Z.inj_sub; [|lia].
-        wp_apply "IH" as (hd') "IH".
-        wp_store.
-        iModIntro.
+        destruct i as [|i]; first done.
+        replace (S i - 1)%Z with (Z.of_nat i) by lia.
+        wp_apply "IH" as "?".
         iApply "Hlater".
         iApply cons_is_MLL.
         iExists _, _, _, _.
-        iFrame.
-        repeat iSplit; try done.
-        iPureIntro.
-        rewrite Z2Nat.inj_pos Pos2Nat.inj_1.
-        apply Nat.neq_0_r in n as [m ->].
-        by rewrite firstn_cons /= Nat.sub_0_r.
+        by iFrame.
   Qed.
+  Print MLL_delete_spec.
 End SkipQueue.
 
 Section GSets.
