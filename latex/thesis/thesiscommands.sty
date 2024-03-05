@@ -2,6 +2,7 @@
 \usepackage{syntax}
 \usepackage{csquotes}
 \usepackage{xspace}
+\usepackage{float}
 
 \usepackage{empheq}
 \usepackage{stmaryrd}
@@ -77,6 +78,23 @@
 % right for mathbin-style spacing.
 \newcolumntype{M}{@{\mskip\thickmuskip}}
 
+%%%%%%%%%%% Reusable pieces %%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\MLLdelete}{\operatorname{delete}}
+\newcommand{\MLLDeleteProg}{
+    \begin{align*}
+        \MLLdelete\,\langv{hd}\,\langv{i} :=\  & \MatchML{\langv{hd}\,}with{\None}=>{()}|{\Some \loc}=>{
+        \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \loc in                                                                                                               \\
+                                               &                                                         & \phantom{\Ra}\ \If \langv{mark} = \False\ \&\&\ \langv{i} = 0 then \\
+                                               &                                                         & \phantom{\Ra}\ \quad \loc \gets (\lvar, \True, \langv{tl})         \\
+                                               &                                                         & \phantom{\Ra}\ \Else \If \langv{mark} = \False then                \\
+                                               &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ (\langv{i} - 1)       \\
+                                               &                                                         & \phantom{\Ra}\ \Else                                               \\
+                                               &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ \langv{i}
+        }end{}
+    \end{align*}
+}
+
 %%%%%%%%%%% math things %%%%%%%%%%%%%%%%%%
 
 \usepackage{esvect}
@@ -84,6 +102,9 @@
 \newcommand{\vect}[1]{%
     \vv{#1}%
 }
+
+\newcommand{\iindex}{i}
+\newcommand{\iindexB}{j}
 
 \newcommand{\lfp}{\ensuremath{\textlog{lfp}}}
 \newcommand{\hopred}{\ensuremath{\textlog{F}}}

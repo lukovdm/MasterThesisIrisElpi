@@ -965,6 +965,6 @@
     "elpi": "dummy",
     "iris": "dummy",
     "ce": "dummy",
-    "cref*": "default"
+    "cref*": "dummy"
   }
 }
