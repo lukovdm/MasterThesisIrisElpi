@@ -128,7 +128,6 @@ Section Experiments.
 
   Global Instance big_opL_IProper {A} : IProper (□> .> .> bi_wand ==> .> bi_wand) (@big_opL PROP bi_sep _ A).
     unfold IProper, iRespectful, iPointwise_relation.
-    Set Printing All.
     iIntros (P Q) "#HPQ %a".
     iRevert (P Q) "HPQ".
     iInduction a as [ |y ys] "IH"; iIntros (P Q) "#HPQ Hbo".

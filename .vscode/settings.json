@@ -966,5 +966,14 @@
     "iris": "dummy",
     "ce": "dummy",
     "cref*": "dummy"
-  }
+  },
+  "latex-workshop.latex.verbatimEnvs": [
+    "verbatim",
+    "lstlisting",
+    "minted",
+    "coqi",
+    "elpii",
+    "coqcode",
+    "elpicode"
+  ]
 }

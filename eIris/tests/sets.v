@@ -47,12 +47,12 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hlater"; simplify_eq.
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".
       wp_pures.
       iModIntro.
-      iApply "Hlater".
+      iApply "Hphi".
       iApply cons_is_MLL.
       iFrame.
       iExists _.
@@ -67,7 +67,7 @@ Section SkipQueue.
         wp_alloc k as "Hk".
         wp_pures.
         iModIntro.
-        iApply "Hlater".
+        iApply "Hphi".
         iApply cons_is_MLL.
         iFrame; iExists _; repeat iSplit; try done.
         rewrite drop_0.
@@ -80,7 +80,7 @@ Section SkipQueue.
         eiIntros "%hd' His".
         wp_store.
         iModIntro.
-        iApply "Hlater".
+        iApply "Hphi".
         iApply mark_is_MLL.
         by iFrame.
     - wp_rec.
@@ -91,7 +91,7 @@ Section SkipQueue.
         wp_alloc k as "Hk".
         wp_pures.
         iModIntro.
-        iApply "Hlater".
+        iApply "Hphi".
         iApply cons_is_MLL.
         iFrame; iExists _; repeat iSplit; try done.
         rewrite drop_0.
@@ -106,7 +106,7 @@ Section SkipQueue.
         eiIntros "%hd' His".
         wp_store.
         iModIntro.
-        iApply "Hlater".
+        iApply "Hphi".
         iApply cons_is_MLL.
         iFrame.
         iSplit; done.
@@ -133,18 +133,18 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hlater"; simplify_eq.
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_pures.
       iModIntro.
-      iApply "Hlater".
+      iApply "Hphi".
       by iApply empty_is_MLL.
     - wp_rec.
       wp_load.
       wp_pures.
       iDestruct "IH" as "[IH _]".
       wp_apply "IH" as "?".
-      iApply "Hlater".
+      iApply "Hphi".
       iApply mark_is_MLL.
       iExists _, _, _, _.
       iFrame.
@@ -157,7 +157,7 @@ Section SkipQueue.
         wp_pures.
         wp_store.
         iModIntro.
-        iApply "Hlater".
+        iApply "Hphi".
         iApply mark_is_MLL.
         iExists _, _, _, _.
         iFrame.
@@ -168,7 +168,7 @@ Section SkipQueue.
         destruct i as [|i]; first done.
         replace (S i - 1)%Z with (Z.of_nat i) by lia.
         wp_apply "IH" as "?".
-        iApply "Hlater".
+        iApply "Hphi".
         iApply cons_is_MLL.
         iExists _, _, _, _.
         by iFrame.
@@ -212,13 +212,13 @@ Section GSets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hlater".
+    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
       wp_pures.
       iModIntro.
-      iApply "Hlater".
+      iApply "Hphi".
       iApply cons_is_gset.
       iExists l, NONEV, {[ e ]}, e, ∅.
       iFrame.
@@ -239,7 +239,7 @@ Section GSets.
       unfold bool_decide, decide_rel.
       destruct (val_eq_dec #e #a2); wp_pures.
       + eiDestruct "IH" as "[_ His]".
-        iModIntro. iApply "Hlater".
+        iModIntro. iApply "Hphi".
         iApply cons_is_gset.
         iExists l, tl, (a1 ∪ {[ a2 ]}), a2, (a1 ∖ {[a2]}). 
         simplify_eq.
@@ -252,7 +252,7 @@ Section GSets.
         wp_apply "IH".
         eiIntros "%hd' His".
         wp_store.
-        iApply "Hlater".
+        iApply "Hphi".
         iModIntro.
         iApply cons_is_gset.
         iExists l, _, (a1 ∪ {[ e ]}), _, _.
@@ -323,13 +323,13 @@ Section Sets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hlater".
+    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
       wp_pures.
       iModIntro.
-      iApply "Hlater".
+      iApply "Hphi".
       iApply cons_is_set.
       iExists l, NONEV, (Ensembles.Singleton nat e), e, (Empty_set nat).
       iFrame.
@@ -355,7 +355,7 @@ Section Sets.
       unfold bool_decide, decide_rel.
       destruct (val_eq_dec #e #a2); wp_pures.
       + eiDestruct "IH" as "[_ His]".
-        iModIntro. iApply "Hlater".
+        iModIntro. iApply "Hphi".
         iApply cons_is_set.
         iExists _, _, (Ensembles.Add nat a1 e), _, (Ensembles.Subtract nat a1 e). 
         simplify_eq.
@@ -372,7 +372,7 @@ Section Sets.
         wp_apply "IH".
         eiIntros "%hd' His".
         wp_store.
-        iApply "Hlater".
+        iApply "Hphi".
         iModIntro.
         iApply cons_is_set.
         iExists _, _, (Ensembles.Add nat a1 e), _, _.

@@ -94,6 +94,7 @@
         }end{}
     \end{align*}
 }
+\newcommand{\isMLL}{\textlog{isMLL}}
 
 %%%%%%%%%%% math things %%%%%%%%%%%%%%%%%%
 
@@ -110,6 +111,13 @@
 \newcommand{\hopred}{\ensuremath{\textlog{F}}}
 
 \newcommand{\purered}{\longrightarrow_{\text{pure}}}
+
+\newcommand{\CoqProp}{\textdom{Prop}}
+\newcommand{\pure}[1]{\ensuremath{\left\lceil #1 \right\rceil}}
+
+\newcommand*{\inferp}[3]{%
+    \inferrule*[right=\ruleref{#1},vcenter]{#2}{#3}%
+}
 
 %%%%%%%%%%%%%%%%%% Theorems %%%%%%%%%%%%%%%%%%
 \declaretheorem[within=chapter, thmbox=M]{theorem}

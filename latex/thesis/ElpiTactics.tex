@@ -1,5 +1,10 @@
 \documentclass[thesis.tex]{subfiles}
 
+\ifSubfilesClassLoaded{
+  \externaldocument{thesis}
+  \setcounter{chapter}{3}
+}{}
+
 \begin{document}
 
 \chapter{Implementing an Iris tactic in Elpi}
@@ -7,41 +12,33 @@ In this chapter we will show how \elpi together with \ce can be used to create n
 
 
 \section[iIntros example]{\coqi{iIntros} example}
-\coqi{iIntros} is based on the \coq \coqi{intros} tactic. The \coq \coqi{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqi{iIntros} tactic, but adopted to the \iris contexts. Also, a few expansions, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, were added to perform other common initial proof steps such as \coqi{simpl}, \coqi{done} and others. We will show a few examples of how \coqi{iIntros} can be used to help prove lemmas.
+The tactic \coqi{iIntros} is based on the \coq \coqi{intros} tactic. The \coq \coqi{intros} tactic makes use of a domain specific language (DSL) for quickly introducing different logical connective. In \iris this concept was adopted for the \coqi{iIntros} tactic, but modified to the \iris contexts. Also, a few expansions, as inspired by ssreflect \cite*{huetCoqProofAssistant1997, gonthierSmallScaleReflection2016}, were added to perform other common initial proof steps such as \coqi{simpl}, \coqi{done} and others. We will show a few examples of how \coqi{iIntros} can be used to help prove lemmas.
 
-We begin with a lemma about the magic wand. The magic wand can be seen as the implication of separation logic which also takes into account the separation of resources.
-
-\begin{minipage}{0.4\textwidth}
-  \begin{prooftree}
-    \AxiomC{$P\ ∗\ Q \vdash R$}
-    \RightLabel{$\mathrel{\rule[0.5ex]{1em}{0.55pt}∗}$-Intro}
-    \UnaryInfC{$P \vdash Q \mathrel{\rule[0.5ex]{1em}{0.55pt}∗} R$}
-  \end{prooftree}
-\end{minipage}
-%
-\begin{minipage}{0.4\textwidth}
-  \begin{prooftree}
-    \AxiomC{$P \land Q \vdash R$}
-    \RightLabel{$\to$-Intro}
-    \UnaryInfC{$P \vdash Q \to R$}
-  \end{prooftree}
-\end{minipage}
-
-Thus, where a normal implication introduction adds the left-hand side to the \coq context, the magic wand adds the left-hand side to the spatial resource context.
-\todoo{Rewrite when I have a solid explanation of the \iris contexts}
-
+We have seen in \cref*{ch:backgroundseplogic} how we often have two types of propositions as our assumptions during a proof. There are persistent and non-persistent (also called spatial from now on) proposition. In \coq assumption management is a very important part of writing proofs. Thus, in \coq implementation of the separation logic \iris, theses two types of assumptions have been made into two contexts, the persistent and the spatial context. Together with the \coq context, we thus have three context. As an example given we have the separation logic statement.
+\[ \always\prop * \propB \proves \propC \]
+This would be shown in \iris as the following proof state.
 \begin{coqcode}
-  P, R: iProp
-  ============
-  ------------∗
-  P -∗ R -∗ P
-\end{coqcode}
-When using \coqi{iIntros "HP HR"}, the proof state is transformed into the following state.
-\begin{coqcode}
-  P, R: iProp
+  P, Q, R: iProp
   ============
   "HP" : P
-  "HR" : R
+  ------------□
+  "HR" : Q
+  ------------∗
+  R
+\end{coqcode}
+Above the double lined line we have the types of all our proof variables and any other statements in the \coq logic. Next we have a section of persistent proposition we have as assumptions, each one named. The assumption $\prop$ is thus named \coqi{"HP"}. Following the persistent context we have the spatial context, where again each assumption is named. At the bottom we have the statement we want to prove. We will now show how the \coqi{iIntros} tactic modifies these contexts. Given the below proof state, we would want to introduce $\prop$ and $\propB$.
+\begin{coqcode}
+  P, Q: iProp
+  ============
+  ------------∗
+  P -∗ Q -∗ P
+\end{coqcode}
+We can use \coqi{iIntros "HP HQ"}, this will intelligently apply \ruleref{wand-IE} twice.
+\begin{coqcode}
+  P, Q: iProp
+  ============
+  "HP" : P
+  "HQ" : Q
   ------------∗
   P
 \end{coqcode}
@@ -53,7 +50,11 @@ We have introduced the two separation logic propositions into the spatial contex
   ∀ x : nat, (∃ y : nat, P x ∗ P y) ∨ P 0 -∗ P 1
 \end{coqcode}
 %Universal quantification existensial quantification
-It consists of a universal quantification, an existential quantification, a conjunction and a disjunction. We can again use one application of \coqi{iIntros} to introduce and eliminate the premise. \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} takes the proof to the following state of two goals
+It consists of a universal quantification, an existential quantification, a seperating conjunction and a disjunction. We can again use one application of \coqi{iIntros} to introduce and eliminate the premise.
+\begin{center}
+  \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"}
+\end{center}
+When applied we get two proof states, one for each side of the disjunction elimination. These different proof states are shown with the \coqi{(1/2)} and \coqi{(2/2)} prefixes.
 \begin{coqcode}
   (1/2)
   P: nat → iProp
@@ -72,7 +73,7 @@ It consists of a universal quantification, an existential quantification, a conj
   ------------------∗
   P 1
 \end{coqcode}
-The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a forall introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. They can have the following interpretations:
+The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a forall introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. A few of the possible intro patterns are:
 \begin{itemize}
   \item \coqi{"H"} represents renaming a hypothesis. The name given is used as the name of the hypothesis in the spatial context.
   \item \coqi{"%H"} represents pure elimination. The introduced hypothesis is interpreted as a \coq hypothesis, and added to the \coq context.
@@ -102,8 +103,8 @@ There are more patterns available to introduce more complicated goals, these can
     env_counter : positive;
   }.
 \end{coqcode}
-\todoo{Explain \mProp somewhere or just use \iProp}
-\todoo{I am simplifying the environments here, should I do that?}
+\quest{Should I use $\Prop$ or \coqi{PROP} here?}
+\quest{I am simplifying the environments here, should I do that?}
 \begin{itemize}
   \item Identifiers are either anonymous or named
   \item Environments are maps from identifiers to values
@@ -150,8 +151,9 @@ There are more patterns available to introduce more complicated goals, these can
 
 \section{Tactics}
 \begin{itemize}
-  \item The proof rules are hard to use with the context
+  \item The proof rules in \cref{ch:backgroundseplogic} are hard to use with the context
   \item Define Lemma's that work with the context
+  \item We have already seen one, \ruleref{wp-apply}
   \item These allow us to define our tactics easily
 \end{itemize}
 \begin{coqcode}
@@ -176,7 +178,7 @@ The tactics the IPM adds are build to replicate many of the behaviors of the \co
 We implement our tactic in the $\lambda$Prolog language \elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. \elpi implements $\lambda$prolog \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012} and adds constraint handling rules to it \cite{monfroyConstraintHandlingRules2011}. constraint handling will be explained in Section ?.
 \todoo{Defer constraint handling to later}
 
-To use \elpi as a \coq meta programming language, there exists the \elpi \coq connector, \ce \cite{tassiElpiExtensionLanguage2018}. We will use \ce to implement the \elpi variant of \coqi{iIntros}, named above as \coqi{eiIntros}.
+To use \elpi as a \coq meta programming language, there exists the \elpi \coq connector, \ce \cite{tassiElpiExtensionLanguage2018}. We will use \ce to implement the \elpi variant of \coqi{iIntros}, named \coqi{eiIntros}.
 
 Our \elpi implementation \coqi{eiIntros} consists of three parts as seen in \cref{fig:eiintrosstruct}. The first two parts will interpret the DSL used to describe what we want to introduce. Then, the last part will apply the interpreted DSL. In \cref{ssec:tokenizer} we describe how a string is tokenized by the tokenizer. In \cref{ssec:parser} we describe how a list of tokens is parsed into a list of intro patterns. In \cref{ssec:applier} we describe how we use an intro pattern to introduce and eliminate the needed connectives. In every section we describe more parts of the \elpi programming language and the \ce connector starting with the base concepts of the language and working up to the mayor concepts of \elpi and \ce.
 \begin{figure}
@@ -230,9 +232,9 @@ We first define a new type called token using the \elpii{kind} keyword, where \e
   type none option A.
   type some A -> option A.
 \end{elpicode}
-Creating types of kind \elpii{type -> type} can be done using the \elpii{kind} directive and passing in a more complicated kind.
+Creating types of kind \elpii{type -> type} can be done using the \elpii{kind} directive and passing in a more complicated kind as shown above.
 
-We can now represent a string as a list of these tokens. Given the string \elpii{"[H %H']"} we can represent it as the following list of type \elpii{token}: 
+Using the above types we can represent a given string as a list of tokens. Thus, given the string \elpii{"[H %H']"} we can represent it as the following list of type \elpii{token}: 
 \begin{elpicode}
   [tBracketL, tName "H", tPure (some "H'"), tBracketR]
 \end{elpicode}
@@ -317,7 +319,7 @@ The predicate contains two rules. The first rule, defined on lines 2 and 3, recu
 
 The first rule destructs the input in its head \elpii{X} and its tail \elpii{XS}. It then checks if \elpii{Pred} holds for \elpii{X}, if it does, we continue the rule and call \elpii{take-while-split} on the tail while assigning X as the first element of the first output list and the output of the recursive call as the tail of the first output and the second output. However, if \elpii{Pred X} does not succeed we backtrack to the previous rule in our conclusion. Since there is no previous rule in the conclusion we instead undo any unification that has happened and try the next possible rule. This will be the rule on line 4 and returns the input as the second output of the predicate.
 
-We can use \elpii{take-while-split} to define the rule for the token \elpii{tName}
+We can use \elpii{take-while-split} to define the rule for the token \elpii{tName}.
 \begin{elpicode}
   type tName string -> token.
 
