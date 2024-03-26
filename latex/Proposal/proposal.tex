@@ -1,0 +1,98 @@
+\documentclass[11pt,a4paper,final]{report}
+
+\usepackage[rgb]{xcolor}
+\usepackage{url}
+
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage[a4paper]{geometry}
+\usepackage[style=alphabetic]{biblatex}
+% use natbib
+
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[noabbrev]{cleveref}
+     
+\makeatletter %otherwise geometry resets everything
+\Gm@restore@org
+\makeatother
+
+\setlength{\itemsep}{0cm}
+\setlength{\voffset}{0cm}
+\setlength{\headheight}{0cm}
+\setlength{\topmargin}{0cm} 
+\lstset{basicstyle = \footnotesize, breaklines = true}
+
+\graphicspath{{imgs/}}
+
+\addbibresource{iris-elpi.bib}
+
+\setlength {\marginparwidth }{4cm}
+\begin{document}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\chapterautorefname}{Chapter}
+
+\begin{titlepage}
+    \begin{center}
+        \textsc{\LARGE Master thesis proposal\\Computing Science}\\[1.5cm]
+        \includegraphics[height=100pt]{logo}
+
+        \vspace{0.4cm}
+        \textsc{\Large Radboud University}\\[1cm]
+        \hrule
+        \vspace{0.4cm}
+        \textbf{\huge Extending Iris with Inductive predicates using Elpi}\\[0.4cm]
+        \hrule
+        \vspace{2cm}
+        \begin{minipage}[t]{0.45\textwidth}
+            \begin{flushleft} \large
+                \textit{Author:}\\
+                Luko van der Maas\\
+                Computer science\\
+                \texttt{luko.vandermaas@ru.nl}\\
+                s1010320
+            \end{flushleft}
+        \end{minipage}
+        \begin{minipage}[t]{0.45\textwidth}
+            \begin{flushright} \large
+                \textit{Supervisor:}\\
+                dr. Robbert Krebbers\\
+                \texttt{robbert@cs.ru.nl}\\[1.3cm]
+                \textit{Assessor:}\\
+                dr. Freek Wiedijk\\
+                \texttt{freek@cs.ru.nl}
+            \end{flushright}
+        \end{minipage}
+        \vfill
+        {\large \today}
+    \end{center}
+\end{titlepage}
+
+\begin{description}
+    \item[Start date:] 01-September-2023
+    \item[Expected end date:] 01-June-2024
+\end{description}
+
+\section*{Problem statement}
+In the Iris separation logic\cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}, implemented in Coq as MoSeL \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}, there has long been a need to represent recursive data structures in memory using mathematical concepts. Several techniques have been created to solve this problem. When the recursive structure of the data structure mimics the inductive structure of the mathematical concept used to represent it, we can use the Coq fixpoint mechanism define our representation predicate. However, when this is not the case three different manual ways of creating a representation predicate where available. This leads to a higher level of understanding needed to do simple tasks and more laborious steps in proofs.
+
+Recently, a new meta language for Coq has been developed in order to create new tactics and commands. This meta language is called Elpi with its connector, Coq-Elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. Using Elpi we can automatically create definitions and proofs and create tactics for the interactive prover.
+
+The problem statement of this proposal is:
+\begin{quote}
+    Is it possible, from an inductive definition, to automate the definition of a representation predicate using Elpi?
+\end{quote}
+Included in the definition are the predicate itself and any associated lemmas such as unfold and induction lemmas. Also included are tactics for easily applying these lemmas.
+
+\section*{Approach}
+I will be trying to solve the problem as stated above by creating several commands and tactics in order to automate the creation of a representation predicate and simplify the use of them in a proof. This will consist of several Elpi programs together with the needed Coq code in order to create these commands and tactics.
+
+\section*{Roadmap}
+I will start by deepening my understanding of Iris and MoSeL together while reading more about Elpi. As a proof of concept I hope to implement a simpler tactic already existent in MoSeL and use this knowledge in order to create a plan for the commands and tactics needed for the representation predicate. This will probably take the first few months. Next I will try to implement the commands according to the roadmap created. During this time I will start writing my thesis about the previous section of work. Lastly, I will write the rest of the thesis.
+
+\section*{Literature}
+Relevant literature includes the literature about Iris and its proof mode MoSeL \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018,krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018,iristeamIrisReference2023}. These describe how the Iris logic works and how it is implemented in Coq. Secondly we have the literature about the Elpi programming language and the Elpi-Coq connector \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. These explain what Elpi is and how it is used together with Coq. They also describe how a type checker was written using Elpi. Lastly, to create a representation predicate we will most likely make use least fixpoints. These are originally described by Knaster and Tarski \cite{tarskiLatticetheoreticalFixpointTheorem1955} and very useful for creating inductive predicates.
+
+\printbibliography
+\end{document}
