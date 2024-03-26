@@ -8,234 +8,234 @@
 \begin{document}
 \chapter{Fixpoints for representation predicates}
 \label{ch:fixpoints}
-\begin{itemize}
-    \item We will show how one can apply the Tarski Fixpoint theorem to create an inductive predicate and how we can create the induction principle from it.
-\end{itemize}
+% \begin{itemize}
+%     \item We will show how one can apply the Tarski Fixpoint theorem to create an inductive predicate and how we can create the induction principle from it.
+% \end{itemize}
 \section{Finite predicates and functors}
-\begin{itemize}
-    \item The logic described here is embedded in \coq.
-    \item This has as result that any recursive predicate has to terminate.
-    \item The type for locations is defined as $\Loc = \integer$
-    \item Thus we can have infinite locations
-    \item Our predicates like, $\isMLL$ when they are recursively defined, as in \cref*{sec:represpreds}, don't necessarily terminate
-\end{itemize}
+% \begin{itemize}
+%     \item The logic described here is embedded in \coq.
+%     \item This has as result that any recursive predicate has to terminate.
+%     \item The type for locations is defined as $\Loc = \integer$
+%     \item Thus we can have infinite locations
+%     \item Our predicates like, $\isMLL$ when they are recursively defined, as in \cref*{sec:represpreds}, don't necessarily terminate
+% \end{itemize}
 
-\begin{itemize}
-    \item Since we cannot define recursive predicates, we instead need to find another way.
-    \item The approach first introduced in \cite{?} will be to take the least fixpoint of a monotone functor
-    \item We first repeat the recursive definition of \isMLL
-\end{itemize}
-\begin{align*}
-    \isMLL\, \langv{hd}\, \vect{\val} & =
-    \begin{array}{cl}
-             & \langv{hd} = \None * \vect{\val} = []                                                                                                      \\
-        \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val}                                           \\
-        \lor & \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) * \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
-    \end{array}
-\end{align*}
-\begin{itemize}
-    \item We can transform this definition into a functor acting on possible \isMLL predicates, by replacing the recursive call with an argument \quest{In logic it is not really a call, what is it?}
-\end{itemize}
-\begin{align*}
-    \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} & \eqdef
-    \begin{array}{rl}
-             & \langv{hd} = \None * \vect{v} = []                                                                                                         \\
-        \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \pred\, \langv{tl}\, \vect{v}                                               \\
-        \lor & \langv{hd} = \Some l * \vect{\val} = [\val'] + \vect{\val}'' * l \fmapsto (\val', \False, \langv{tl}) * \pred\, \langv{tl}\, \vect{\val}''
-    \end{array}
-\end{align*}
-\begin{itemize}
-    \item Here, $\pred$ is a predicate of type $\Val \to \vect{\Val} \to \iProp$
-    \item And, $\textlog{isMLL}_\hopred$ is a predicate of type $(\Val \to \vect{\Val} \to \iProp) \to (\Val \to \vect{\Val} \to \iProp)$
-    \item We have thus created a \quest{function? predicate? which is it?} function which transforms a predicate into another
-    \item We call this type of function a functor \quest{Why is it a functor, I don't know how one would check any of the functor laws, what is composition and is $\Lam\var\,\var'.\TRUE$ the identity?}
-    \item This functor, given a predicate $\pred$, creates a new predicate that holds if its arguments are the head of a MLL and $\pred$ holds for the tail of the MLL.
-    \item We will be able to harness this transformation in \cref*{sec:fixpoint} to recreate \isMLL.
-\end{itemize}
+% \begin{itemize}
+%     \item Since we cannot define recursive predicates, we instead need to find another way.
+%     \item The approach first introduced in \cite{?} will be to take the least fixpoint of a monotone functor
+%     \item We first repeat the recursive definition of \isMLL
+% \end{itemize}
+% \begin{align*}
+%     \isMLL\, \langv{hd}\, \vect{\val} & =
+%     \begin{array}{cl}
+%              & \langv{hd} = \None * \vect{\val} = []                                                                                                      \\
+%         \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val}                                           \\
+%         \lor & \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) * \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
+%     \end{array}
+% \end{align*}
+% \begin{itemize}
+%     \item We can transform this definition into a functor acting on possible \isMLL predicates, by replacing the recursive call with an argument \quest{In logic it is not really a call, what is it?}
+% \end{itemize}
+% \begin{align*}
+%     \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} & \eqdef
+%     \begin{array}{rl}
+%              & \langv{hd} = \None * \vect{v} = []                                                                                                         \\
+%         \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \pred\, \langv{tl}\, \vect{v}                                               \\
+%         \lor & \langv{hd} = \Some l * \vect{\val} = [\val'] + \vect{\val}'' * l \fmapsto (\val', \False, \langv{tl}) * \pred\, \langv{tl}\, \vect{\val}''
+%     \end{array}
+% \end{align*}
+% \begin{itemize}
+%     \item Here, $\pred$ is a predicate of type $\Val \to \vect{\Val} \to \iProp$
+%     \item And, $\textlog{isMLL}_\hopred$ is a predicate of type $(\Val \to \vect{\Val} \to \iProp) \to (\Val \to \vect{\Val} \to \iProp)$
+%     \item We have thus created a \quest{function? predicate? which is it?} function which transforms a predicate into another
+%     \item We call this type of function a functor \quest{Why is it a functor, I don't know how one would check any of the functor laws, what is composition and is $\Lam\var\,\var'.\TRUE$ the identity?}
+%     \item This functor, given a predicate $\pred$, creates a new predicate that holds if its arguments are the head of a MLL and $\pred$ holds for the tail of the MLL.
+%     \item We will be able to harness this transformation in \cref*{sec:fixpoint} to recreate \isMLL.
+% \end{itemize}
 
-\section{Monotone predicates}
+\section{Monotone functors}
 \label{sec:monotone}
 
-\begin{itemize}
-    \item In order for us to apply the Tarski least fixpoint theorem we need for the functor to be monotone.
-\end{itemize}
-\begin{definition}[Monotone predicate]
-    We define a monotone predicate for two different arities, however it can be expanded to any arity monotone predicate and arity argument, as long as the arity of the predicate is at most one higher than that of the argument.
-    \begin{description}
-        \item[Arity one predicate, arity zero arguments:] Any $\pred\colon A \to \iProp$ is monotone when for any $\prop, \propB\colon \iProp$, it holds that
-            \[\proves \always(\prop \wand \propB) \wand \pred\prop \wand \pred\propB\]
-        \item[Arity two predicate, arity one arguments:] Any $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
-            \[\proves \always(\All \var. \pred\var \wand \predB\var) \wand \All \var. \hopred\pred\var \wand \hopred\predB\var\]
-    \end{description}
-\end{definition}
-\begin{itemize}
-    \item Note that there would have been a similar way we could have written the property of a monotone predicate.
-          \[
-              \always{(\prop \wand \propB)} * \pred\prop \proves \pred\propB
-          \]
-    \item This would be more inline with the way they are written in \cref*{ch:backgroundseplogic}
-    \item However, these rules are a lot more strict in what the context is in which they are used, thus making them a lot harder to use.
-    \item Also, it is the way they are written and used in \iris
-    \item We thus write these like in the definition from now on
-\end{itemize}
+% \begin{itemize}
+%     \item In order for us to apply the Tarski least fixpoint theorem we need for the functor to be monotone.
+% \end{itemize}
+% \begin{definition}[Monotone predicate]
+%     We define a monotone predicate for two different arities, however it can be expanded to any arity monotone predicate and arity argument, as long as the arity of the predicate is at most one higher than that of the argument.
+%     \begin{description}
+%         \item[Arity one predicate, arity zero arguments:] Any $\pred\colon A \to \iProp$ is monotone when for any $\prop, \propB\colon \iProp$, it holds that
+%             \[\proves \always(\prop \wand \propB) \wand \pred\prop \wand \pred\propB\]
+%         \item[Arity two predicate, arity one arguments:] Any $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
+%             \[\proves \always(\All \var. \pred\var \wand \predB\var) \wand \All \var. \hopred\pred\var \wand \hopred\predB\var\]
+%     \end{description}
+% \end{definition}
+% \begin{itemize}
+%     \item Note that there would have been a similar way we could have written the property of a monotone predicate.
+%           \[
+%               \always{(\prop \wand \propB)} * \pred\prop \proves \pred\propB
+%           \]
+%     \item This would be more inline with the way they are written in \cref*{ch:backgroundseplogic}
+%     \item However, these rules are a lot more strict in what the context is in which they are used, thus making them a lot harder to use.
+%     \item Also, it is the way they are written and used in \iris
+%     \item We thus write these like in the definition from now on
+% \end{itemize}
 
-\begin{itemize}
-    \item We want to eventually prove certain predicates are monotone
-    \item To accomplish this we first prove a few different connectives monotone
-    \item We show the full proof for the separating conjunction
-    \item The other connectives are proven in similar ways.
-\end{itemize}
+% \begin{itemize}
+%     \item We want to eventually prove certain predicates are monotone
+%     \item To accomplish this we first prove a few different connectives monotone
+%     \item We show the full proof for the separating conjunction
+%     \item The other connectives are proven in similar ways.
+% \end{itemize}
 
-\begin{lemma}[Seperation conjuction is monotone]
-    \label{lem:sepmono}
-    The separation conjunction is monotone in its left and right argument.
-\end{lemma}
-\begin{proof}
-    We only prove monotonicity in its left argument, the proof for the right side is identical.
-    We thus need to prove $\pred_\propC\prop = \prop * \propC$ is monotone.
-    expading the definition of monotone for arity one we get the following statement.
-    \[\proves \always(\prop \wand \propB) \wand \prop * \propC \wand \propB * \propC\]
-    We introduce the wands and persistence modalities giving us the assumptions, $\prop\wand\propB$, $\prop$ and $\propC$.
-    We then use \ruleref{sep-mono} using the first two assumptions for proving $\prop$ and using the last assumption for proving $\propC$.
-    That $\prop \wand \propB * \prop \proves \propB$ holds follows from \ruleref{wand-IE}, and $\propC \proves \propC$ holds directly.
-\end{proof}
-\begin{lemma}[Magic wand monotone]
-    \label{lem:wandconcmono}
-    The magic wand is monotone in its conclusion.
-    \[\proves\always{(\prop\wand\propB)}\wand(\propC\wand\prop)\wand(\propC\wand\propB)\]
-\end{lemma}
-\begin{lemma}[Disjunction monotone]
-    \label{lem:disjmono}
-    The disjunction is monotone in its left and right argument.
-    \[\proves\always{(\prop\wand\propB)}\wand(\prop\lor\propC)\wand(\propB\lor\propC)\]
-    \[\proves\always{(\prop\wand\propB)}\wand(\propC\lor\prop)\wand(\propC\lor\propB)\]
-\end{lemma}
-\begin{lemma}[Universal quantification monotone]
-    \label{lem:allmono}
-    The universal quantification is monotone.
-    \[
-        \always{(\All \var. \pred(\var) \wand \predB(\var))} \wand (\All\var.\pred(\var)) \wand (\All\var.\predB(\var))
-    \]
-\end{lemma}
+% \begin{lemma}[Seperation conjuction is monotone]
+%     \label{lem:sepmono}
+%     The separation conjunction is monotone in its left and right argument.
+% \end{lemma}
+% \begin{proof}
+%     We only prove monotonicity in its left argument, the proof for the right side is identical.
+%     We thus need to prove $\pred_\propC\prop = \prop * \propC$ is monotone.
+%     expading the definition of monotone for arity one we get the following statement.
+%     \[\proves \always(\prop \wand \propB) \wand \prop * \propC \wand \propB * \propC\]
+%     We introduce the wands and persistence modalities giving us the assumptions, $\prop\wand\propB$, $\prop$ and $\propC$.
+%     We then use \ruleref{sep-mono} using the first two assumptions for proving $\prop$ and using the last assumption for proving $\propC$.
+%     That $\prop \wand \propB * \prop \proves \propB$ holds follows from \ruleref{wand-IE}, and $\propC \proves \propC$ holds directly.
+% \end{proof}
+% \begin{lemma}[Magic wand monotone]
+%     \label{lem:wandconcmono}
+%     The magic wand is monotone in its conclusion.
+%     \[\proves\always{(\prop\wand\propB)}\wand(\propC\wand\prop)\wand(\propC\wand\propB)\]
+% \end{lemma}
+% \begin{lemma}[Disjunction monotone]
+%     \label{lem:disjmono}
+%     The disjunction is monotone in its left and right argument.
+%     \[\proves\always{(\prop\wand\propB)}\wand(\prop\lor\propC)\wand(\propB\lor\propC)\]
+%     \[\proves\always{(\prop\wand\propB)}\wand(\propC\lor\prop)\wand(\propC\lor\propB)\]
+% \end{lemma}
+% \begin{lemma}[Universal quantification monotone]
+%     \label{lem:allmono}
+%     The universal quantification is monotone.
+%     \[
+%         \always{(\All \var. \pred(\var) \wand \predB(\var))} \wand (\All\var.\pred(\var)) \wand (\All\var.\predB(\var))
+%     \]
+% \end{lemma}
 
-\begin{lemma}[Existential quantification monotone]
-    \label{lem:eximono}
-    The existential quantification is monotone.
-    \[
-        \always{(\Exists \var. \pred(\var) \wand \predB(\var))} \wand (\Exists\var.\pred(\var)) \wand (\Exists\var.\predB(\var))
-    \]
-\end{lemma}
+% \begin{lemma}[Existential quantification monotone]
+%     \label{lem:eximono}
+%     The existential quantification is monotone.
+%     \[
+%         \always{(\Exists \var. \pred(\var) \wand \predB(\var))} \wand (\Exists\var.\pred(\var)) \wand (\Exists\var.\predB(\var))
+%     \]
+% \end{lemma}
 
-\begin{itemize}
-    \item The last two lemmas, about the two quantification, both used the arity one predicate and arity one argument version of monotone
-    \item They thus had equal arity, whereas up until now all monotone predicates used a predicate with arity one higher than the argument.
-\end{itemize}
-\begin{itemize}
-    \item A predicate is also monotone in any arguments in which it is constant
-    \item Thus, a predicate $\pred(\var) = \FALSE$ is monotone in $\var$.
-\end{itemize}
-\begin{lemma}[Constant monotone]
-    \label{lem:constmono}
-    A predicate $\pred\colon A \to \iProp$ which is constant in respects to its first argument, thus $\pred(\var) = \prop$, where $\var$ does not occur in $\prop$, is monotone in that argument.
-    \[ \always{(\propB \wand \propC)} \wand \prop \wand \prop \]
-\end{lemma}
-\begin{itemize}
-    \item The magic wand is not monotone in its first argument, however, we can still say something useful about it.
-    \item The magic wand is downwards monotone in its first argument.
-\end{itemize}
-\begin{definition}[Downward monotone]
-    We define a downward monotone predicate for two different arities, however it can be expanded to any arity monotone predicate and arity argument, as long as the arity of the predicate is at most one higher than that of the argument.
-    \begin{description}
-        \item[Arity one predicate, arity zero arguments:] Any $\pred\colon A \to \iProp$ is monotone when for any $\prop, \propB\colon \iProp$, it holds that
-            \[\proves \always(\propB \wand \prop) \wand \pred\prop \wand \pred\propB\]
-        \item[Arity two predicate, arity one arguments:] Any $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
-            \[\proves \always(\All \var. \predB\var \wand \pred\var) \wand \All \var. \hopred\pred\var \wand \hopred\predB\var\]
-    \end{description}
-\end{definition}
-\begin{itemize}
-    \item The definition of downward monotone is exactly the same as upwards monotone, just with its first condition flipped.
-    \item A monotone predicate is sometimes also called an upwards monotone predicate
-    \item Using the downwards monotone property we can give a useful lemma about the assumption of the magic wand.
-\end{itemize}
-\begin{lemma}[Magic wand downward monotone]
-    \label{lem:wandassmono}
-    The magic wand is downwards monotone in its assumption.
-    \[\proves\always{(\propB\wand\prop)}\wand(\prop\wand\propC)\wand(\prop\wand\propC)\]
-\end{lemma}
-\quest{I don't have an example using downwards monotone, but it is used in for example the twp proof, thus should I include it?}
-\begin{itemize}
-    \item Any composite predicate made from the connectives we have lemmas about are now easily proven monotone.
-\end{itemize}
-\begin{example}[$\isMLL_\hopred$\ is monotone]
-    The predicate $\isMLL_\hopred$ is monotone in its first argument.
-    \[
-        \always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})} \wand \All \langv{hd}\, \vect{v}. \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} \wand \isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}
-    \]
-\end{example}
-\begin{proof}
-    We assume $\always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})}$ holds and for arbitrary $\langv{hd}$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v}$ holds.
-    After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}\]
+% \begin{itemize}
+%     \item The last two lemmas, about the two quantification, both used the arity one predicate and arity one argument version of monotone
+%     \item They thus had equal arity, whereas up until now all monotone predicates used a predicate with arity one higher than the argument.
+% \end{itemize}
+% \begin{itemize}
+%     \item A predicate is also monotone in any arguments in which it is constant
+%     \item Thus, a predicate $\pred(\var) = \FALSE$ is monotone in $\var$.
+% \end{itemize}
+% \begin{lemma}[Constant monotone]
+%     \label{lem:constmono}
+%     A predicate $\pred\colon A \to \iProp$ which is constant in respects to its first argument, thus $\pred(\var) = \prop$, where $\var$ does not occur in $\prop$, is monotone in that argument.
+%     \[ \always{(\propB \wand \propC)} \wand \prop \wand \prop \]
+% \end{lemma}
+% \begin{itemize}
+%     \item The magic wand is not monotone in its first argument, however, we can still say something useful about it.
+%     \item The magic wand is downwards monotone in its first argument.
+% \end{itemize}
+% \begin{definition}[Downward monotone]
+%     We define a downward monotone predicate for two different arities, however it can be expanded to any arity monotone predicate and arity argument, as long as the arity of the predicate is at most one higher than that of the argument.
+%     \begin{description}
+%         \item[Arity one predicate, arity zero arguments:] Any $\pred\colon A \to \iProp$ is monotone when for any $\prop, \propB\colon \iProp$, it holds that
+%             \[\proves \always(\propB \wand \prop) \wand \pred\prop \wand \pred\propB\]
+%         \item[Arity two predicate, arity one arguments:] Any $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
+%             \[\proves \always(\All \var. \predB\var \wand \pred\var) \wand \All \var. \hopred\pred\var \wand \hopred\predB\var\]
+%     \end{description}
+% \end{definition}
+% \begin{itemize}
+%     \item The definition of downward monotone is exactly the same as upwards monotone, just with its first condition flipped.
+%     \item A monotone predicate is sometimes also called an upwards monotone predicate
+%     \item Using the downwards monotone property we can give a useful lemma about the assumption of the magic wand.
+% \end{itemize}
+% \begin{lemma}[Magic wand downward monotone]
+%     \label{lem:wandassmono}
+%     The magic wand is downwards monotone in its assumption.
+%     \[\proves\always{(\propB\wand\prop)}\wand(\prop\wand\propC)\wand(\prop\wand\propC)\]
+% \end{lemma}
+% \quest{I don't have an example using downwards monotone, but it is used in for example the twp proof, thus should I include it?}
+% \begin{itemize}
+%     \item Any composite predicate made from the connectives we have lemmas about are now easily proven monotone.
+% \end{itemize}
+% \begin{example}[$\isMLL_\hopred$\ is monotone]
+%     The predicate $\isMLL_\hopred$ is monotone in its first argument.
+%     \[
+%         \always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})} \wand \All \langv{hd}\, \vect{v}. \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} \wand \isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}
+%     \]
+% \end{example}
+% \begin{proof}
+%     We assume $\always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})}$ holds and for arbitrary $\langv{hd}$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v}$ holds.
+%     After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}\]
 
-\end{proof}
+% \end{proof}
 
 \section{Fixpoints of functors}
 \label{sec:fixpoint}
 
-\begin{itemize}
-    \item This gets rid of the possible infinite nature of the statement
-    \item but not strong enough
-    \item we want to find a $\pred$ such that
-\end{itemize}
-\begin{align*}
-    \All \langv{hd}\, \vect{v}. \textlog{isMLLPre}\, \pred\, \langv{hd}\, \vect{v} \wandIff \pred\, \langv{hd}\, \vect{v}
-\end{align*}
-\begin{itemize}
-    \item This is the fixpoint of $\textlog{isMLLPre}$
-    \item Use Knaster-Tarski Fixpoint Theorem to find this fixpoint \cite*{tarskiLatticetheoreticalFixpointTheorem1955}
-    \item Specialized to the lattice on predicates
-\end{itemize}
-\begin{theorem}[Knaster-Tarski Fixpoint Theorem]
-    \label{thm:tarski}
-    Let $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$ be a monotone functor, then
-    \[\lfp\, \hopred\, \var \eqdef \All \Phi. (\All \var. \hopred\, \pred\, \var \wand \pred\, \var) \wand \pred \, \var\]
-    defines the least fixpoint of $\hopred$
-\end{theorem}
-\quest{Where to introduce $\iProp$?}
-\begin{itemize}
-    \item Monotone is defined as
-\end{itemize}
+% \begin{itemize}
+%     \item This gets rid of the possible infinite nature of the statement
+%     \item but not strong enough
+%     \item we want to find a $\pred$ such that
+% \end{itemize}
+% \begin{align*}
+%     \All \langv{hd}\, \vect{v}. \textlog{isMLLPre}\, \pred\, \langv{hd}\, \vect{v} \wandIff \pred\, \langv{hd}\, \vect{v}
+% \end{align*}
+% \begin{itemize}
+%     \item This is the fixpoint of $\textlog{isMLLPre}$
+%     \item Use Knaster-Tarski Fixpoint Theorem to find this fixpoint \cite*{tarskiLatticetheoreticalFixpointTheorem1955}
+%     \item Specialized to the lattice on predicates
+% \end{itemize}
+% \begin{theorem}[Knaster-Tarski Fixpoint Theorem]
+%     \label{thm:tarski}
+%     Let $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$ be a monotone functor, then
+%     \[\lfp\, \hopred\, \var \eqdef \All \Phi. (\All \var. \hopred\, \pred\, \var \wand \pred\, \var) \wand \pred \, \var\]
+%     defines the least fixpoint of $\hopred$
+% \end{theorem}
+% \quest{Where to introduce $\iProp$?}
+% \begin{itemize}
+%     \item Monotone is defined as
+% \end{itemize}
 
-\begin{itemize}
-    \item In general $\hopred$ is monotone if all occurrences of its $\pred$ are positive
-    \item This is the case for $\textlog{isMLL}$
-    \item We can expand \cref*{thm:tarski} to predicates of type $\hopred\colon (\sigax \to B \to \iProp) \to (\sigax \to B \to \iProp)$
-    \item Thus the fixpoint exists and is
-\end{itemize}
-\begin{align*}
-    \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v} & = \All \Phi. (\All \langv{hd}'\, \vect{v}'. \textlog{isMLLPre}\, \pred\, \langv{hd}'\, \vect{v}' \wand \pred\, \langv{hd}'\, \vect{v}') \wand \Phi \, \langv{hd}\, \vect{v}
-\end{align*}
-\begin{itemize}
-    \item We can now redefine $\textlog{isMLL}$ as
-\end{itemize}
-\begin{align*}
-    \textlog{isMLL}\, \langv{hd}\, \vect{v} \eqdef \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v}
-\end{align*}
-\begin{itemize}
-    \item Using the least fixpoint we can now define some additional lemmas
-\end{itemize}
-\begin{lemma}[$\lfp\, \hopred$ is the least fixpoint on $\hopred$]
-    Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
-    \[\All\var.\hopred\,(\lfp\,\hopred)\,\var \wandIff \lfp\,\hopred\,\var\]
-\end{lemma}
+% \begin{itemize}
+%     \item In general $\hopred$ is monotone if all occurrences of its $\pred$ are positive
+%     \item This is the case for $\textlog{isMLL}$
+%     \item We can expand \cref*{thm:tarski} to predicates of type $\hopred\colon (\sigax \to B \to \iProp) \to (\sigax \to B \to \iProp)$
+%     \item Thus the fixpoint exists and is
+% \end{itemize}
+% \begin{align*}
+%     \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v} & = \All \Phi. (\All \langv{hd}'\, \vect{v}'. \textlog{isMLLPre}\, \pred\, \langv{hd}'\, \vect{v}' \wand \pred\, \langv{hd}'\, \vect{v}') \wand \Phi \, \langv{hd}\, \vect{v}
+% \end{align*}
+% \begin{itemize}
+%     \item We can now redefine $\textlog{isMLL}$ as
+% \end{itemize}
+% \begin{align*}
+%     \textlog{isMLL}\, \langv{hd}\, \vect{v} \eqdef \lfp\, \textlog{isMLLPre}\, \langv{hd}\, \vect{v}
+% \end{align*}
+% \begin{itemize}
+%     \item Using the least fixpoint we can now define some additional lemmas
+% \end{itemize}
+% \begin{lemma}[$\lfp\, \hopred$ is the least fixpoint on $\hopred$]
+%     Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+%     \[\All\var.\hopred\,(\lfp\,\hopred)\,\var \wandIff \lfp\,\hopred\,\var\]
+% \end{lemma}
 \section{Induction principle}
 
 
-\begin{lemma}[least fixpoint induction principle]
-    Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
-    \[\always(\All\var.\hopred\,\pred\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
-\end{lemma}
-\begin{lemma}[least fixpoint strong induction principle]
-    Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
-    \[\always(\All\var.\hopred\,(\Lam\varB. \pred\,\varB \land \lfp\,\hopred\,\varB)\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
-\end{lemma}
-\end{document}
+% \begin{lemma}[least fixpoint induction principle]
+%     Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+%     \[\always(\All\var.\hopred\,\pred\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
+% \end{lemma}
+% \begin{lemma}[least fixpoint strong induction principle]
+%     Given a monotone $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
+%     \[\always(\All\var.\hopred\,(\Lam\varB. \pred\,\varB \land \lfp\,\hopred\,\varB)\,\var \wand \pred\,\var) \wand \All\var. \lfp\,\hopred\,\var \wand \pred\,\var\]
+% \end{lemma}
+% \end{document}
