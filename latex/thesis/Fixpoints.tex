@@ -8,7 +8,9 @@
 \begin{document}
 \chapter{Fixpoints for representation predicates}
 \label{ch:fixpoints}
-
+\begin{itemize}
+    \item We will show how one can apply the Tarski Fixpoint theorem to create an inductive predicate and how we can create the induction principle from it.
+\end{itemize}
 \section{Finite predicates and functors}
 \begin{itemize}
     \item The logic described here is embedded in \coq.
@@ -21,43 +23,19 @@
 \begin{itemize}
     \item Since we cannot define recursive predicates, we instead need to find another way.
     \item The approach first introduced in \cite{?} will be to take the least fixpoint of a monotone functor
-    \item Take this simple recursive definition, that does not always terminate
+    \item We first repeat the recursive definition of \isMLL
 \end{itemize}
 \begin{align*}
-    \textlog{isList}\, \langv{hd} & \eqdef \langv{hd} = \None \lor \langv{hd} = \Some \loc * \loc\fmapsto(\val,\langv{tl}) * \textlog{isList}\, \langv{tl}
-\end{align*}
-\begin{itemize}
-    \item This predicate simply checks if a pointer points to a linked list.
-    \item It checks if either the pointer is a null pointer, or it points to a node containing a value and a pointer to the rest of the list.
-    \item We can transform this definition into a functor acting on possible $\textlog{isList}$ predicates, by replacing the recursive call with an argument \quest{In logic it is not really a call, what is it?}
-\end{itemize}
-\begin{align*}
-    \textlog{isList}_\hopred\, \pred\, \langv{hd} & \eqdef \langv{hd} = \None \lor \langv{hd} = \Some \loc * \loc\fmapsto(\val,\langv{tl}) * \pred\, \langv{tl}
-\end{align*}
-\begin{itemize}
-    \item Here, $\pred$ is a predicate of type $\Val \to \iProp$
-    \item And, $\textlog{isList}_\hopred$ is a predicate of type $(\Val \to \iProp) \to (\Val \to \iProp)$
-    \item Any fixpoint $\pred$ of $\textlog{isList}_\hopred$ would have the following property after filling in the definition of $\textlog{isList}_\hopred$
-\end{itemize}
-\begin{align*}
-    \All\langv{hd}. (\langv{hd} = \None \lor \langv{hd} = \Some \loc * \loc\fmapsto(\val,\langv{tl}) * \pred\, \langv{tl}) \wand \pred\, \langv{hd}
-\end{align*}
-\begin{itemize}
-    \item Thus, if $\hopred\, \langv{hd}$ holds we know at depth one, $\langv{hd}$ is a linked list.
-\end{itemize}
-\begin{align*}
-    \textlog{isMLL}\, \langv{hd}\, \vect{\val} & =
+    \isMLL\, \langv{hd}\, \vect{\val} & =
     \begin{array}{cl}
-             & \langv{hd} = \None * \vect{\val} = []                                                                                                                \\
-        \lor & \langv{hd} = \Some l * l \fmapsto (\val, \True, \langv{tl}) * \textlog{isMLL}\, \langv{tl}\, \vect{\val}                                             \\
-        \lor & \langv{hd} = \Some l * \vect{\val} = [\val'] + \vect{\val}'' * l \fmapsto (\val', \False, \langv{tl}) * \textlog{isMLL}\, \langv{tl}\, \vect{\val}''
+             & \langv{hd} = \None * \vect{\val} = []                                                                                                      \\
+        \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val}                                           \\
+        \lor & \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) * \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
     \end{array}
 \end{align*}
 \begin{itemize}
-    \item We first turn our desired predicate into a functor
-    \item It transforms a predicate $\pred$ into a predicate that applies $\pred$ to the tail of the MLL if it exists \todoo{write more correct}
+    \item We can transform this definition into a functor acting on possible \isMLL predicates, by replacing the recursive call with an argument \quest{In logic it is not really a call, what is it?}
 \end{itemize}
-
 \begin{align*}
     \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} & \eqdef
     \begin{array}{rl}
@@ -66,12 +44,20 @@
         \lor & \langv{hd} = \Some l * \vect{\val} = [\val'] + \vect{\val}'' * l \fmapsto (\val', \False, \langv{tl}) * \pred\, \langv{tl}\, \vect{\val}''
     \end{array}
 \end{align*}
+\begin{itemize}
+    \item Here, $\pred$ is a predicate of type $\Val \to \vect{\Val} \to \iProp$
+    \item And, $\textlog{isMLL}_\hopred$ is a predicate of type $(\Val \to \vect{\Val} \to \iProp) \to (\Val \to \vect{\Val} \to \iProp)$
+    \item We have thus created a \quest{function? predicate? which is it?} function which transforms a predicate into another
+    \item We call this type of function a functor \quest{Why is it a functor, I don't know how one would check any of the functor laws, what is composition and is $\Lam\var\,\var'.\TRUE$ the identity?}
+    \item This functor, given a predicate $\pred$, creates a new predicate that holds if its arguments are the head of a MLL and $\pred$ holds for the tail of the MLL.
+    \item We will be able to harness this transformation in \cref*{sec:fixpoint} to recreate \isMLL.
+\end{itemize}
 
 \section{Monotone predicates}
 \label{sec:monotone}
 
 \begin{itemize}
-    \item
+    \item In order for us to apply the Tarski least fixpoint theorem we need for the functor to be monotone.
 \end{itemize}
 \begin{definition}[Monotone predicate]
     We define a monotone predicate for two different arities, however it can be expanded to any arity monotone predicate and arity argument, as long as the arity of the predicate is at most one higher than that of the argument.
@@ -96,7 +82,7 @@
 \begin{itemize}
     \item We want to eventually prove certain predicates are monotone
     \item To accomplish this we first prove a few different connectives monotone
-    \item We show the full prove for the separating conjunction
+    \item We show the full proof for the separating conjunction
     \item The other connectives are proven in similar ways.
 \end{itemize}
 
@@ -189,10 +175,11 @@
 \begin{proof}
     We assume $\always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})}$ holds and for arbitrary $\langv{hd}$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v}$ holds.
     After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}\]
-    We apply \cref*{lem:disjmono} twice in order to get three predicates we need to prove are monotone
+
 \end{proof}
 
 \section{Fixpoints of functors}
+\label{sec:fixpoint}
 
 \begin{itemize}
     \item This gets rid of the possible infinite nature of the statement
@@ -209,7 +196,7 @@
 \end{itemize}
 \begin{theorem}[Knaster-Tarski Fixpoint Theorem]
     \label{thm:tarski}
-    Let $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$ be a monotone predicate, then
+    Let $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$ be a monotone functor, then
     \[\lfp\, \hopred\, \var \eqdef \All \Phi. (\All \var. \hopred\, \pred\, \var \wand \pred\, \var) \wand \pred \, \var\]
     defines the least fixpoint of $\hopred$
 \end{theorem}

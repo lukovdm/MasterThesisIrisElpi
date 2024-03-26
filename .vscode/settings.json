@@ -965,7 +965,9 @@
     "elpi": "dummy",
     "iris": "dummy",
     "ce": "dummy",
-    "cref*": "dummy"
+    "cref*": "dummy",
+    "quest": "ignore",
+    "todoo": "ignore"
   },
   "latex-workshop.latex.verbatimEnvs": [
     "verbatim",
