@@ -99,17 +99,7 @@ Lijstje van je contributies, ik heb x y en z gedaan en verwijzen naar hoofdstuk
 - Meetbaar zijn
 - Doelvol zijn
 
-\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. Propositions can be seen as predicates over resources, \eg heaps. Thus, there are a number of extra logical connectives such as \coqi{P ∗ Q}, which represents that \coqi{P} and \coqi{Q} split up the resources into two disjoints in which they respectively hold. Moreover, hypotheses in our logic can often be used only once when proving something, they represent resources that we consume when used. To be able to reason in this logic in \coq a tactics' language has been added to \coq called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}.
-
-\begin{coqcode}
-  EI.ind
-  Inductive is_MLL : val → list val → iProp :=
-    | empty_is_MLL : is_MLL NONEV []
-    | link_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ 
-      is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
-    | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ 
-      is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
-\end{coqcode}
+\iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. It is implemented in \coq in what is called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}.
 
 \subfile{IrisBackground}
 \subfile{Fixpoints}
@@ -118,6 +108,13 @@ Lijstje van je contributies, ik heb x y en z gedaan en verwijzen naar hoofdstuk
 
 % \subfile{Induction}
 \subfile{ElpiImplementation}
+
+\chapter{Conclusion}
+\section{Application}
+\section{Evaluation of Elpi}
+\section{Related work}
+\section{Future work}
+
 
 \printbibliography
 

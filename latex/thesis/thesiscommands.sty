@@ -3,6 +3,7 @@
 \usepackage{csquotes}
 \usepackage{xspace}
 \usepackage{float}
+\usepackage{ifdraft}
 
 \usepackage{empheq}
 \usepackage{stmaryrd}
@@ -60,7 +61,7 @@
 \newcommand{\coq}{Coq\xspace}
 
 % Todo notes
-\usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny]{todonotes}
+\usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny,obeyFinal]{todonotes}
 
 \newcommand{\quest}[1]{\todo[color=blue!20]{Question: #1}}
 \newcommand{\todoo}[1]{\todo[color=red!20]{TODO: #1}}
@@ -83,14 +84,14 @@
 \newcommand{\MLLdelete}{\operatorname{delete}}
 \newcommand{\MLLDeleteProg}{
     \begin{align*}
-        \MLLdelete\,\langv{hd}\,\langv{i} :=\  & \MatchML{\langv{hd}\,}with{\None}=>{()}|{\Some \loc}=>{
-        \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \loc in                                                                                                               \\
-                                               &                                                         & \phantom{\Ra}\ \If \langv{mark} = \False\ \&\&\ \langv{i} = 0 then \\
-                                               &                                                         & \phantom{\Ra}\ \quad \loc \gets (\lvar, \True, \langv{tl})         \\
-                                               &                                                         & \phantom{\Ra}\ \Else \If \langv{mark} = \False then                \\
-                                               &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ (\langv{i} - 1)       \\
-                                               &                                                         & \phantom{\Ra}\ \Else                                               \\
-                                               &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ \langv{i}
+        \MLLdelete\,\langv{hd}\,\langv{i} =\  & \MatchML{\langv{hd}\,}with{\None}=>{()}|{\Some \loc}=>{
+        \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \loc in                                                                                                              \\
+                                              &                                                         & \phantom{\Ra}\ \If \langv{mark} = \False\ \&\&\ \langv{i} = 0 then \\
+                                              &                                                         & \phantom{\Ra}\ \quad \loc \gets (\lvar, \True, \langv{tl})         \\
+                                              &                                                         & \phantom{\Ra}\ \Else \If \langv{mark} = \False then                \\
+                                              &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ (\langv{i} - 1)       \\
+                                              &                                                         & \phantom{\Ra}\ \Else                                               \\
+                                              &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ \langv{i}
         }end{}
     \end{align*}
 }
@@ -107,10 +108,19 @@
 \newcommand{\iindex}{i}
 \newcommand{\iindexB}{j}
 
-\newcommand{\lfp}{\ensuremath{\textlog{lfp}}}
+\newcommand{\lfp}{\ensuremath{\mu}}
 \newcommand{\hopred}{\ensuremath{\textlog{F}}}
+\newcommand{\hopredB}{\ensuremath{\textlog{G}}}
 
 \newcommand{\purered}{\longrightarrow_{\text{pure}}}
+
+\newcommand{\rel}{\ensuremath{R}}
+
+\newcommand{\respect}{\ensuremath{\spac\hookrightarrow}}
+\newcommand{\point}{\ensuremath{\bullet}}
+
+\newcommand{\func}{f}
+\newcommand{\funcB}{g}
 
 \newcommand{\CoqProp}{\textdom{Prop}}
 \newcommand{\pure}[1]{\ensuremath{\left\lceil #1 \right\rceil}}
@@ -185,3 +195,6 @@
     >/.tip = Latex,
     p/.tip = Circle
 }
+
+%%%%%%%%%%%% Draft / Final %%%%%%%%%%%%%%%%%%%%
+\newcommand{\outline}[1]{\ifoptionfinal{}{#1}}

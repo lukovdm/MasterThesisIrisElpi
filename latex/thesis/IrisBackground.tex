@@ -10,64 +10,64 @@
 \chapter{Background on separation logic}
 \label{ch:backgroundseplogic}
 
-In this chapter we give a background on separation logic by specifying and proving the correctness of a program on marked linked lists (MLLs), as seen in \cref*{ch:introduction}. First we will set up the example we will discuss in this chapter in \cref*{sec:irissetup}. Next, we will be looking at separation logic as we will use it in the rest of this thesis in \cref*{sec:seplogic}. Then, we show how to give specifications using Hoare triples and weakest preconditions in \cref*{sec:Hoare}. In \cref*{sec:nestedhoaretriple} we will show how Hoare triples and weakest preconditions relate to one another and in the progress explain persistent propositions. Next, we will show how we can create a predicate used to represent a data structure for our example in \cref*{sec:represpreds}. Lastly, we will finish the specification and proof of a program manipulating marked linked lists in \cref*{sec:proofmll}.
+In this chapter we give a background on separation logic by specifying and proving the correctness of a program on marked linked lists (MLLs), as seen in \cref*{ch:introduction}. First we set up the running example in \cref*{sec:irissetup}. Next, we introduce the relevant features of separation logic in \cref*{sec:seplogic}. Then, we show how to give specifications using Hoare triples and weakest preconditions in \cref*{sec:Hoare}. In \cref*{sec:nestedhoaretriple}, we show how Hoare triples and weakest preconditions relate to each other. In the process we explain persistent propositions. Next, we show how we can create a predicate used to represent a data structure for our example in \cref*{sec:represpreds}. Lastly, we finish the specification and proof of a program manipulating marked linked lists in \cref*{sec:proofmll}.
 
 \section{Setup}
 \label{sec:irissetup}
-We will be defining a program that deletes an element at an index in a MLL as our example for this chapter. This program is written in HeapLang, a higher order, untyped, ML-like language. HeapLang supports many concepts around both concurrency and higher-order heaps (storing closures on the heap), however, we won't need any of these features. It can thus be treated as a basic ML-like language. The syntax can be found in \cref*{fig:heaplangsyntax}. For more information about HeapLang one can reference the Iris technical reference \cite*{iristeamIrisReference2023}.
+Our running example is a program that deletes an element at an index in a MLL. This program is written in HeapLang, a higher order, untyped, ML-like language. HeapLang supports many concepts around both concurrency and higher-order heaps (storing closures on the heap), however, we won't need any of these features. It can thus be treated as a basic ML-like language. The syntax can be found in \cref*{fig:heaplangsyntax}. For more information about HeapLang one can reference the Iris technical reference \cite*{iristeamIrisReference2023}.
 
-We make use of a few pieces of syntactic sugar to simplify notation. We write let statements, $\Let \lvar = \expr in \expr'$, using rec expressions $(\Lam \lvar. \expr')(\expr)$. To sequence expressions we write $\expr; \expr'$ which is defined using a let where we ignore the result of the first expression. The keywords $\None$ and $\Some$ are just $\Inl$ and $\Inr$ respectively, both in values and in the match statement. We define the short circuit and $\expr_1 \&\& \expr_2$ using the following if statement, $\If \expr_1 then \expr_2 \Else \False$. Lastly we omit the
+We use several pieces of syntactic sugar to simplify notation. Lambda expressions, $\Lam \lvar. \expr$, are defined using rec expressions. We write let statements, $\Let \lvar = \expr in \expr'$, using lambda expressions $(\Lam \lvar. \expr')(\expr)$. Expression sequencing is written as $\expr; \expr'$, this is defined using a let where we ignore the result of the first expression. The keywords $\None$ and $\Some$ are just $\Inl$ and $\Inr$ respectively, both in values and in the match statement. We define the short circuit and, $\expr_1 \&\& \expr_2$, using the following if statement, $\If \expr_1 then \expr_2 \Else \False$. Lastly, we often omit the $\langkw{rec}$ keyword whenever we define a recursive function.
 
-\begin{figure}[ht]
+\begin{figure}[t]
   \begin{center}
     \begin{align*}
       \val,\valB \in \Val \bnfdef{} &
       z \mid
       \True \mid \False \mid
       \TT \mid
-      \loc \mid                     \hspace*{2cm} (z \in \integer, \loc \in \Loc)                     \\ &
+      \loc \mid                     \hspace*{2cm} (z \in \integer, \loc \in \Loc) \\ &
       (\val,\valB) \mid
       \Inl(\val) \mid
-      \Inr(\val) \mid                                                                                 \\ &
-      \Rec\lvarF\,(\lvar)= \expr                                                                      \\
+      \Inr(\val) \mid                                                             \\ &
+      \Rec\lvarF\,(\lvar)= \expr                                                  \\
       \expr \in \Expr \bnfdef{}     &
       \val \mid
       \lvar \mid
       \expr_1(\expr_2) \mid
       {}
       \HLOp_1 \expr \mid
-      \expr_1 \HLOp_2 \expr_2 \mid                                                                    \\ &
+      \expr_1 \HLOp_2 \expr_2 \mid                                                \\ &
       \Rec\lvarF\,(\lvar)= \expr \mid
       \If \expr then \expr_1 \Else \expr_2 \mid
-      {}                                                                                              \\ &
+      {}                                                                          \\ &
       (\expr_1,\expr_2) \mid
       \Fst(\expr) \mid
       \Snd(\expr) \mid
-      {}                                                                                              \\ &
+      {}                                                                          \\ &
       \Inl(\expr) \mid
-      \Inr(\expr) \mid                                                                                \\ &
+      \Inr(\expr) \mid                                                            \\ &
       \Match \expr with \Inl(\lvar) => \expr_1 | \Inr(\lvarB) => \expr_2 end \mid
-      {}                                                                                              \\ &
+      {}                                                                          \\ &
       \Alloc(\expr) \mid
       \deref \expr \mid
-      \expr_1 \gets \expr_2                                                                           \\
-      \HLOp_1 \bnfdef{}             & - \mid \ldots ~~\text{(list incomplete)}                        \\
-      \HLOp_2 \bnfdef{}             & + \mid - \mid \mathop{=} \mid \ldots ~~\text{(list incomplete)}
+      \expr_1 \gets \expr_2                                                       \\
+      \HLOp_1 \bnfdef{}             & - \mid \ldots                               \\
+      \HLOp_2 \bnfdef{}             & + \mid - \mid \mathop{=} \mid \ldots
     \end{align*}
-    \caption{Fragment of the syntax of HeapLang as used in the examples}
+    \caption{Relevant fragment of the syntax of HeapLang}
     \label{fig:heaplangsyntax}
   \end{center}
 \end{figure}
 
-The program we will be using as an example will delete an index out of the list by marking that node, thus logically deleting it.
+Our running example deletes an index out of a list by marking that node, logically deleting it.
 \MLLDeleteProg
-The program is a function called $\textlog{delete}$, the function has two arguments. The first argument $\loc$ is either $\None$, for the empty list, or $\Some \langv{hd}$ where $\langv{hd}$ is a pointer to a MLL. HeapLang has no null pointers, thus we use $\None$ as the null pointer. The second argument is the index in the MLL to delete. The first step this recursive function does in check whether the list we are deleting from is empty or not. We thus match $\loc$ on either $\None$, the MLL is empty, or on $\Some\,\langv{hd}$, where $\langv{hd}$ becomes the pointer to the MLL and the MLL contains some nodes. If the list is empty, we are done and return unit. If the list is not empty, we load the first node and save it in the three variables $\lvar$, $\langv{mark}$ and $\langv{tl}$. Now, $\lvar$ contains the first element of the list, $\langv{mark}$ tells us whether the element is marked, thus logically deleted, and $\langv{tl}$ contains the reference to the tail of the list. We now have three different options for our list.
+The example is a recursive function called $\textlog{delete}$, the function has two arguments. The first argument $\loc$ is either $\None$, for the empty list, or $\Some \langv{hd}$ where $\langv{hd}$ is a pointer to a MLL. HeapLang has no null pointers, thus we use $\None$ as the null pointer. The second argument is the index in the MLL to delete. The first step this recursive function taken is checking whether we are deleting from the empty list. To do this, we perform a match on $\langv{hd}$. Either $\langv{hd}$ is $\None$, the MLL is empty. Or, $\langv{hd}$ is $\Some\,\langv{hd}$, $\langv{hd}$ becomes the pointer to the MLL and the MLL contains some nodes. If the list is empty, the function is done, and it returns unit. If the list is not empty, we load the first node and save it in the three variables $\lvar$, $\langv{mark}$ and $\langv{tl}$. Now, $\lvar$ contains the first element of the list, $\langv{mark}$ tells us whether the element is marked, thus logically deleted, and $\langv{tl}$ contains the reference to the tail of the list. We now have three different branches we might take.
 \begin{itemize}
-  \item If our index is zero and the element is not marked, thus logically deleted, we want to delete it. We write to the $\langv{hd}$ pointer our node, but with the mark bit set to $\True$, thus logically deleting it.
+  \item If our index is zero and the element is not marked, thus logically deleted, we want to delete it. We write the node to the $\loc$ pointer, but with the mark bit set to $\True$, thus logically deleting it.
   \item If the mark bit is $\False$, but the index to delete, $\iindex$, is not zero. The current node has not been deleted, and thus we want to decrease $\iindex$ by one and recursively call our function $\operatorname{f}$ on the tail of the list.
-  \item Lastly if the mark bit is set to $\True$, we want to ignore this node and continue to the next one. We thus call our recursive function $\operatorname{f}$ without decreasing $\iindex$.
+  \item If the mark bit is set to $\True$, we want to ignore this node and continue to the next one. We thus call our recursive function $\operatorname{f}$ without decreasing $\iindex$.
 \end{itemize}
-$\MLLdelete\, \loc\, 1$ will thus apply the transformation below.
+The expression $\MLLdelete\, \loc\, 1$ thus applies the transformation below.
 \begin{center}
   \begin{tikzpicture}
     \begin{scope}
@@ -101,19 +101,20 @@ $\MLLdelete\, \loc\, 1$ will thus apply the transformation below.
 \end{center}
 A tuple is shown here as three boxes next to each other, the first box contains a value. The second box is a boolean, it is true, thus marked, if it is crossed out. The third box is a pointer, denoted by either a cross, a null pointer, or a circle with an arrow pointing to the next node.
 
-When thinking about it in terms of lists, $\MLLdelete\, \loc\, 1$ deletes from the list $[\val_0, \val_2, \val_3]$ the element $\val_2$, thus resulting in the list $[\val_0, \val_3]$.
-In the next section we will show how separation logic can be used to reason about sections of memory, such as shown above.
+When viewing this in terms of lists, the expression $\MLLdelete\, \loc\, 1$ deletes from the list $[\val_0, \val_2, \val_3]$ the element $\val_2$, thus resulting in the list $[\val_0, \val_3]$. This idea of representing an MLL using a mathematical structure is discussed more formally in \cref*{sec:represpreds}. However, to understand this we first need a basis of separation logic. This is discussed in the next section.
 
 \section{Separation logic}
 \label{sec:seplogic}
-Separation logic, \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, is a logic that allows us to represent the state of memory in a higher order predicate logic. We also make use of recent additions to separation logic as seen in ?\quest{Where do wp and persistent come frome?}. We take a subset of features from these separation logics and present them below, starting with the syntax.
+Separation logic, \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, is a logic that is used to represent the state of memory in a predicate logic. This is the basis for the logic we use. We also make use of several additions to separation logic taken from Iris \cite*{krebbersEssenceHigherOrderConcurrent2017}. This logic is presented below, starting with the syntax.
 \begin{align*}
   \prop \in \iProp \bnfdef{} & \FALSE \mid \TRUE \mid \prop \land \prop \mid \prop \lor \prop \mid \prop \Ra \prop \mid \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \\
                              & \pure{\pprop} \mid \loc \fmapsto \val \mid \prop * \prop \mid \prop \wand \prop \mid \always\prop \mid \wpre\expr{\pred}
 \end{align*}
-Separation logic contains all the usual higher order predicate logic connectives as seen on the first line, where $\type$ is any type we have seen. The second row contains separation logic specific connectives. The first connective embeds any \coq proposition, also called a pure proposition, into separation logic. \coq propositions include common connectives like equality, list manipulations and set manipulations. Whenever from context it is clear a statement is pure, we may omit the pure brackets. The next two connectives will be discussed in this section. The last three connectives will be discussed when they become relevant in \cref*{sec:Hoare} and \cref*{sec:nestedhoaretriple}. We will sometimes contract the $\wpre\expr{\pred}$ statement, and we will also discuss these contractions in \cref*{sec:Hoare}.
+Separation logic contains all the usual higher order predicate logic connectives as seen on the first line. The symbol $\type$, represents is any type we have seen, including $\Prop$ itself. The second row contains separation logic specific connectives. The first connective embeds any \coq proposition, also called a pure proposition, into separation logic. \coq propositions include common connectives like equality, list manipulations and set manipulations. Whenever it is clear from context that a statement is pure, we may omit the pure brackets. The next two connectives are discussed in this section. The last three connectives are discussed when they become relevant in \cref*{sec:Hoare} and \cref*{sec:nestedhoaretriple}.
 
-The first connective to discuss is the points to, $\loc\fmapsto\val$. The statement $\loc\fmapsto\val$ holds for any state of memory in which we own a location $\loc$ and at this location $\loc$ we have the value $\val$. We represent this state of memory using the below diagram.
+Separation logic reasons about ownership in heaps. Thus, a statement in separation logic describes a set of heaps for which the statement holds. Whenever a location exists in such a heap this is interpreted as owning that location and its value. Using this semantic model of separation logic we can reason about its connectives.
+
+The statement $\loc\fmapsto\val$, $\loc$ maps to $\val$, holds for any heap in which we own a location $\loc$, which has the value $\val$. We represent such a heap using the below diagram.
 \begin{center}
   \begin{tikzpicture}
     \node[memnode] (x) at (0,0) {$\val$};
@@ -123,7 +124,7 @@ The first connective to discuss is the points to, $\loc\fmapsto\val$. The statem
     % \node (logic) at (3,0.8) {$\loc\fmapsto\val$};
   \end{tikzpicture}
 \end{center}
-To describe two values in memory we could try to write $\loc\fmapsto\val \land \locB\fmapsto\valB$. However, this does not ensure that $\loc$ and $\locB$ are not the same location. The above diagram would still be a valid state of memory for the statement $\loc\fmapsto\val \land \locB\fmapsto\valB$. Thus, we introduce a second form of conjunction, the separating conjunction, $\prop * \propB$. For $\prop * \propB$ to hold we have to split the memory in two disjunct parts, $\prop$ should hold for one part and $\propB$ should hold for the other part.
+To describe two values in memory we could try to write $\loc\fmapsto\val \land \locB\fmapsto\valB$. However, this does not ensure that $\loc$ and $\locB$ are not the same location. The above diagram would still be a valid state of memory for the statement $\loc\fmapsto\val \land \locB\fmapsto\valB$. Thus, we introduce a second form of conjunction, the separating conjunction, $\prop * \propB$. For $\prop * \propB$ to hold for a heap we have to split it in two disjunct parts, $\prop$ should hold while owning only location in the first part and $\propB$ should hold with only the second part.
 \begin{center}
   \begin{tikzpicture}
     \node[memnode] (x) at (0,0) {$\val$};
@@ -140,7 +141,7 @@ To describe two values in memory we could try to write $\loc\fmapsto\val \land \
     \node (logic) at (4,0.8) {$\loc\fmapsto\val\ ∗\ \locB\fmapsto\valB$};
   \end{tikzpicture}
 \end{center}
-The separating conjunction is formally defined by a set of rules.
+The separating conjunction has the following set of rules.
 \begin{mathpar}
   \begin{array}{rMcMl}
     \TRUE * \prop             & \provesIff & \prop                     \\
@@ -153,48 +154,49 @@ The separating conjunction is formally defined by a set of rules.
     \prop_2 \proves \propB_2}
   {\prop_1 * \prop_2 \proves \propB_1 * \propB_2}
 \end{mathpar}
-These rules mirror the rules for the normal conjunction, however, there is one omission. We can not duplicate a proposition using the separating conjunction. Thus, the following rule is missing $\prop \proves \prop * \prop$. This makes sense intuitively since if $\loc\fmapsto\val$ holds, we could not split the memory in two, such that $\loc\fmapsto\val * \loc\fmapsto\val$ holds. We cannot have two disjunct sections of memory where $\loc$ resides in both.
+The separating conjunction is commutative, associative and respects $\TRUE$ as identity element. Instead of an introduction and elimination rule, like the normal conjunction has, there is the \ruleref{sep-mono} rule. The separating conjunction is not duplicable. Thus, the following rule is missing, $\prop \proves \prop * \prop$. This makes sense intuitively since if $\loc\fmapsto\val$ holds, we could not split the memory in two, such that $\loc\fmapsto\val * \loc\fmapsto\val$ holds. We cannot have two disjunct sections of a heap where $\loc$ resides in both.
 
 \section{Writing specifications of programs}
 \label{sec:Hoare}
-The goal in specifying programs is to connect the world in which the program lives to the mathematical world. In the mathematical world we are able to create proofs and by linking the world of the program to the mathematical world we can prove properties of the program.
+The goal when specifying programs is to connect the world in which the program lives to the mathematical world. In the mathematical world we are able to create proofs and by linking the world of the program to the mathematical world we can prove properties of the program.
 
-In this section we will discuss how to specify actions of a program, we will do so using two different methods, the Hoare triple and the weakest precondition. In the next section, \cref*{sec:nestedhoaretriple}, we will discuss how they are related. We will use $\MLLdelete$ as defined in \cref*{sec:irissetup} as an example throughout this section.
+In this section we discuss how to specify actions of a program, we use two different methods, the Hoare triple and the weakest precondition. In the next section, \cref*{sec:nestedhoaretriple}, we show how they are related.
 
 \paragraph{Hoare triples}
-Our goal when we specify a program will be total correctness. Thus, given some precondition holds, the program does not crash and terminates and afterwards the postcondition holds. To do this we first use total Hoare triples, abbreviated to Hoare triples in this thesis.
+Our goal when we specify a program is total correctness. Thus, given some precondition holds, the program does not crash, it terminates and afterwards the postcondition holds. To do this we first use total Hoare triples, abbreviated to Hoare triples in this thesis.
 \[\hoare{\prop}{\expr}{\pred}\]
-The Hoare triple consists of three parts, the precondition, $\prop$, the expression, $\expr$, and the postcondition, $\pred$. This Hoare triple states that, given that $\prop$ holds beforehand, $\expr$ does not crash and terminates with a return value $\val$ and $\pred(\val)$ holds afterwards. Thus $\pred$ is a predicate taking a value as its argument. Whenever we write out the predicate, we omit the $\lambda$ and write $\hoare{\prop}{\expr}{\Ret\val. \propB}$ instead. Whenever we assume $\val$ to be a certain value, $\val'$, instead of writing $\hoare{\prop}\expr{\Ret\val. \val = \val' * \propB}$ we just write $\hoare{\prop}\expr{\Ret\val'. \propB}$. Lastly, if we assume the return value is the unit, $\TT$, we leave it out entirely. Thus, $\hoare{\prop}\expr{\Ret\val. \val = \TT * \propB}$ is equivalent to $\hoare{\prop}\expr{\propB}$. This will often happen as quite a few programs return $\TT$. We can now look at an example of a specification for a very simple program.
+The Hoare triple consists of three parts, the precondition, $\prop$, the expression, $\expr$, and the postcondition, $\pred$. This Hoare triple states that, given that $\prop$ holds beforehand, $\expr$ does not crash, and it terminates with a return value $\val$, with $\pred(\val)$ holding afterwards. Thus, $\pred$ is a predicate taking a value as its argument. Whenever we write out the predicate, we omit the $\lambda$ and write $\hoare{\prop}{\expr}{\Ret\val. \propB}$ instead. Whenever we assume $\val$ to be a certain value, $\val'$, instead of writing $\hoare{\prop}\expr{\Ret\val. \val = \val' * \propB}$ we just write $\hoare{\prop}\expr{\Ret\val'. \propB}$. Lastly, if we assume the return value is the unit, $\TT$, we leave it out entirely. Thus, $\hoare{\prop}\expr{\Ret\val. \val = \TT * \propB}$ is equivalent to $\hoare{\prop}\expr{\propB}$. This often happens as quite a few programs return $\TT$. We can now look at an example of a specification for a very simple program.
 \begin{align*}
   \hoare{\loc\fmapsto\val}{\loc\gets\valB}{\loc\fmapsto\valB}
 \end{align*}
-This program assigns to location $\loc$ the value $\valB$. Our specification states that as a precondition, $\loc\fmapsto\val$, thus, there we own a location $\loc$, and it has value $\val$. Next, we can execute $\loc\gets\valB$, and it won't crash and will terminate. The program will return $\TT$ and afterwards $\loc\fmapsto\valB$ holds. Thus, we still own $\loc$ and it now points to the value $\valB$. The specification for $\MLLdelete$ follows the same principle.
+This program assigns to location $\loc$ the value $\valB$. The precondition is, $\loc\fmapsto\val$. Thus, we own a location $\loc$, and it has value $\val$. Next the specification states that we can execute $\loc\gets\valB$, and it won't crash and will terminate. The program will return $\TT$ and afterwards $\loc\fmapsto\valB$ holds. Thus, we still own $\loc$, and it now points to the value $\valB$. The specification for $\MLLdelete$ follows the same principle.
 \begin{align*}
   \hoare{\isMLL\, \langv{hd}\, \vect{\val}}{\MLLdelete\, \langv{hd}\; \iindex }{\isMLL\, \langv{hd}\; (\textlog{remove}\, \iindex\, \vect{\val})}
 \end{align*}
-We make use of a predicate we will explain in \cref*{sec:represpreds}. The predicate $\isMLL\, \langv{hd}\, \vect{\val}$ holds if the MLL starting at $\langv{hd}$ contains the mathematical list $\vect{\val}$. The function $\textlog{remove}$ gives the list $\vect{\val}$ with index $\iindex$ removed. If the index is larger than the size of the list the original list is returned. We thus specify the program by relating its actions to operations on a mathematical list.
+The predicate $\isMLL\, \langv{hd}\, \vect{\val}$ holds if the MLL starting at $\langv{hd}$ contains the mathematical list $\vect{\val}$. This predicate is explained further in \cref*{sec:represpreds}. The function $\textlog{remove}$ gives the list $\vect{\val}$ with index $\iindex$ removed. If the index is larger than the size of the list the original list is returned. We thus specify the program by relating its actions to operations on a mathematical list.
 
 \paragraph{Weakest precondition}
-Hoare triples allow us to easily specify a program, however, in a proof, they can be harder to work with in conjuction with predicates like $\isMLL$. Instead, we introduce the total weakest precondition, $\wpre{\expr}{\pred}$, also abbreviated to weakest precondition from now on. The weakest precondition can be seen as a hoare triple without its precondition. Thus, $\wpre{\expr}{\pred}$ states that $\expr$ does not crash and terminates with a return value $\val$. Afterwards, $\pred(\val)$ holds. We make use of the same contractions when writing the predicate of the weakest precondition as with the Hoare triple.
+Hoare triples allow us to easily specify a program. However, in a proof, they can be harder to work with in conjunction with predicates like $\isMLL$. Instead, we introduce the total weakest precondition, $\wpre{\expr}{\pred}$, abbreviated to weakest precondition from now on. The weakest precondition can be seen as a hoare triple without its precondition. Thus, $\wpre{\expr}{\pred}$ states that $\expr$ does not crash and that it terminates with a return value $\val$. Afterwards, the postcondition $\pred(\val)$ holds. We make use of the same contractions when writing the predicate of the weakest precondition as with the Hoare triple.
 
-We still need a concept of a precondition when working with the specification of a program, but we embed this in the logic using the magic wand.
+We still need a precondition when working with the specification of a program, thus we embed this in the logic using the magic wand.
 $$\prop \wand \wpre{\expr}{\pred}$$
-The magic wand acts like the normal implication while taking into account the distribution of sections of memory. The statement, $\propB \wand \propC$, describes the state of memory where if we add the memory described by $\propB$ we get $\propC$. This property is expressed by the below rule.
+The magic wand acts like the normal implication while taking into account the heap. The statement, $\propB \wand \propC$, describes the state of memory where if we add the memory described by $\propB$ we get $\propC$. This property is expressed by the below rule.
 \begin{mathpar}
   \inferhrefB{$\wand$I-E}{wand-IE}
   {\prop * \propB \proves \propC}
   {\prop \proves \propB \wand \propC}
 \end{mathpar}
-Note that this is both the elimination and introduction rule, as signified by the double lined rule.
+If we have as assumption $\prop$ and need to prove $\propB \wand \propC$, We can add $\propB$ to our assumptions in order to prove $\propC$. Thus, if we add ownership of the heap described by $\propB$ we can prove $\propC$.
+Note that this rule works both ways, as signified by the double lined rule. It is both the introduction and the elimination rule.
 
 We can now rewrite the specification of $\loc\gets\val$ using the weakest precondition.
 $$\loc\fmapsto\val \wand \wpre{\loc\gets\valB}{\loc\fmapsto\valB}$$
-To prove that this specification holds we use the rules for the weakest precondition in \cref*{fig:wp-rules}. We can use the \ruleref{wp-store} rule to prove that the specification holds. We have two categories of rules, rules for the language constructs, such as \ruleref{wp-store}, and rules for reasoning about the structure of the language.
+This specification holds from \ruleref{wp-store} in \cref*{fig:wp-rules}. We have two categories of such rules, rules for the language constructs, such as \ruleref{wp-store}, and rules for reasoning about the structure of the language.
 
 For reasoning about the language constructs we have three rules for the three different operations that deal with the memory and one rule for all pure operation.
 \begin{itemize}
-  \item The rule \ruleref{wp-alloc} defines that for $\wpre{\Alloc(\val)}{\pred}$ to hold, $\pred(\loc)$ should hold for a new $\loc$ for which we know that $\loc\fmapsto\val$.
-  \item The rule \ruleref{wp-load} defines that for $\wpre{\deref \loc}{\pred}$ to hold, we need $\loc$ to point to $\val$ and separately if we add $\loc\fmapsto\val$, $\pred(\val)$ holds. Note that we need to add $\loc\fmapsto\val$ with the wand to the predicate since the statement is not duplicable. Thus, if we know $\loc\fmapsto\val$, we have to use it to prove the first part of the \ruleref{wp-load} rule. But, at this point we lose that $\loc\fmapsto\val$. Thus, the \ruleref{wp-load} rule adds that we know $\loc\fmapsto\val$ using the magic wand to the postcondition.
+  \item The rule \ruleref{wp-alloc} defines the following. For $\wpre{\Alloc(\val)}{\pred}$ to hold, $\pred(\loc)$ should hold for a new $\loc$ with $\loc\fmapsto\val$.
+  \item The rule \ruleref{wp-load} defines that for $\wpre{\deref \loc}{\pred}$ to hold, we need $\loc$ to point to $\val$ and separately if we add $\loc\fmapsto\val$, $\pred(\val)$ holds. Note that we need to add $\loc\fmapsto\val$ with the wand to the predicate since the statement is not duplicable. Thus, if we know $\loc\fmapsto\val$, we have to use it to prove the first part of the \ruleref{wp-load} rule. But, at this point we lose that $\loc\fmapsto\val$. Then, the \ruleref{wp-load} rule adds that we know $\loc\fmapsto\val$ using the magic wand to the postcondition.
   \item The rule \ruleref{wp-store} works similar to \ruleref{wp-load}, but changes the value stored in $\loc$ for the postcondition.
   \item The rule \ruleref{wp-pure} defines that for any pure step we just change the expression in the weakest precondition
 \end{itemize}
@@ -203,10 +205,10 @@ For reasoning about the general structure of the language and the weakest precon
   \item The rule \ruleref{wp-value} defines that if the expression is just a value, we can evaluate the postcondition.
   \item The rule \ruleref{wp-mono} allows for changing the postcondition as long as this change holds for any value.
   \item The rule \ruleref{wp-frame} allows for adding any propositions we have as assumption into the postcondition of a weakest precondition we have as assumption.
-  \item The rule \ruleref{wp-bind} allows for extracting the expressions that is in the head position of a program. This is done by using contexts as defined at the bottom of \cref*{fig:wp-rules}. The verification of the rest of the program is delayed by moving it into the postcondition of the head expression.
+  \item The rule \ruleref{wp-bind} allows for extracting the expressions in the head position of a program. This is done by wrapping the head expression in a context as defined at the bottom of \cref*{fig:wp-rules}. The verification of the rest of the program is delayed by moving it into the postcondition of the head expression.
 \end{itemize}
 An example where some of these rules can be found in \cref*{sec:nestedhoaretriple} and \cref*{sec:proofmll}
-\begin{figure}[H]
+\begin{figure}[th!]
   Structural rules.
   \begin{mathpar}
     \inferH{wp-value}
@@ -298,7 +300,7 @@ An example where some of these rules can be found in \cref*{sec:nestedhoaretripl
 \section{Persistent propositions and nested hoare triples}
 \label{sec:nestedhoaretriple}
 \quest{I am using persistent modality and persistent proposition through each other in the section, is that bad?}
-In this section we will show Hoare triples are defined using the weakest precondition and in the process explain persistent propositions. We end with an example showing why hoare triples are persistent and a verification of this example.
+In this section we define Hoare triples using the weakest precondition and in the process explain persistent propositions. We end with an example showing why hoare triples are persistent and a verification of this example.
 \begin{mathpar}
   \inferH{Hoare-def}
   {}
@@ -346,22 +348,24 @@ From the above rules we can derive the following rule for introducing persistent
   {\always\prop \proves \propB}
   {\always{\prop} \proves \always{\propB}}
 \end{align*}
-We keep the fact that the assumption is persistent and thus still allow for duplicating the assumption while still removing the persistence modality around the conclusion.
+We keep that the assumption is persistent and are thus still allowed to duplicate the assumption.
 
-\paragraph*{Nested Hoare triples} From the definition of the Hoare triple, we know that Hoare triples are persistent. This is needed since we have a higher order heap, in other words, we can store closures in memory. When we store a closure in memory we can use it multiple times and thus might need to duplicate the specification of the closure multiple times. Take the following example with its specification.
+\paragraph*{Nested Hoare triples}
+In HeapLang we are allowed to store closures on the heap, thus creating a higher order heap. When we store a closure in memory we can use it multiple times and thus might need to duplicate the specification of the closure multiple times. This is the reason Hoare triples are persistent. Take the following example with its specification.
 \begin{align*}
    & \operatorname{refadd}\ :=\ \Lam n. \Lam \loc. \loc \gets \deref \loc + n                                                 \\
    & \hoare{\TRUE}{\operatorname{refadd}\, n}{\Ret f. {\forall \loc.\ \hoare{\loc \fmapsto m}{f\, \loc}{\loc\fmapsto m + n}}}
 \end{align*}
-This program takes a value $n$ and then returns a closure which we can call with a pointer to add $n$ to the value of that pointer. The specification of $\operatorname{refadd}$ has as it's postcondition another Hoare triple for the returned closure. We just need one more derived rule before we can apply this specification of $\operatorname{refadd}$ in a proof.
+This program takes a value $n$ and then returns a closure which we can call with a pointer to add $n$ to the value of that pointer. The specification of $\operatorname{refadd}$ has as postcondition another Hoare triple for the returned closure. We just need one more derived rule before we can apply this specification of $\operatorname{refadd}$ in a proof.
 \begin{mathpar}
   \inferH{wp-apply}
   {\prop \proves \hoare{\propC}{\expr}{\predB} \and \propB \proves \propC * \All \val. \predB(\val) \wand \wpre{\lctx[\val]}{\pred}}
   {\prop * \propB \proves \wpre{\lctx[\expr]}{\pred}}
 \end{mathpar}
-Given we need to prove a weakest precondition of an expression in a context, and we have a Hoare triple for that expression. We can apply the Hoare triple and use the postcondition to infer a value for the continued proof of the weakest precondition.
+Given that we need to prove a weakest precondition of an expression in a context, and we have a Hoare triple for that expression. We can apply the Hoare triple and use the postcondition to infer a value for the continued proof of the weakest precondition.
 \begin{lemma}
-  The below Hoare triple holds given that $$\hoare{\TRUE}{\operatorname{refadd}\, n}{\Ret f. {\forall \loc.\ \hoare{\loc \fmapsto m}{f\, \loc}{\loc\fmapsto m + n}}}$$
+  Given that the following Hoare triples holds $$\hoare{\TRUE}{\operatorname{refadd}\, n}{\Ret f. {\forall \loc.\ \hoare{\loc \fmapsto m}{f\, \loc}{\loc\fmapsto m + n}}}$$
+  This specification holds.
   \[
     \begin{aligned}
        & \rightbracket{\TRUE}                         \\
@@ -435,9 +439,7 @@ Given we need to prove a weakest precondition of an expression in a context, and
 \end{proof}
 \section{Representation predicates}
 \label{sec:represpreds}
-We have shown in the previous three sections how one can represent simple states of memory in a logic and reason about it together with the program. However, this does not easily scale to more complicated data types, especially recursive data types. One such data type is the MLL. We want to connect a MLL in memory to a mathematical list. In \cref*{sec:Hoare} we used the predicate $\isMLL\, \langv{hd}\, \vect{v}$, which tells us that the in the memory starting at $\langv{hd}$ we can find a MLL that represents the list $\vect{\val}$. In the next chapter we will show how such a predicate can be made, in this section we will show how such a predicate can be used.
-
-We start with an example of how $\isMLL$ is used.
+We have shown in the previous three sections how one can represent simple states of the heap in a logic and reason about it together with the program. However, this does not easily scale to recursive data types. One such data type is the MLL. We want to connect an MLL in memory to a mathematical list. In \cref*{sec:Hoare} we used the predicate $\isMLL\, \langv{hd}\, \vect{v}$. In the next chapter we show how such a predicate can be made, in this section we show how such a predicate can be used. We start with an example of how $\isMLL$ is used.
 \begin{center}
   \begin{tikzpicture}
     \begin{scope}
@@ -457,13 +459,14 @@ We start with an example of how $\isMLL$ is used.
 \end{center}
 We want to reason about the above state of memory. Using the predicate $\isMLL$ we state that it represents the list $[x_0, x_1, x_2]$. This is expressed as, $\isMLL\,(\Some\loc)\,[x_0,x_2,x_3]$.
 
-To illustrate how $\isMLL$ works we give the below inductive predicate. This will not be a valid definition for $\isMLL$ for the rest of this thesis as will be made clear in \cref*{ch:fixpoints}, but it will serve as an explanation for this chapter.
+To illustrate how $\isMLL$ works we give the below inductive predicate. This is not a valid definition for $\isMLL$ for the rest of this thesis as is made clear in \cref*{ch:fixpoints} However, it serves as an explanation in this chapter.
 \begin{align*}
   \isMLL\, \langv{hd}\, \vect{\val} & =
   \begin{array}{cl}
-         & \langv{hd} = \None * \vect{\val} = []                                                                                                      \\
-    \lor & \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val}                                           \\
-    \lor & \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) * \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
+           & \langv{hd} = \None * \vect{\val} = []                                                                                             \\
+      \lor & \Exists \loc, \val', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val} \\
+      \lor & \Exists \loc, \val', \vect{\val}'', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) *                   \\
+           & \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
   \end{array}
 \end{align*}
 The predicate \isMLL for a $\langv{hd}$ and $\vect{\val}$ holds if either of the below three options are true, as signified by the disjunction.
@@ -487,14 +490,14 @@ Since $\isMLL$ is an inductive predicate we can define an induction principle. I
 To use this rule we need two things. We need to have an assumption of the shape $\isMLL\, \langv{hd}\, \vect{\val}$, and we need to prove a predicate $\pred$ that takes these same $\langv{hd}$ and $\vect{\val}$ as variables. We then need to prove that $\pred$ holds for the three cases of the induction principle of $\isMLL$.
 \begin{description}
   \item[Case Empty MLL:] This is the base case, we have to prove $\pred$ with $\None$ and the empty list.
-  \item[Case Marked Head:] This is the first inductive case, we have to prove $\pred$ for a head containing a pointer $\loc$ and the list $\vect{\val}$. We get as assumption that $\loc$ points to a node that is marked as deleted and contains a possible null pointer $\langv{tl}$. We also get the following induction hypothesis: the tail, $\langv{tl}$, is a MLL represented by $\vect{\val}$, and $\pred$ holds for $\langv{tl}$ and $\vect{\val}$.
-  \item[Case Unmarked head:] This is the second inductive case, we have to prove $\pred$ for a head containing a pointer $\loc$ and a list with as first element $\val'$ and the rest of the list is name $\vect{\val}$. We get as assumption that $\loc$ points to a node that is marked as not deleted and the node contains a possible null pointer $\langv{tl}$. We also get the following induction hypothesis: the tail, $\langv{tl}$, is a MLL represented by $\vect{\val}$, and $\pred$ holds for $\langv{tl}$ and $\vect{\val}$.
+  \item[Case Marked Head:] This is the first inductive case, we have to prove $\pred$ for a head containing a pointer $\loc$ and the list $\vect{\val}$. We have the assumption that $\loc$ points to a node that is marked as deleted and contains a possible null pointer $\langv{tl}$. We also have the following induction hypothesis: the tail, $\langv{tl}$, is a MLL represented by $\vect{\val}$, and $\pred$ holds for $\langv{tl}$ and $\vect{\val}$.
+  \item[Case Unmarked head:] This is the second inductive case, we have to prove $\pred$ for a head containing a pointer $\loc$ and a list with as first element $\val'$ and the rest of the list is name $\vect{\val}$. We have the assumption that $\loc$ points to a node that is marked as not deleted and the node contains a possible null pointer $\langv{tl}$. We also have the following induction hypothesis: the tail, $\langv{tl}$, is a MLL represented by $\vect{\val}$, and $\pred$ holds for $\langv{tl}$ and $\vect{\val}$.
 \end{description}
-The induction hypothesis in the last two cases is different from statements we have seen so far in separation logic, it uses the normal conjunction. We use the normal conjunction since both $\isMLL\, \langv{tl}\, \vect{\val}$ and $\pred\, \langv{tl}\, \vect{\val}$ reason about the section of memory containing $\langv{tl}$. We thus cannot split the memory in two for these two statements. This also has a side effect on how we use the induction hypothesis. We can only use one side of the conjunction in any one branch of the proof. We will see this in practice in the next section, \cref*{sec:proofmll}.
+The induction hypothesis in the last two cases is different from statements we have seen so far in separation logic, it uses the normal conjunction. We use the normal conjunction since both $\isMLL\, \langv{tl}\, \vect{\val}$ and $\pred\, \langv{tl}\, \vect{\val}$ reason about the section of memory containing $\langv{tl}$. We thus cannot split the memory in two for these statements. This also has a side effect on how we use the induction hypothesis. We can only use one side of the conjunction in any one branch of the proof. We see this in practice in the next section, \cref*{sec:proofmll}.
 
 \section{Proof of delete in MLL}
 \label{sec:proofmll}
-In this section we will prove the specification of $\MLLdelete$. Recall the definition of $\MLLdelete$.
+In this section we prove the specification of $\MLLdelete$. Recall the definition of $\MLLdelete$.
 \MLLDeleteProg
 \\
 \begin{lemma}
@@ -505,23 +508,22 @@ In this section we will prove the specification of $\MLLdelete$. Recall the defi
 \end{lemma}
 \begin{proof}
   We first use the definition of a Hoare triple, \ruleref{Hoare-def}, to create the associated weakest precondition.
-  We thus need to prove that
   \[\always(\isMLL\, \langv{hd}\, \vect{\val} \wand \wpre{\MLLdelete\, \langv{hd}\; \iindex}{\isMLL\, \langv{hd}\; (\textlog{remove}\, \iindex\, \vect{v})})\]
   Since we have only persistent assumptions we can assume
-  $\isMLL\, \langv{hd}\, \vect{\val}$, and we now have to prove the following:
+  $\isMLL\, \langv{hd}\, \vect{\val}$, and we now have to prove:
   \[\wpre{\MLLdelete\, \langv{hd}\; \iindex}{\isMLL\, \langv{hd}\; (\textlog{remove}\, \iindex\, \vect{v})}\]
   We do strong induction on $\isMLL\, \langv{hd}\, \vect{\val}$ as defined by rule \ruleref{ismll-ind}. For $\pred$ we take:
   \[
     \pred\, \langv{hd}\, \vect{\val} \eqdef \All \iindex. \wpre{\MLLdelete\, \langv{hd}\; \iindex}{\isMLL\, \langv{hd}\; (\textlog{remove}\, \iindex\, \vect{v})}
   \]
-  And, as a result we get three cases we need to prove:
+  We need to prove three cases:
   \begin{description}
-    \item[Case Empty MLL:] We need to prove the following
+    \item[Empty MLL:] We need to prove the following
       \[\wpre{\MLLdelete\, \None\; \iindex}{\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])}\]
       We can now repeatedly use the \ruleref{wp-pure} rule and finish with the rule \ruleref{wp-value} to arrive at the following statement that we have to prove:
       \[\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])\]
       This follows from the definition of $\isMLL$
-    \item[Case Marked Head:] We know that $\loc \fmapsto (\val', \True, \langv{tl})$ with disjointly as IH the following:
+    \item[Marked Head:] We know that $\loc \fmapsto (\val', \True, \langv{tl})$ with disjointly as IH the following:
       \[\left(\All \iindex. \wpre{\MLLdelete\, \langv{tl}\; \iindex}{\isMLL\, \langv{tl}\; (\textlog{remove}\, \iindex\, \vect{\val})}\right) \land \isMLL\, \langv{tl}\, \vect{\val}\]
       And, we need to prove that:
       \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}\]
@@ -558,7 +560,7 @@ In this section we will prove the specification of $\MLLdelete$. Recall the defi
         \wpre{\MLLdelete\,\langv{tl}\ \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{\val})}
       \]
       Which is the left-hand side of our IH.
-    \item[Case Unmarked head:] We know that $\loc \fmapsto (\val', \False, \langv{tl})$ with disjointly as IH the following:
+    \item[Unmarked head:] We know that $\loc \fmapsto (\val', \False, \langv{tl})$ with disjointly as IH the following:
       \[\All \iindex. \wpre{\MLLdelete\, \langv{tl}\; \iindex}{\isMLL\, \langv{tl}\; (\textlog{remove}\, \iindex\, \vect{\val}'')} \land \isMLL\, \langv{tl}\, \vect{\val}''\]
       And, we need to prove that:
       \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, (\val' :: \vect{\val}''))}\]

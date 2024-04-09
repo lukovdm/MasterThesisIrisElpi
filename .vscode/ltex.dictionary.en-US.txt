@@ -34,3 +34,5 @@ Arity
 arity
 arities
 prover
+uncurry
+pointwise

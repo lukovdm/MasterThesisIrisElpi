@@ -2,41 +2,43 @@
 
 \begin{document}
 \chapter{Elpi implementation of Inductive}
-\section{Functor}
+    \section{Functor}
 
-\begin{itemize}
-    \item We can also make commands
-    \item What do we get as input for our commands
-    \item What do we need to turn it in to
-    \item Show example for $\textlog{isMLL}$
-\end{itemize}
+    \begin{itemize}
+        \item We can also make commands
+        \item What do we get as input for our commands
+        \item What do we need to turn it in to
+        \item Show example for $\textlog{isMLL}$
+    \end{itemize}
 
-\section{Monotone}
-\subsection{Proper}
-\begin{itemize}
-    \item Write tactic for solving IProper proofs
-    \item We write small tactics for different possible steps
-    \item Simple steps, for respectful, point-wise, persistent
-    \item Finishing steps for assumption and reflexive implication
-    \item Apply other proper instance
-    \item Find how many arguments to add to connective
-    \item Lemma to get IProper instance from IProperTop instance
-    \item Apply Lemma IProper
-    \item Compose till all goals proven
-\end{itemize}
+    \section{Monotone}
+    \subsection{Proper}
+    \begin{itemize}
+        \item Write tactic for solving IProper proofs
+        \item We write small tactics for different possible steps
+        \item Simple steps, for respectful, point-wise, persistent
+        \item Finishing steps for assumption and reflexive implication
+        \item Apply other proper instance
+        \item Find how many arguments to add to connective
+        \item Lemma to get IProper instance from IProperTop instance
+        \item Apply Lemma IProper
+        \item Compose till all goals proven
+    \end{itemize}
 
-\subsection{Induction for proper}
-\begin{itemize}
-    \item Create Proper Type for fix-point
-    \item Add point-wise for every constructor using fold-map
-    \item Add this to left and right of respectful with a persistent around left-hand side
-    \item Apply proper solver
-\end{itemize}
+    \subsection{Induction for proper}
+    \begin{itemize}
+        \item Create Proper Type for fix-point
+        \item Add point-wise for every constructor using fold-map
+        \item Add this to left and right of respectful with a persistent around left-hand side
+        \item Apply proper solver
+    \end{itemize}
 
-\section{Least fix-point}
-\begin{itemize}
-    \item The basic structure is this \dots
-    \item We recurse over the type of the fix-point to introduce lambda's and existential quantification
-    \item As the last step we add lambda's for any parameters we have
-\end{itemize}
+    \section{Least fix-point}
+    \begin{itemize}
+        \item The basic structure is this \dots
+        \item We recurse over the type of the fix-point to introduce lambda's and existential quantification
+        \item As the last step we add lambda's for any parameters we have
+    \end{itemize}
+
+
 \end{document}

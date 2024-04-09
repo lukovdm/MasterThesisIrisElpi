@@ -84,15 +84,15 @@ The intro pattern consists of multiple sub intro patterns. Each sub intro patter
 % Add simpl and done here and refrence ssreflect with citation
 Thus, we can break down \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqi{"%x"} and then perform the second case, introduce a pure \coq variable for the \coqi{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqi{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqi{y} to the \coq context. Lastly, \coqi{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the \iris context by splitting it into two assumptions \coqi{"Hx"} and \coqi{"Hy"}.
 
-There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
+  There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
 
 
-\section{Contexts}
-\begin{itemize}
-  \item Iris uses a named context instead of the entailment
-  \item \coqi{env A} is a list of pairs from identifiers to \coqi{A}.
-\end{itemize}
-\begin{coqcode}
+  \section{Contexts}
+  \begin{itemize}
+    \item Iris uses a named context instead of the entailment
+    \item \coqi{env A} is a list of pairs from identifiers to \coqi{A}.
+  \end{itemize}
+  \begin{coqcode}
   Inductive ident :=
     | IAnon : positive → ident
     | INamed :> string → ident.
@@ -103,38 +103,38 @@ There are more patterns available to introduce more complicated goals, these can
     env_counter : positive;
   }.
 \end{coqcode}
-\quest{Should I use $\Prop$ or \coqi{PROP} here?}
-\quest{I am simplifying the environments here, should I do that?}
-\begin{itemize}
-  \item Identifiers are either anonymous or named
-  \item Environments are maps from identifiers to values
-  \item The final context is two environments of propositions and a counter
-  \item The first environment is the persistent context
-  \item The second environment is the spatial context
-  \item The two environments can't have overlapping identifiers
-  \item The counter is used to always be able to generate a fresh anonymous identifier
-  \item Semantics of the contexts is
-\end{itemize}
-\begin{coqcode}
+  \quest{Should I use $\Prop$ or \coqi{PROP} here?}
+  \quest{I am simplifying the environments here, should I do that?}
+  \begin{itemize}
+    \item Identifiers are either anonymous or named
+    \item Environments are maps from identifiers to values
+    \item The final context is two environments of propositions and a counter
+    \item The first environment is the persistent context
+    \item The second environment is the spatial context
+    \item The two environments can't have overlapping identifiers
+    \item The counter is used to always be able to generate a fresh anonymous identifier
+    \item Semantics of the contexts is
+  \end{itemize}
+  \begin{coqcode}
   Definition of_envs {PROP : bi} 
       (Γp Γs : env PROP) : PROP :=
     (□ [∧] Γp ∧ [∗] Γs)%I.
 \end{coqcode}
-\quest{Should I differentiate between $\always$ and \coqi{<pers>}}
-\begin{itemize}
-  \item The persistent environment is combined with $\land$ and surrounded by a $\always$.
-  \item The spatial environment is combined with ∗
-  \item We can now write our entailment as
-\end{itemize}
-\begin{coqcode}
+  \quest{Should I differentiate between $\always$ and \coqi{<pers>}}
+  \begin{itemize}
+    \item The persistent environment is combined with $\land$ and surrounded by a $\always$.
+    \item The spatial environment is combined with ∗
+    \item We can now write our entailment as
+  \end{itemize}
+  \begin{coqcode}
   Definition envs_entails {PROP : bi} 
       (Δ : envs PROP) (Q : PROP) : Prop :=
     of_envs (env_intuitionistic Δ) (env_spatial Δ) ⊢ Q.
 \end{coqcode}
-\begin{itemize}
-  \item This is represented in the proof state as
-\end{itemize}
-\begin{coqcode}
+  \begin{itemize}
+    \item This is represented in the proof state as
+  \end{itemize}
+  \begin{coqcode}
   P, Q, R: iProp
   ============
   "HP" : P
@@ -143,11 +143,12 @@ There are more patterns available to introduce more complicated goals, these can
   ------------∗
   R
 \end{coqcode}
-\begin{itemize}
-  \item \coqi{P} is a persistent proposition
-  \item \coqi{Q} is a spatial proposition
-  \item We need to proof \coqi{R}
-\end{itemize}
+  \begin{itemize}
+    \item \coqi{P} is a persistent proposition
+    \item \coqi{Q} is a spatial proposition
+    \item We need to proof \coqi{R}
+  \end{itemize}
+
 
 \section{Tactics}
 \begin{itemize}
@@ -172,6 +173,7 @@ There are more patterns available to introduce more complicated goals, these can
   \item Tactics now just process the arguments and call necessary Lemma's
 \end{itemize}
 The tactics the IPM adds are build to replicate many of the behaviors of the \coq tactics while manipulating the \iris contexts. In the next section we will show how the \iris variant of the \coqi{intros} tactic works.
+
 
 \section{Elpi}
 
@@ -364,10 +366,10 @@ Alternative for this section
 \end{itemize}
 
 \subsection{Data structure}
-\begin{itemize}
-  \item structured to be easily read to apply the intro pattern.
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item structured to be easily read to apply the intro pattern.
+  \end{itemize}
+  \begin{elpicode}
   kind ident type.
   type iNamed string -> ident.
   type iAnon term -> ident.
@@ -377,41 +379,42 @@ Alternative for this section
   type iIdent ident -> intro_pat.
   type iList list (list intro_pat) -> intro_pat.
 \end{elpicode}
-\begin{itemize}
-  \item Tree structure?
-  \item iList is combination of existential, disjunction and conjunction pattern
-\end{itemize}
+  \begin{itemize}
+    \item Tree structure?
+    \item iList is combination of existential, disjunction and conjunction pattern
+  \end{itemize}
+
 
 \subsection{Reductive descent parsing}
-\begin{itemize}
-  \item We can translate a grammar directly into a parser
-  \item Below, partial grammar for the intro patterns
-\end{itemize}
+  \begin{itemize}
+    \item We can translate a grammar directly into a parser
+    \item Below, partial grammar for the intro patterns
+  \end{itemize}
 
-\begin{grammar}
-  <intropattern\_list> ::= $\epsilon$
-  \alt <intropattern> <intropattern\_list>
+  \begin{grammar}
+    <intropattern\_list> ::= $\epsilon$
+    \alt <intropattern> <intropattern\_list>
 
-  <intropattern> ::= <ident>
-  \alt `?' | `/=' | `//'
-  \alt `[' <intropattern\_list> `]'
-  \alt `(' <intropattern\_conj\_list> `)'
+    <intropattern> ::= <ident>
+    \alt `?' | `/=' | `//'
+    \alt `[' <intropattern\_list> `]'
+    \alt `(' <intropattern\_conj\_list> `)'
 
-  <intropattern\_list> ::= $\epsilon$
-  \alt <intropattern> `|' <intropattern\_list>
-  \alt <intropattern> <intropattern\_list>
+    <intropattern\_list> ::= $\epsilon$
+    \alt <intropattern> `|' <intropattern\_list>
+    \alt <intropattern> <intropattern\_list>
 
-  <intropattern\_conj\_list> ::= $\epsilon$
-  \alt <intropattern> `&' <intropattern\_conj\_list>
-\end{grammar}
+    <intropattern\_conj\_list> ::= $\epsilon$
+    \alt <intropattern> `&' <intropattern\_conj\_list>
+  \end{grammar}
 
-\begin{itemize}
-  \item Explain structure of parser
-  \item give example of anon, simpl and done
-  \item Using tokenizer name has become the same
-\end{itemize}
+  \begin{itemize}
+    \item Explain structure of parser
+    \item give example of anon, simpl and done
+    \item Using tokenizer name has become the same
+  \end{itemize}
 
-\begin{elpicode}
+  \begin{elpicode}
   pred parse_ip i:list token, o:list token, o:intro_pat.
   parse_ip [tAnon | TS] TS (iFresh) :- !.
   parse_ip [tSimpl | TS] TS (iSimpl) :- !.
@@ -419,12 +422,12 @@ Alternative for this section
   parse_ip [tName X | TS] TS (iIdent (iNamed X)) :- !.
 \end{elpicode}
 
-\begin{itemize}
-  \item Check after calling new parser that conditions for values hold
-  \item Post process conj parser result
-\end{itemize}
+  \begin{itemize}
+    \item Check after calling new parser that conditions for values hold
+    \item Post process conj parser result
+  \end{itemize}
 
-\begin{elpicode}
+  \begin{elpicode}
   parse_ip [tBracketL | TS] TS' (iList L) :- !,
   parse_ilist TS [tBracketR | TS'] L.
   parse_ip [tParenL | TS] TS' IP :- !,
@@ -432,11 +435,11 @@ Alternative for this section
   {std.length L'} >= 2,
   foldr {std.drop-last 2 L'} (iList [{std.take-last 2 L'}]) (x\ a\ r\ r = iList [[x, a]]) IP.
 \end{elpicode}
-\begin{itemize}
-  \item Recursive parser
-\end{itemize}
+  \begin{itemize}
+    \item Recursive parser
+  \end{itemize}
 
-\begin{elpicode}
+  \begin{elpicode}
   pred parse_ilist i:list token, o:list token, o:list (list intro_pat).
   parse_ilist [tBracketR | TS] [tBracketR | TS] [[]].
   parse_ilist TS R [[IP] | LL'] :-
@@ -454,15 +457,16 @@ Alternative for this section
     parse_conj_ilist RT R L'.
 \end{elpicode}
 
-\subsection{Danger of backtracking}
-\begin{itemize}
-  \item Show timing of current \elpii{parse_ilist} code on larger inputs
-  \item Change backtracking
-  \item Show new timings
-  \item Explain why it is better
-\end{itemize}
 
-\begin{elpicode}
+\subsection{Danger of backtracking}
+  \begin{itemize}
+    \item Show timing of current \elpii{parse_ilist} code on larger inputs
+    \item Change backtracking
+    \item Show new timings
+    \item Explain why it is better
+  \end{itemize}
+
+  \begin{elpicode}
   pred parse_ilist i:list token, o:list token, o:list (list intro_pat).
   parse_ilist [tBracketR | TS] [tBracketR | TS] [[]].
   parse_ilist TS R [IPS | LL'] :-
@@ -480,157 +484,164 @@ Alternative for this section
     ).
 \end{elpicode}
 
+
 \section{Applier}\label{ssec:applier}
-\begin{itemize}
-  \item Only used standard \elpi
-  \item Now use \ce
-  \item What \ce adds
-  \item Section overview
-\end{itemize}
+  \begin{itemize}
+    \item Only used standard \elpi
+    \item Now use \ce
+    \item What \ce adds
+    \item Section overview
+  \end{itemize}
+
 
 \subsection{Elpi coq HOAS}
-\begin{itemize}
-  \item First step, represent \coq terms in \elpi
-  \item Names and function application are just constructors
-\end{itemize}
-\coqi{1+1}
-\begin{elpicode}
+  \begin{itemize}
+    \item First step, represent \coq terms in \elpi
+    \item Names and function application are just constructors
+  \end{itemize}
+  \coqi{1+1}
+  \begin{elpicode}
   app [global (const «Nat.add»), 
       app [global (indc «S»), global (indc «O»)], 
       app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
-\begin{itemize}
-  \item Explain app, global, const, indc and «»
-\end{itemize}
+  \begin{itemize}
+    \item Explain app, global, const, indc and «»
+  \end{itemize}
 
-\begin{itemize}
-  \item \ce uses higher-order abstract syntax (HOAS)
-  \item functions in \coq are functions that produce terms in \ce
-\end{itemize}
-\coqi{fun (n: nat), n + 1}
-\begin{elpicode}
+  \begin{itemize}
+    \item \ce uses higher-order abstract syntax (HOAS)
+    \item functions in \coq are functions that produce terms in \ce
+  \end{itemize}
+  \coqi{fun (n: nat), n + 1}
+  \begin{elpicode}
   FUN = fun `n` (global (indt «nat»)) n \ 
           app [global (indt «sum»), 
               n, 
               app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
-\begin{itemize}
-  \item fun constructor taking name, type and function producing term
-  \item footnote about names all being convertible
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item fun constructor taking name, type and function producing term
+    \item footnote about names all being convertible
+  \end{itemize}
+  \begin{elpicode}
   type fun  name -> term -> (term -> term) -> term.
 \end{elpicode}
-\begin{itemize}
-  \item prod, let, fix work the same
-\end{itemize}
+  \begin{itemize}
+    \item prod, let, fix work the same
+  \end{itemize}
+
 
 \subsection{Coq context in Elpi}
-\begin{itemize}
-  \item Looking at terms in functions becomes hard as we need to give the function an input to get the term
-  \item introduce fresh constant using \elpii{pi x\ }
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Looking at terms in functions becomes hard as we need to give the function an input to get the term
+    \item introduce fresh constant using \elpii{pi x\ }
+  \end{itemize}
+  \begin{elpicode}
   FUN = fun _ _ F,
   pi x\ F x = app [_, _, P],
   P = app [global (indc «S»), global (indc «O»)]
 \end{elpicode}
-\begin{itemize}
-  \item Take function out of constructor
-  \item Fill in function with existential variable to inspect contents
-  \item Take out number we add
-  \item We lose type and name information about x
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Take function out of constructor
+    \item Fill in function with existential variable to inspect contents
+    \item Take out number we add
+    \item We lose type and name information about x
+  \end{itemize}
+  \begin{elpicode}
   pred decl i:term, o:name, o:term.
   decl x `n` (global (indt «nat»)).
 \end{elpicode}
-\begin{itemize}
-  \item decl rule describes types and names of variables
-  \item Lookup type using \elpii{decl x N T}
-  \item We have to add the rule when we define x
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item decl rule describes types and names of variables
+    \item Lookup type using \elpii{decl x N T}
+    \item We have to add the rule when we define x
+  \end{itemize}
+  \begin{elpicode}
   pi x\ decl x `n` (global (indt «nat»)) 
           => coq.typecheck (F x) Type ok.
 \end{elpicode}
-\begin{itemize}
-  \item We add a rule to the top of the rules for the execution of the code after the \elpii{=>}
-  \item During typechecking, \elpii{decl x N T} is executed resulting in ...
-  \item \elpii{Type} becomes (global (indt «nat»))
-  \item \elpii{=>} has many more uses later on
-\end{itemize}
+  \begin{itemize}
+    \item We add a rule to the top of the rules for the execution of the code after the \elpii{=>}
+    \item During typechecking, \elpii{decl x N T} is executed resulting in ...
+    \item \elpii{Type} becomes (global (indt «nat»))
+    \item \elpii{=>} has many more uses later on
+  \end{itemize}
+
 
 \subsection{Quotation and anti-quotation}
-\begin{itemize}
-  \item Writing terms is a lot of work
-  \item \ce allows us to write \coq code that is translated immediately using imports in current file
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Writing terms is a lot of work
+    \item \ce allows us to write \coq code that is translated immediately using imports in current file
+  \end{itemize}
+  \begin{elpicode}
   {{ λ (n: nat), n + 1 }} =
     fun `n` (global (indt «nat»)) c0 \ 
         app [global (indt «sum»), 
             c0, 
             app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
-\begin{itemize}
-  \item \ce also allows putting \elpi vars in \coq terms (anti quotation)
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item \ce also allows putting \elpi vars in \coq terms (anti quotation)
+  \end{itemize}
+  \begin{elpicode}
   {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} 
 \end{elpicode}
-\begin{itemize}
-  \item Extract values from term
-  \item Insert values in term, useful in proofs
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Extract values from term
+    \item Insert values in term, useful in proofs
+  \end{itemize}
+  \begin{elpicode}
   {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }}
 \end{elpicode}
-\begin{itemize}
-  \item Lemma useful in next section
-  \item Type is type of goal we want to proof
-  \item Term becomes lemma we can apply to goal
-\end{itemize}
+  \begin{itemize}
+    \item Lemma useful in next section
+    \item Type is type of goal we want to proof
+    \item Term becomes lemma we can apply to goal
+  \end{itemize}
+
+
 \subsection{Proofs in Elpi}
-\begin{itemize}
-  \item Proofs in \elpi built up proof term step by step
-  \item Pass around Type of goal and variable to assign proof term to
-  \item This is hole
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Proofs in \elpi built up proof term step by step
+    \item Pass around Type of goal and variable to assign proof term to
+    \item This is hole
+  \end{itemize}
+  \begin{elpicode}
   kind hole type.
   type hole term -> term -> hole. % hole Type Proof
 \end{elpicode}
-\begin{itemize}
-  \item Proofs take a hole and often produce new holes
-  \item Following proof step applies the ex-Falso proof step
-  \item Replace type with False
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Proofs take a hole and often produce new holes
+    \item Following proof step applies the ex-Falso proof step
+    \item Replace type with False
+  \end{itemize}
+  \begin{elpicode}
   pred do-iExFalso i:hole, o:hole.
   do-iExFalso (hole Type Proof) (hole FalseType FalseProof) :-
     coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
     Proof = {{ tac_ex_falso _ _ lp:FalseProof }},
     coq.typecheck FalseProof FalseType ok.
 \end{elpicode}
-\begin{coqcode}
+  \begin{coqcode}
   Lemma tac_ex_falso Δ Q : envs_entails Δ False → envs_entails Δ Q.
 \end{coqcode}
-\begin{itemize}
-  \item Elaborate Lemma against type to generate proof term will be Lemma filled in with necessary values
-  \item Next, extract New proof variable
-  \item Get type of new proof variable
-\end{itemize}
+  \begin{itemize}
+    \item Elaborate Lemma against type to generate proof term will be Lemma filled in with necessary values
+    \item Next, extract New proof variable
+    \item Get type of new proof variable
+  \end{itemize}
+
 
 \subsubsection{Iris context counter}
-\begin{itemize}
-  \item Iris can have anonymous hypotheses in context
-  \item Keep track of number to assign to anon hypothesis
-  \item Normally in Type
-  \item Since we derive the type from the proof term we have to apply increases in this number in the proof term
-  \item Instead we keep track of it separately
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Iris can have anonymous hypotheses in context
+    \item Keep track of number to assign to anon hypothesis
+    \item Normally in Type
+    \item Since we derive the type from the proof term we have to apply increases in this number in the proof term
+    \item Instead we keep track of it separately
+  \end{itemize}
+  \begin{elpicode}
   pred do-iStartProof i:hole, o:ihole.
   do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :- 
     coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof ok,
@@ -638,34 +649,35 @@ Alternative for this section
     coq.typecheck NProof NType ok,
     NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 \end{elpicode}
-\begin{itemize}
-  \item Start proof applies start proof lemma
-  \item Next extracts current anon hypotheses count
-  \item Stores it in hole using new type ihole
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Start proof applies start proof lemma
+    \item Next extracts current anon hypotheses count
+    \item Stores it in hole using new type ihole
+  \end{itemize}
+  \begin{elpicode}
   kind ihole type.
   type ihole term -> hole -> ihole. % ihole iris hyp counter, (hole type proof)
 \end{elpicode}
-\begin{itemize}
-  \item Counter is \coq positive since increasing it is fairly easy
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Counter is \coq positive since increasing it is fairly easy
+  \end{itemize}
+  \begin{elpicode}
   pred increase-ctx-count i:term, o:term.
   increase-ctx-count N NS :-
     coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
 \end{elpicode}
-\begin{itemize}
-  \item We can increase counter and put it in the resulting \elpii{ihole} when necessary.
-\end{itemize}
+  \begin{itemize}
+    \item We can increase counter and put it in the resulting \elpii{ihole} when necessary.
+  \end{itemize}
+
 
 \subsection{Continuation Passing Style}
-\begin{itemize}
-  \item When introducing a forall we need to add the variable to our context
-  \item Next steps in the proof thus need the new value in the context
-  \item We have to use continuation passing style
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item When introducing a forall we need to add the variable to our context
+    \item Next steps in the proof thus need the new value in the context
+    \item We have to use continuation passing style
+  \end{itemize}
+  \begin{elpicode}
   pred do-intro-anon i:hole, i:(hole -> prop).
   do-intro-anon (hole Type Proof) C :-
     coq.ltac.fresh-id "a" {{ False }} ID,
@@ -676,20 +688,20 @@ Alternative for this section
       coq.typecheck (IntroFProof x) (F x) ok,
       C (hole (F x) (IntroFProof x)).
 \end{elpicode}
-\begin{itemize}
-  \item This introduces a variable without needing a name
-  \item first two steps create the name of the variable
-  \item Next we use a function as the proof term
-  \item We extract the (term -> term) proof variable and the type
-  \item Add the new variable to the context with the name
-  \item Get the type of the new hole
-  \item Call the continuation function on the hole in the context
-\end{itemize}
+  \begin{itemize}
+    \item This introduces a variable without needing a name
+    \item first two steps create the name of the variable
+    \item Next we use a function as the proof term
+    \item We extract the (term -> term) proof variable and the type
+    \item Add the new variable to the context with the name
+    \item Get the type of the new hole
+    \item Call the continuation function on the hole in the context
+  \end{itemize}
 
-\begin{itemize}
-  \item In our eiIntros tactic we will be calling predicates like \elpii{do-intro-anon} and thus we get a similar type
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item In our eiIntros tactic we will be calling predicates like \elpii{do-intro-anon} and thus we get a similar type
+  \end{itemize}
+  \begin{elpicode}
   pred do-iIntros i:(list intro_pat), i:ihole, i:(ihole -> prop).
   do-iIntros [] IH C :- !, C IH.
   do-iIntros [iPure (none) | IPS] (ihole N (hole Type Proof)) C :-
@@ -702,19 +714,20 @@ Alternative for this section
       do-iIntros IPS (ihole N (hole NormType IntroProof)) C
     ).
 \end{elpicode}
-\begin{itemize}
-  \item The predicate \elpii{do-iIntros} gets a list of intro patterns, an ihole and the continuation function
-  \item Base case calls the cont. predicate
-  \item Pure intro case
-  \item First transform goal to put forall at the top of goal
-  \item Then use \elpii{do-intro-anon} to introduce that variable
-  \item Lastly normalize the type and call iIntros on the new hole
-  \item No anon \iris hypotheses introduced thus counter stays the same
-\end{itemize}
+  \begin{itemize}
+    \item The predicate \elpii{do-iIntros} gets a list of intro patterns, an ihole and the continuation function
+    \item Base case calls the cont. predicate
+    \item Pure intro case
+    \item First transform goal to put forall at the top of goal
+    \item Then use \elpii{do-intro-anon} to introduce that variable
+    \item Lastly normalize the type and call iIntros on the new hole
+    \item No anon \iris hypotheses introduced thus counter stays the same
+  \end{itemize}
+
 
 \subsection{Backtracking in proofs}
-\quest{We don't actually need to backtrack here, we can just look at the type and see which case we need}
-\begin{elpicode}
+  \quest{We don't actually need to backtrack here, we can just look at the type and see which case we need}
+  \begin{elpicode}
   pred do-iIntro-ident i:ident, i:ihole, o:ihole.
   do-iIntro-ident ID (ihole N (hole Type Proof)) 
                      (ihole N (hole IType IProof)) :-
@@ -746,12 +759,13 @@ Alternative for this section
     coq.error "eiIntro: " X " could not introduce".
 \end{elpicode}
 
+
 \subsection{Starting the tactic}
-\begin{itemize}
-  \item Solve is the entry point
-  \item Gets a goal with type proof and the arguments
-\end{itemize}
-\begin{elpicode}
+  \begin{itemize}
+    \item Solve is the entry point
+    \item Gets a goal with type proof and the arguments
+  \end{itemize}
+  \begin{elpicode}
   solve (goal _ _ Type Proof [str Args]) GS :-
     tokenize Args T, !,
     parse_ipl T IPS, !,
@@ -761,13 +775,14 @@ Alternative for this section
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
 \end{elpicode}
-\begin{itemize}
-  \item First we parse the arguments
-  \item Ten start proof and get the ihole
-  \item Then start do-iIntros where at the end we put the context counter in the proof
-  \item ...
-  \item ...
-\end{itemize}
+  \begin{itemize}
+    \item First we parse the arguments
+    \item Ten start proof and get the ihole
+    \item Then start do-iIntros where at the end we put the context counter in the proof
+    \item ...
+    \item ...
+  \end{itemize}
+
 
 \section{Writing commands}
 
