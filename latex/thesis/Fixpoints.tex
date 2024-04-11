@@ -97,25 +97,14 @@
         \item We want to transform the non-structurally recursive definition of \isMLL into a least fixpoint
     \end{itemize}
     \begin{align*}
-        \isMLL\, \langv{hd}\, \vect{\val} & =
-        \begin{array}{cl}
-                 & \langv{hd} = \None * \vect{\val} = []                                                                                             \\
-            \lor & \Exists \loc, \val', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \isMLL\, \langv{tl}\, \vect{\val} \\
-            \lor & \Exists \loc, \val', \vect{\val}'', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl}) *                   \\
-                 & \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \langv{tl}\, \vect{\val}''
-        \end{array}
+        \isMLL\, \hd\, \vect{\val} & = \isMLLRecDef
     \end{align*}
     \begin{itemize}
         \item We start by ?ing any recursive calls in the definition in order to create a functor?
     \end{itemize}
     \begin{align*}
-        \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} & \eqdef
-        \begin{array}{rl}
-                 & \langv{hd} = \None * \vect{v} = []                                                                                            \\
-            \lor & \Exists \loc, \val', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \True, \langv{tl}) * \pred\, \langv{tl}\, \vect{v} \\
-            \lor & \Exists \loc, \val', \vect{\val}'', \langv{tl}. \langv{hd} = \Some l * l \fmapsto (\val', \False, \langv{tl})*                \\
-                 & \vect{\val} = [\val'] + \vect{\val}'' * \pred\, \langv{tl}\, \vect{\val}''
-        \end{array}
+        \isMLL_\hopred\, \pred\, \hd\, \vect{v} & \eqdef
+        \isMLLFDef
     \end{align*}
     \begin{itemize}
         \item Predicate $\isMLL_\hopred$ now has type $(\Val \to \vect{\Val} \to \iProp) \to \Val \to \vect{\Val} \to \iProp$
@@ -123,29 +112,48 @@
         \item We solve this by currying $\isMLL_\hopred$ into $\isMLL'_\hopred\colon ((\Val, \vect{\Val}) \to \iProp) \to  (\Val, \vect{\Val}) \to \iProp$
     \end{itemize}
     \begin{align*}
-        \isMLL'_\hopred\, (\langv{hd}, \vect{\val}) \eqdef \isMLL_\hopred\, \langv{hd}\, \vect{\val}
+        \isMLL'_\hopred\, \pred\, (\hd, \vect{\val}) \eqdef \isMLL_\hopred\, \pred\, \hd\, \vect{\val}
     \end{align*}
     \begin{itemize}
         \item In order to apply the fixpoint theorem, we need $\isMLL'_\hopred$ to be monotone
     \end{itemize}
     \begin{proof}
         To prove $\isMLL'_\hopred$ is monotone, we need the following to hold.
-        \[ \always(\All\var. \pred\,\var \wand \predB\,\var) \wand \All\var. \isMLL'_\hopred\, \pred\, \var \wand \isMLL'_\hopred\, \predB\, \var \]
-        \ldots
+        \[ \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) \wand \All(\hd, \vect{\val}). \isMLL'_\hopred\, \pred\, (\hd, \vect{\val}) \wand \isMLL'_\hopred\, \predB\, (\hd, \vect{\val}) \]
+        We can apply the definition of $\isMLL'_\hopred$, introduce the wands, eliminate the disjunctions on the left and introduce the matching disjunctions on the right in order to get three statements to prove.
+        \begin{description}
+            \item[Empty MLL:] We need to prove
+                \[ \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \hd = \None * \vect{\val} = [] \proves \hd = \None * \vect{\val} = [] \]
+                This holds trivially
+            \item[Marked head:] We first eliminate any existentials on the left and introduce them using the gained variables on the right. We now need to prove
+                \begin{align*}
+                    \begin{array}{l}
+                        \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \\
+                        \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{v}
+                    \end{array} \proves
+                    \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{v}
+                \end{align*}
+                The propositions that don't include $\pred$ or $\predB$ cancel each other out, and we are left with the following.
+                \begin{align*}
+                    \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \pred\, \tl\, \vect{v} \proves \predB\, \tl\, \vect{v}
+                \end{align*}
+                This holds trivially using \ruleref{pers-elim}.
+            \item[Unmarked head:] We follow the same prove steps as in the marked head case. \qedhere
+        \end{description}
     \end{proof}
     \begin{itemize}
         \item Given that $\isMLL'_\hopred$ is monotone, we now know from \cref*{thm:leastfixpoint} that the least fixpoint exists of $\isMLL'_\hopred$
         \item We can now define $\isMLL'_\hopred$ as
     \end{itemize}
     \begin{align*}
-        \isMLL'\, (\langv{hd}, \vect{\val}) & \eqdef \lfp(\isMLL'_\hopred)\, (\langv{hd}, \vect{\val})                                                   \\
-                                            & = \All \pred. \always(\All \varB. \isMLL'_\hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var
+        \isMLL'\, (\hd, \vect{\val}) & \eqdef \lfp(\isMLL'_\hopred)\, (\hd, \vect{\val})                                                          \\
+                                     & = \All \pred. \always(\All \varB. \isMLL'_\hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var
     \end{align*}
     \begin{itemize}
         \item To finish the definition of \isMLL we uncurry the created fixpoint
     \end{itemize}
     \begin{align*}
-        \isMLL\, \langv{hd}\, \vect{\val} \eqdef \isMLL'\, (\langv{hd}, \vect{\val})
+        \isMLL\, \hd\, \vect{\val} \eqdef \isMLL'\, (\hd, \vect{\val})
     \end{align*}
 
 \end{example}
@@ -232,15 +240,16 @@
 \end{definition}
 
 \begin{definition}[Persistent relation]
-    The persistent relation $\always\rel\colon\sigax\to\sigax\to\Prop$ for a relation $\rel\colon\sigax\to\sigax\to\Prop$ is defined as
-    \[\always\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)\]
+    The persistent relation $\persrel\rel\colon\sigax\to\sigax\to\Prop$ for a relation $\rel\colon\sigax\to\sigax\to\Prop$ is defined as
+    \[\persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)\]
 \end{definition}
 
 \begin{itemize}
     \item We can rewrite \cref*{lem:sepmonomar} using the relations we described above
 \end{itemize}
 \begin{lemma}[Separating conjuction monotone]
-    The separating conjunction is a proper element of the relation $(\always\wand \respect \always\wand \respect \wand)$
+    The separating conjunction is a proper element of the relation
+    $$\persrel{\wandrel} \respect \persrel{\wandrel} \respect {\wandrel}$$
 \end{lemma}
 \begin{itemize}
     \item Writing out the above statement gives
@@ -254,25 +263,25 @@
 
 \begin{definition}[Pointwise relation]
     The pointwise relation $\point \rel$ is a special case of a respectful relation defined as
-    \[\point \rel \eqdef (= \respect \rel)\]
+    \[\point \rel \eqdef (=\ \respect \rel)\]
 \end{definition}
 
 \begin{lemma}[Existential quantification monotone]
-    The existential quantification is a proper element of the relation \[(\always\point\wand \respect \wand)\]
+    The existential quantification is a proper element of the relation \[\persrel(\point\wandrel) \respect {\wandrel}\]
 \end{lemma}
 
 \begin{example}[$\isMLL_\hopred$\ is monotone]
     The predicate $\isMLL_\hopred$ is monotone in its first argument. Thus, $\isMLL_\hopred$ is a proper element of
     \[
-        \always \point \point \wand \respect \point \point \wand
+        \persrel (\point \point \wandrel) \respect \point \point \wandrel
     \]
     \[
-        \always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})} \wand \All \langv{hd}\, \vect{v}. \isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v} \wand \isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}
+        \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \All \hd\, \vect{v}. \isMLL_\hopred\, \pred\, \hd\, \vect{v} \wand \isMLL_\hopred\, \predB\, \hd\, \vect{v}
     \]
 \end{example}
 \begin{proof}
-    We assume $\always{(\All \langv{hd}\, \vect{v}. \pred\, \langv{hd}\, \vect{v} \wand \predB\, \langv{hd}\, \vect{v})}$ holds and for arbitrary $\langv{hd}$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \langv{hd}\, \vect{v}$ holds.
-    After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \langv{hd}\, \vect{v}\]
+    We assume $\always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})}$ holds and for arbitrary $\hd$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \hd\, \vect{v}$ holds.
+    After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \hd\, \vect{v}\]
 \end{proof}
 
 \end{document}

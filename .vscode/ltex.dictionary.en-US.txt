@@ -36,3 +36,4 @@ arities
 prover
 uncurry
 pointwise
+Tarski

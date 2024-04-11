@@ -23,6 +23,9 @@
 \usepackage{thm-listof}
 \usepackage{xcolor}
 
+\usepackage{anysize}
+\usepackage{bm}
+
 \AtBeginDocument{%
     \LetLtxMacro\proof\amsproof
     \LetLtxMacro\endproof\amsendproof
@@ -79,6 +82,10 @@
 % right for mathbin-style spacing.
 \newcolumntype{M}{@{\mskip\thickmuskip}}
 
+\newcommand\fat[1]{\ThisStyle{\ooalign{%
+            \kern.46pt$\SavedStyle#1$\cr\kern.33pt$\SavedStyle#1$\cr%
+            \kern.2pt$\SavedStyle#1$\cr$\SavedStyle#1$}}}
+
 %%%%%%%%%%% Reusable pieces %%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand{\MLLdelete}{\operatorname{delete}}
@@ -96,6 +103,21 @@
     \end{align*}
 }
 \newcommand{\isMLL}{\textlog{isMLL}}
+\newcommand{\isMLLRecDef}{\isMLLDef{\isMLL}}
+\newcommand{\isMLLFDef}{\isMLLDef{\pred}}
+
+\newcommand{\isMLLDef}[1]{\ensuremath{
+        \begin{array}{cl}
+                 & \hd = \None * \vect{\val} = []                                                                      \\
+            \lor & (\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * #1\, \tl\, \vect{\val}) \\
+            \lor & \left( \Exists \loc, \val', \vect{\val}'', \tl.
+            \begin{array}[pos]{l}
+                \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac * \\
+                \vect{\val} = \val' :: \vect{\val}'' * #1\, \tl\, \vect{\val}''
+            \end{array}
+            \right)
+        \end{array}
+    }}
 
 %%%%%%%%%%% math things %%%%%%%%%%%%%%%%%%
 
@@ -108,6 +130,9 @@
 \newcommand{\iindex}{i}
 \newcommand{\iindexB}{j}
 
+\newcommand{\hd}{\langv{hd}}
+\newcommand{\tl}{\langv{tl}}
+
 \newcommand{\lfp}{\ensuremath{\mu}}
 \newcommand{\hopred}{\ensuremath{\textlog{F}}}
 \newcommand{\hopredB}{\ensuremath{\textlog{G}}}
@@ -116,14 +141,16 @@
 
 \newcommand{\rel}{\ensuremath{R}}
 
-\newcommand{\respect}{\ensuremath{\spac\hookrightarrow}}
-\newcommand{\point}{\ensuremath{\bullet}}
+\newcommand{\wandrel}{\ensuremath{{\bm{\wand}}}}
+\newcommand{\respect}{\ensuremath{\bm{\Longrightarrow}}}
+\newcommand{\point}{\ensuremath{\bm{\gtrdot}}}
+\newcommand{\persrel}{\ensuremath{\pmb{\always}}}
 
 \newcommand{\func}{f}
 \newcommand{\funcB}{g}
 
 \newcommand{\CoqProp}{\textdom{Prop}}
-\newcommand{\pure}[1]{\ensuremath{\left\lceil #1 \right\rceil}}
+\newcommand{\pure}[1]{\ensuremath{\left\ulcorner #1 \right\urcorner}}
 
 \newcommand*{\inferp}[3]{%
     \inferrule*[right=\ruleref{#1},vcenter]{#2}{#3}%
