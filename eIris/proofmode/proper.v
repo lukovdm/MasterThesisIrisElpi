@@ -55,24 +55,24 @@ Section Experiments.
     iSplitL "Hxy Hx".
       - by iApply "Hxy".
       - by iApply "Hxy'".
-  Defined.
+  Qed.
 
   Global Instance sep_IProperTop : IProperTop (@bi_wand PROP) (bi_sep) (fun F => bi_wand ==> bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance exists_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_exist PROP A).
     unfold IProper, iPointwise_relation, iRespectful.
     iIntros (x y) "Hxaya [%y' Hxy]".
     iExists y'.
     by iApply "Hxaya".
-  Defined.
+  Qed.
 
   Global Instance exists_IProperTop {A} : IProperTop (bi_wand) (@bi_exist PROP A) (fun F => .> bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance forall_IProper {A} : IProper (.> bi_wand ==> bi_wand) (@bi_forall PROP A).
     unfold IProper, iPointwise_relation, iRespectful.
@@ -80,12 +80,12 @@ Section Experiments.
     iApply "Hxaya".
     change p with (fun x => p x).
     done.
-  Defined.
+  Qed.
 
   Global Instance forall_IProperTop {A} : IProperTop (bi_wand) (@bi_forall PROP A) (fun F => .> bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance or_IProper : IProper (□> bi_wand ==> □> bi_wand ==> bi_wand) (@bi_or PROP).
   Proof.
@@ -95,12 +95,22 @@ Section Experiments.
       by iApply "Hxy".
     - iRight.
       by iApply "Hxy'".
-  Defined.
+  Qed.
+
+  (* Global Instance or_IProper' `{!BiAffine PROP} : IProper (bi_wand ==> bi_wand ==> bi_wand) (@bi_or PROP).
+  Proof.
+    unfold IProper, iRespectful.
+    iIntros (x y) "Hxy %x' %y' Hxy' [Hx | Hx']".
+    - iLeft.
+      by iApply "Hxy".
+    - iRight.
+      by iApply "Hxy'".
+  Qed. *)
 
   Global Instance or_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_or PROP) (fun F => □> bi_wand ==> □> bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance wand_IProper : IProper (iFlip bi_wand ==> bi_wand ==> bi_wand) (@bi_wand PROP).
     unfold IProper, iRespectful, iFlip.
@@ -108,23 +118,23 @@ Section Experiments.
     iApply "HRS". 
     iApply "HPR". 
     by iApply "HQP".
-  Defined.
+  Qed.
 
   Global Instance wand_IProperTop : @IProperTop PROP _ _ (@bi_wand PROP) (@bi_wand PROP) (fun F => iFlip bi_wand ==> bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance fupd_IProper `(BiFUpd PROP) (A B : coPset) : IProper (bi_wand ==> bi_wand) (@fupd PROP bi_fupd_fupd A B).
     unfold IProper, iRespectful.
     iIntros "%P %Q HPQ HABP".
     by iApply "HPQ".
-  Defined.
+  Qed.
 
   Global Instance fudp_IProperTop `(BiFUpd PROP) (A B : coPset) : @IProperTop PROP _ _ (@bi_wand PROP) (@fupd PROP bi_fupd_fupd A B) (fun F => bi_wand ==> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
   Global Instance big_opL_IProper {A} : IProper (□> .> .> bi_wand ==> .> bi_wand) (@big_opL PROP bi_sep _ A).
     unfold IProper, iRespectful, iPointwise_relation.
@@ -143,11 +153,11 @@ Section Experiments.
         iModIntro.
         iIntros (a a').
         iApply "HPQ".
-  Defined.
+  Qed.
 
   Global Instance big_opL_IProperTop {A} : @IProperTop PROP _ _ (@bi_wand PROP) (@big_opL PROP bi_sep _ A) (fun F => □> .> .> bi_wand ==> .> F)%i_signature.
     unfold IProperTop.
     tc_solve.
-  Defined.
+  Qed.
 
 End Experiments.

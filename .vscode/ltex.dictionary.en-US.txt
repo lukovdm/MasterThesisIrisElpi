@@ -37,3 +37,9 @@ prover
 uncurry
 pointwise
 Tarski
+uncurrying
+combinators
+combinator
+curryed
+Coq
+non-presistent

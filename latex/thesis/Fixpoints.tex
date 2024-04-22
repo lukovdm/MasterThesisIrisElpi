@@ -8,280 +8,318 @@
 \begin{document}
 \chapter{Fixpoints for representation predicates}
 \label{ch:fixpoints}
-\begin{itemize}
-    \item We will show how one can apply the Tarski Fixpoint theorem to create an inductive predicate and how we can create the induction principle from it.
-\end{itemize}
+In this chapter we show how non-structurally recursive representation predicates can be defined using least fixpoints. In \cref*{sec:fixproblem} we explain why it is hard to define non-structurally recursive predicates and generally explain the approach that is taken. Next, in \cref*{sec:fixIris} we show the way least fixpoints are defined in Iris. Lastly, in \cref*{sec:monoproofsearch} we explain the improvements we made to the approach of Iris in order for the process to be automated.
 
 \section{Problem statement}
-\begin{itemize}
-    \item The logic described here is embedded in \coq.
-    \item We are only allowed to do structural recursion
-    \item The recursive formulation of \isMLL is not structurally recursive
-    \item We need another way to define this predicate
-    \item Iris already has a way of defining fixpoints that would be applicable
-    \item Least fixpoints
-    \item Inspired by the Tarski Fixpoint theorem on lattices and ?
-    \item
-\end{itemize}
+\label{sec:fixproblem}
+The logic and definitions we are describing are embedded in the proof assistant Coq. This imposes a restriction on the logic. We are not allowed to have non-structurally recursive separation logic predicates.
+
+The candidate argument for structural recursion in \isMLL would be the list of values used to represent the MLL. However, this does not work given the second case of the structural recursion.
+\begin{align*}
+    \isMLL\,\hd\,\vect{\val} = \cdots \lor (\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val}) \lor \cdots
+\end{align*}
+Here the list of values is passed straight onto the recursive call to \isMLL. Thus, it is not structurally recursive.
+
+We need another approach to define non-structurally recursive predicates such as these. Iris has several approaches to fix this problem. The most widely applicable one takes an approach inspired by the Knaster-Tarski fixpoint theorem\cite*{tarskiLatticetheoreticalFixpointTheorem1955}. Given a monotone functor on predicates, there exists a least fixpoint of this functor. We can now choose a functor such that the fixpoint corresponds to the recursive predicate we wanted to design. This procedure is explained thoroughly in the next section, \cref*{sec:fixIris}.
 
 \section{Least fixpoint in Iris}
-\begin{definition}[Monotone predicate]
+\label{sec:fixIris}
+To define a least fixpoint in Iris the first step is to have a monotone functor.
+\begin{definition}{Monotone functor}{monofunc}
     Predicate $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
-    \[\proves \always(\All \var. \pred\var \wand \predB\var) \wand \All \var. \hopred\pred\var \wand \hopred\predB\var\]
+    \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \proves \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var\]
+    In other words, it is monotone in its first argument.
 \end{definition}
-\begin{itemize}
-    \item Note that there would have been a similar way we could have written the property of a monotone predicate.
-          \[
-              \always{(\All \var. \pred\var \wand \predB\var)} * \hopred\pred\var \proves \hopred\predB\var
-          \]
-    \item This would be more inline with the way they are written in \cref*{ch:backgroundseplogic}
-    \item However, these rules are a lot more strict in what the context is in which they are used, thus making them a lot harder to use.
-    \item Also, it is the way they are written and used in \iris
-    \item We thus write these like in the definition from now on
-\end{itemize}
-
-\begin{itemize}
-    \item Using this definition of monotone we can define the least fixpoint theorem.
-\end{itemize}
-
-\begin{theorem}[Least fixpoint]
-    \label{thm:leastfixpoint}
-    Given a monotone predicate $\hopred\colon (A \to \iProp) \to  A \to \iProp$, there exists a least fixpoint $\lfp\hopred\colon  A \to \iProp$ such that
+This definition of monotone follows the definition of monotone in other fields with one exception. The assumption has an additional restriction, it has to be persistent. The persistence is necessary since $\hopred$ could use its monotone argument multiple times.
+\begin{example}{}{treemono}
+    Take the following functor.
+    \begin{align*}
+        \hopred\, \pred\, \val \eqdef{} & (\val = \None) \lor{}                                                                                                                                  \\
+                                        & (\Exists \loc_1,\loc_2,\val_1,\val_2. \val = \Some (\loc_1, \loc_2) * \loc_1 \fmapsto \val_1 * \loc_2 \fmapsto \val_2 * \pred\,\val_1 * \pred\,\val_2)
+    \end{align*}
+    This is the functor for binary trees. The value $\val$ is either empty, and we have an empty tree. Or $\val$ contains two locations, for the two branches of the tree. Each location points to a value and $\pred$ is holds for both of these values. The fixpoint, as is discussed in \cref*{thm:leastfixpoint}, of this functor holds for a value containing a binary tree. However, before we can take the fixpoint we have to prove it is monotone.
+    \[\always(\All \valB. \pred\,\valB \wand \predB\,\valB) \proves \All \val. \hopred\, \pred\, \val \wand \hopred\, \predB\, \val\]
+    \begin{proof}
+        We start by introducing $\val$ and the wand.
+        \begin{align*}
+            \always(\All \valB. \pred\,\valB \wand \predB\,\valB) * \hopred\, \pred\, \val \proves \hopred\, \predB\, \val
+        \end{align*}
+        We now unfold the definition of $\hopred$ and eliminate and introduce the disjunction, resulting in two statements to prove.
+        \[\always(\All \valB. \pred\,\valB \wand \predB\,\valB) * \val = \None \proves \val = \None\]
+        \begin{align*}
+             & \always(\All \valB. \pred\,\valB \wand \predB\,\valB) * \left(\Exists \loc_1,\loc_2,\val_1,\val_2.
+            \begin{array}{l}
+                \val = \Some (\loc_1, \loc_2) * \loc_1 \fmapsto \val_1 *{} \\
+                \loc_2 \fmapsto \val_2 * \pred\,\val_1 * \pred\,\val_2
+            \end{array}\right)
+            \proves                                                                                               \\
+             & \left(\Exists \loc_1,\loc_2,\val_1,\val_2.
+            \begin{array}{l}
+                \val = \Some (\loc_1, \loc_2) * \loc_1 \fmapsto \val_1 *{} \\
+                \loc_2 \fmapsto \val_2 * \predB\,\val_1 * \predB\,\val_2
+            \end{array}\right)
+        \end{align*}
+        The first statement holds directly. For the second statement we eliminate the existentials in the assumption and use the created variables to introduce the existentials in the conclusion.
+        \begin{align*}
+             & \always(\All \valB. \pred\,\valB \wand \predB\,\valB) *
+            \begin{array}{l}
+                \val = \Some (\loc_1, \loc_2) *{}                   \\
+                \loc_1 \fmapsto \val_1 * \loc_2 \fmapsto \val_2 *{} \\
+                \pred\,\val_1 * \pred\,\val_2
+            \end{array}
+            \proves
+            \begin{array}{l}
+                \val = \Some (\loc_1, \loc_2) *{}                   \\
+                \loc_1 \fmapsto \val_1 * \loc_2 \fmapsto \val_2 *{} \\
+                \predB\,\val_1 * \predB\,\val_2
+            \end{array}
+        \end{align*}
+        Any sub propositions that occur both on the left and right-hand side are canceled out using \ruleref{sep-mono}.
+        \begin{align*}
+             & \always(\All \valB. \pred\,\valB \wand \predB\,\valB) * \pred\,\val_1 * \pred\,\val_2
+            \proves \predB\,\val_1 * \predB\,\val_2
+        \end{align*}
+        We want to split the conclusion and premise in two, such that we get the following statements, with $i\in\{1,2\}$.
+        \begin{align*}
+             & \always(\All \valB. \pred\,\valB \wand \predB\,\valB) * \pred\,\val_i
+            \proves \predB\,\val_i
+        \end{align*}
+        To achieve this split, we duplicate the persistent premise and then split using \ruleref{sep-mono} again. Both these statements hold trivially.
+    \end{proof}
+    \noindent In the previous proof it was essential that the premise of monotonicity is persistent. This occurs any time we have a data structure with more than one branch.
+\end{example}
+Now that we have a definition of a functor, we can prove that a least fixpoint of a monotone functor always exists.
+\begin{theorem}{Least fixpoint}{leastfixpoint}
+    Given a monotone functor $\hopred\colon (A \to \iProp) \to  A \to \iProp$, there exists a least fixpoint $\lfp\hopred\colon  A \to \iProp$ such that
     \begin{enumerate}
-        \item \[ \lfp\hopred\, \var \provesIff \hopred\, (\lfp\hopred)\, \var \]
-        \item \[ \proves \always (\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \All \var. \lfp\hopred\, \var \wand \pred\, \var \]
+        \item The bidirectional unfolding property holds
+              \[ \lfp\hopred\, \var \provesIff \hopred\, (\lfp\hopred)\, \var \]
+        \item The iteration property holds
+              \[ \always \All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB \proves \All \var. \lfp\hopred\, \var \wand \pred\, \var \]
     \end{enumerate}
 \end{theorem}
+\quest{Maybe move this proof to the appendix, it is not very interesting?}
 \begin{proof}
-    Given a monotone predicate $\hopred\colon (A \to \iProp) \to  A \to \iProp$ we define $\lfp\hopred$ as
+    Given a monotone functor $\hopred\colon (A \to \iProp) \to  A \to \iProp$ we define $\lfp\hopred$ as
     \[ \lfp\hopred\, \var \eqdef \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var \]
     We now prove the two properties of the least fixpoint
     \begin{enumerate}
         \item We start with proving this right to left, then using the result, prove left to right.
               \begin{description}
                   \item[R-L] We first unfold the definition of $\lfp\hopred\, \var$.
-                      \[ \hopred\, \lfp\hopred\, \var \proves \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var \]
+                      \[ \hopred\, (\lfp\hopred)\, \var \proves \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var \]
                       Next we introduce $\pred$ and the wand.
-                      \[ \hopred\, \lfp\hopred\, \var * \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \pred \, \var \]
+                      \[ \hopred\, (\lfp\hopred)\, \var * \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \pred \, \var \]
                       We now apply $\always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB)$ to $\pred\, \var$.
-                      \[ \hopred\, \lfp\hopred\, \var * \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \hopred\, \pred\, \var \]
-                      We can now use the monotonicity of $\hopred$ with the assumption $\hopred\, \lfp\hopred\, \var$
+                      \[ \hopred\, (\lfp\hopred)\, \var * \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \hopred\, \pred\, \var \]
+                      We revert $\hopred\, (\lfp\hopred)\, \var$ and apply the monotonicity of $\hopred$.
                       \[ \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \lfp\hopred\, \var \wand \pred\, \var \]
-                      After unfolding the definition of $\lfp\, \var$ and introducing the wand we get
+                      After introducing the wand and applying the definition of $\lfp\hopred$ we get
                       \[ (\All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var) * \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \pred\, \var \]
                       This statement holds by application of the first assumption.
-                  \item[L-R] We again first unfold the definition of $\lfp\hopred\, \var$.
-                      \[ \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var \proves \hopred\, \lfp\hopred\, \var \]
-                      We apply the assumption with $\pred = \hopred\, \lfp\hopred$ resulting in the following statement after introductions
-                      \[ \hopred\, (\hopred\, \lfp\hopred)\, \var \proves \hopred\, \lfp\hopred\, \var \]
+                  \item[L-R] We again first apply the definition of $\lfp\hopred$.
+                      \[ \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var \proves \hopred\, (\lfp\hopred)\, \var \]
+                      We apply the assumption with $\pred = \hopred\, (\lfp\hopred)$ resulting in the following statement after introductions
+                      \[ \hopred\, (\hopred\, (\lfp\hopred))\, \var \proves \hopred\, (\lfp\hopred)\, \var \]
                       This holds because of monotonicity of $\hopred$ and the above proved property.
               \end{description}
-        \item This follows directly from unfolding the definition of $\lfp\hopred$.
+        \item This follows directly from unfolding the definition of $\lfp\hopred$. \qedhere
     \end{enumerate}
 \end{proof}
-
-\begin{itemize}
-    \item The second property of the least fixpoint is the normal induction property.
-    \item However, it is often useful to make it stronger
-\end{itemize}
-\begin{lemma}[least fixpoint strong induction principle]
+\noindent The first property of \cref*{thm:leastfixpoint}, unfolding, defines that the least fixpoint is a fixpoint. The second property of \cref*{thm:leastfixpoint}, iteration, ensures that this fixpoint is the least of the possible fixpoints. The iteration property is a weaker version of the induction principle. The induction hypothesis during iteration is weaker. It only ensures that $\pred$ holds under $\hopred$. Full induction requires that we also know that the fixpoint holds under $\hopred$ in the induction hypothesis.
+\begin{lemma}{}{fixind}
     Given a monotone predicate $\hopred\colon (\sigax \to \iProp) \to (\sigax \to \iProp)$, it holds that
     \[\always(\All\var.\hopred\,(\Lam\varB. \pred\,\varB \land \lfp\hopred\,\varB)\,\var \wand \pred\,\var) \wand \All\var. \lfp\hopred\,\var \wand \pred\,\var\]
 \end{lemma}
-\begin{itemize}
-    \item We now show how this can be applied to create the \isMLL predicate
-\end{itemize}
-\begin{example}[Iris least fixpoint of \isMLL]
-    \label{ex:irisisMLL}
-    \begin{itemize}
-        \item We want to transform the non-structurally recursive definition of \isMLL into a least fixpoint
-    \end{itemize}
+This lemma follows from monotonicity and the least fixpoint properties.
+
+We can now use the above steps to define \isMLL
+\begin{example}{Iris least fixpoint of \isMLL}{irisisMLL}
+    We want to create a least fixpoint such that it has the following inductive property.
     \begin{align*}
         \isMLL\, \hd\, \vect{\val} & = \isMLLRecDef
     \end{align*}
-    \begin{itemize}
-        \item We start by ?ing any recursive calls in the definition in order to create a functor?
-    \end{itemize}
+    The first step is creating the functor. We do this by adding an argument to \isMLL transforming it into a functor. We then substitute any recursive calls to \isMLL with this argument.
     \begin{align*}
         \isMLL_\hopred\, \pred\, \hd\, \vect{v} & \eqdef
         \isMLLFDef
     \end{align*}
-    \begin{itemize}
-        \item Predicate $\isMLL_\hopred$ now has type $(\Val \to \vect{\Val} \to \iProp) \to \Val \to \vect{\Val} \to \iProp$
-        \item However, the least fixpoint only works for functors of type $(\sigax \to \iProp) \to \sigax \to \iProp$
-        \item We solve this by currying $\isMLL_\hopred$ into $\isMLL'_\hopred\colon ((\Val, \vect{\Val}) \to \iProp) \to  (\Val, \vect{\Val}) \to \iProp$
-    \end{itemize}
+    This has created a functor, $\isMLL_\hopred$. The functor applies the predicate, $\pred$, on the tail of any possible MLL, while ensuring the head is part of an MLL. Next, we want to prove that $\isMLL_\hopred$ is monotone. However, $\isMLL_\hopred$ has the following type.
+    \[\isMLL_\hopred\colon (\Val \to \List\ \Val \to \iProp) \to \Val \to \List\ \Val \to \iProp\]
+    But, \cref*{def:monofunc} only works for functors of type
+    \[\hopred\colon (\sigax \to \iProp) \to \sigax \to \iProp\]
+    This is solved by uncurrying $\isMLL_\hopred$
     \begin{align*}
         \isMLL'_\hopred\, \pred\, (\hd, \vect{\val}) \eqdef \isMLL_\hopred\, \pred\, \hd\, \vect{\val}
     \end{align*}
-    \begin{itemize}
-        \item In order to apply the fixpoint theorem, we need $\isMLL'_\hopred$ to be monotone
-    \end{itemize}
-    \begin{proof}
-        To prove $\isMLL'_\hopred$ is monotone, we need the following to hold.
-        \[ \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) \wand \All(\hd, \vect{\val}). \isMLL'_\hopred\, \pred\, (\hd, \vect{\val}) \wand \isMLL'_\hopred\, \predB\, (\hd, \vect{\val}) \]
-        We can apply the definition of $\isMLL'_\hopred$, introduce the wands, eliminate the disjunctions on the left and introduce the matching disjunctions on the right in order to get three statements to prove.
-        \begin{description}
-            \item[Empty MLL:] We need to prove
-                \[ \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \hd = \None * \vect{\val} = [] \proves \hd = \None * \vect{\val} = [] \]
-                This holds trivially
-            \item[Marked head:] We first eliminate any existentials on the left and introduce them using the gained variables on the right. We now need to prove
-                \begin{align*}
-                    \begin{array}{l}
-                        \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \\
-                        \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{v}
-                    \end{array} \proves
-                    \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{v}
-                \end{align*}
-                The propositions that don't include $\pred$ or $\predB$ cancel each other out, and we are left with the following.
-                \begin{align*}
-                    \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val})) * \pred\, \tl\, \vect{v} \proves \predB\, \tl\, \vect{v}
-                \end{align*}
-                This holds trivially using \ruleref{pers-elim}.
-            \item[Unmarked head:] We follow the same prove steps as in the marked head case. \qedhere
-        \end{description}
-    \end{proof}
-    \begin{itemize}
-        \item Given that $\isMLL'_\hopred$ is monotone, we now know from \cref*{thm:leastfixpoint} that the least fixpoint exists of $\isMLL'_\hopred$
-        \item We can now define $\isMLL'_\hopred$ as
-    \end{itemize}
+    The functor $\isMLL'_\hopred$ now has the type
+    \[\isMLL'_\hopred\colon (\Val \carprod \List\ \Val \to \iProp) \to  \Val \carprod \List\ \Val \to \iProp\]
+    And we can prove it monotone.
     \begin{align*}
-        \isMLL'\, (\hd, \vect{\val}) & \eqdef \lfp(\isMLL'_\hopred)\, (\hd, \vect{\val})                                                          \\
-                                     & = \All \pred. \always(\All \varB. \isMLL'_\hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var
+                  & \always(\All(\hd, \vect{\val}). \pred\,(\hd, \vect{\val}) \wand \predB\,(\hd, \vect{\val}))                              \\
+        \proves{} & \All(\hd, \vect{\val}). \isMLL'_\hopred\, \pred\, (\hd, \vect{\val}) \wand \isMLL'_\hopred\, \predB\, (\hd, \vect{\val})
     \end{align*}
-    \begin{itemize}
-        \item To finish the definition of \isMLL we uncurry the created fixpoint
-    \end{itemize}
+    \begin{proof}
+        We use a similar proof as in \cref*{ex:treemono}. It involves more steps as we have more branches, but the same ideas apply.
+    \end{proof}
+    Given that $\isMLL'_\hopred$ is monotone, we now know from \cref*{thm:leastfixpoint} that the least fixpoint exists of $\isMLL'_\hopred$.
+    \begin{align*}
+        \isMLL'\, (\hd, \vect{\val}) & \eqdef \lfp(\isMLL'_\hopred)\, (\hd, \vect{\val})
+    \end{align*}
+    To finish the definition of \isMLL we uncurry the created fixpoint
     \begin{align*}
         \isMLL\, \hd\, \vect{\val} \eqdef \isMLL'\, (\hd, \vect{\val})
     \end{align*}
+    This definition of \isMLL\ has the inductive property as described in \cref*{sec:represpreds}. That property is the left to right unfolding property. After expanding any currying \cref*{lem:fixind} we get the below induction principle for \isMLL.
+    \begin{align*}
+         & \begin{array}{rl}
+                     & \always(\All\hd,\vect{\val}.\isMLL_\hopred\,(\Lam\hd',\vect{\val}'. \pred\,\hd'\,\vect{\val}' \land \isMLL\,\hd'\,\vect{\val}')\,\hd\,\vect{\val} \wand \pred\,\hd\,\vect{\val}) \\
+               \wand & \All\hd,\vect{\val}. \isMLL\,\hd\,\vect{\val} \wand \pred\,\hd\,\vect{\val}
+           \end{array}
+    \end{align*}
+    The induction principle from \cref*{sec:represpreds} is also derivable from \cref*{lem:fixind}. The three cases of the induction principle follow from the disjunctions in $\isMLL_\hopred$.
 
 \end{example}
-\quest{Also highlight the strong induction already or not?}
 
-\section{Changing arities}
-\begin{itemize}
-    \item We modify the definitions as described in Iris to allow for multiple arity functors.
-\end{itemize}
-\begin{itemize}
-    \item The first step in automating creation of fixpoints is to deal with predicates with more than one argument
-    \item In \cref*{ex:irisisMLL} we solved this by currying the predicate before taking the fixpoint
-    \item When automating the process we solved this somewhat differently
-    \item We change the definitions of and theorems used to match the arity of the predicate we want to take the fixpoint of
-\end{itemize}
-\begin{definition}[Monotone predicate]
-    For any $n\in\nat$, predicate $\hopred\colon (A_1 \to \dots \to A_n \to \iProp) \to A_1 \to \dots \to A_n \to \iProp$ is monotone when for any $\pred, \predB\colon A_1 \to \dots \to A_n \to \iProp$, it holds that
-    \begin{align*}
-        \proves &
-        \begin{array}{rl}
-             & \always(\All \var_1,\dots,\var_n. \pred\,\var_1\,\dots\,\var_n \wand \predB\,\var_1\,\dots\,\var_n) \wand   \\
-             & \All\var_1,\dots,\var_n. \hopred\,\pred\,\var_1\,\dots\,\var_n \wand \hopred\,\predB\,\var_1\,\dots\,\var_n
-        \end{array}
-    \end{align*}
-\end{definition}
-\begin{itemize}
-    \item This definition also applies for $n=0$
-    \item For example, we can prove the separating conjunction monotone in both its arguments
-\end{itemize}
-\begin{lemma}[Seperation conjuction is monotone]
-    \label{lem:sepmonomar}
-    The separation conjunction is monotone in its left and right argument.
-\end{lemma}
-\begin{proof}
-    We only prove monotonicity in its left argument, the proof for the right side is identical.
-    We thus need to prove $\pred_\propC\prop = \prop * \propC$ is monotone.
-    expanding the definition of monotone for arity one we get the following statement.
-    \[\proves \always(\prop \wand \propB) \wand \prop * \propC \wand \propB * \propC\]
-    We introduce the wands and persistence modalities giving us the assumptions, $\prop\wand\propB$, $\prop$ and $\propC$.
-    We then use \ruleref{sep-mono} using the first two assumptions for proving $\prop$ and using the last assumption for proving $\propC$.
-    That $\prop \wand \propB * \prop \proves \propB$ holds follows from \ruleref{wand-IE}, and $\propC \proves \propC$ holds directly.
-\end{proof}
-\begin{itemize}
-    \item In the same way we also modify the least fixpoint theorem
-\end{itemize}
+\section{Syntactic monotone proof search}
+\label{sec:monoproofsearch}%
+As we discussed in \cref*{ch:introduction}, the goal of this thesis is to show how to automate the definition of representation predicates from inductive definitions. The major hurdle in this process can be seen in \cref*{ex:irisisMLL}, proving a functor monotone. In this section we show how a monotonicity proof can be found by using syntactic proof search.
 
-\begin{theorem}[Least fixpoint]
-    \label{thm:leastfixpointmar}
-    Given an $n\in\nat$ and a monotone predicate $\hopred\colon (A_1 \to \dots \to A_n \to \iProp) \to  A_1 \to \dots \to A_n \to \iProp$, there exists a least fixpoint $\lfp\hopred\colon A_1 \to \dots \to A_n \to \iProp$ such that
-    \begin{enumerate}
-        \item \[ \lfp\hopred\, \var_1\,\dots\,\var_n \provesIff \hopred\, (\lfp\hopred)\, \var_1\,\dots\,\var_n \]
-        \item \[
-                  \proves \begin{array}{l}
-                      \always (\All \varB_1,\dots,\varB_n. \hopred\, \pred\, \varB_1\,\dots\,\varB_n \wand \pred\, \varB_1\,\dots\,\varB_n) \wand \\
-                      \All \varB_1,\dots,\varB_n. \lfp\hopred\, \var_1\,\dots\,\var_n \wand \pred\, \var_1\,\dots\,\var_n
-                  \end{array}
-              \]
-    \end{enumerate}
-\end{theorem}
-\begin{itemize}
-    \item The proof follows the same steps as the proof for \cref*{thm:leastfixpoint}
-\end{itemize}
+We take the following strategy. We prove the monotonicity of all the connectives once. We now prove the monotonicity of the functor by making use of the monotonicity of the connectives with which it is built.
 
-\section{Monotone proof search}
-\begin{itemize}
-    \item We create a system for syntactically finding proofs of monotonicity
-    \item Based on generalized rewriting system in coq by \Citeauthor*{sozeauNewLookGeneralized2009} \cite*{sozeauNewLookGeneralized2009}.
-    \item \todoo{This is not sufficient but stuck on it} Define monotonicity of connectives in separation logic using proper elements of relations
-\end{itemize}
+\paragraph*{Monotone connectives}
+We don't want to uncurry every connective when using that it is monotone, thus we take a different approach on what is monotone. For every connective we give a signature telling us how it is monotone. We show a few of these signatures below.
 
-\begin{definition}[Proper element of a relation]
-    Given a relation $\rel\colon\sigax\to\sigax\to\Prop$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$
-\end{definition}
-\begin{itemize}
-    \item When the relation is reflexive, all possible elements are Proper
-    \item For example if we take the magic wand as relation, all propositions are proper.
-    \item
-\end{itemize}
-\begin{definition}[Respectful relation]
+\begin{center}
+    \begin{tabular}{lll}
+        Connective & Type                           & Signature                                    \\
+        \hline
+        $*$        & $\Prop \to \Prop \to \Prop$    & \wandrel \respect \wandrel \respect \wandrel \\
+
+        $\lor$     & $\Prop \to \Prop \to \Prop$    & \wandrel \respect \wandrel \respect \wandrel \\
+
+        $\exists$  & $(\sigax \to \Prop) \to \Prop$ & (\eqrel \respect \wandrel) \respect \wandrel
+    \end{tabular}
+\end{center}
+We make use of the Haskell prefix notation, $(\wand)$, to turn an infix operator into a prefix function.
+\quest{Bad sentence? But do want to say something about what a signature is.} The monotonicity of a connective is defined in terms of the requirements we have for each of its arguments and what we know about the resulting statement after application of the arguments. To show how the signature defines monotonicity we will give the definitions of the combinator used to build them.
+\begin{definition}{Respectful relation}{respect}
     The respectful relation $\rel \respect \rel'\colon(\sigax\to\sigaxB) \to (\sigax\to\sigaxB) \to \Prop$ of two relations $\rel\colon\sigax\to\sigax\to\Prop$, $\rel'\colon\sigaxB\to\sigaxB\to\Prop$ is defined as
     \begin{align*}
-        \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \var)
+        \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
     \end{align*}
 \end{definition}
+A signature defines a relation on predicates. It makes use of the two relations, $\wandrel$ and $\eqrel$. We can now use the signature on the connective
+\begin{definition}{Proper element of a relation}{proper}
+    Given a relation $\rel\colon\sigax\to\sigax\to\Prop$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$
+\end{definition}
+We define how a connective is monotone by the signature it is a proper element of. The proofs that the connectives are the proper elements of their signature are fairly trivial, but we will highlight the existential qualifier.
 
-\begin{definition}[Persistent relation]
+\quest{I want to expand the first two signatures, but I don't have anything interesting to say about it except for showing the expanded version}
+% Both the separating conjunction and the disjunction have the same signature, when filling in the seperating conjunction we get the following statement
+% \[ \All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB') \]
+
+We can unfold the definitions in the signature and fill in the existential quantification in order to get the following statement,
+\[\All \pred, \predB. (\All \var, \varB. \var = \varB \wand \pred\, \var \wand \predB\, \varB) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var) \]
+This statement can be easily simplified by substituting $\varB$ for $\var$ in the first relation.
+\[\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var) \]
+We create a new combinator for signatures, the pointwise relation, to include the above simplification in signatures.
+\begin{definition}{Pointwise relation}{pointwise}
+    The pointwise relation $\point \rel$ is a special case of a respectful relation defined as
+    \begin{align*}
+        \point \rel \eqdef & \Lam \func, \funcB. \All \var. \rel\, (\func\, \var)\, (\funcB\, \varB)
+    \end{align*}
+\end{definition}
+\noindent The new signature for the existential quantification becomes
+\[\point \wandrel \respect \wandrel\]
+
+\paragraph*{Monotone functors}
+To create a monotone functor for the least fixpoint we need to be able to at least define \cref*{def:monofunc} in terms of the proper element of a signature. We already have most the combinators needed, but we are missing a way to mark a relation as persistent.
+\begin{definition}{Persistent relation}{persrel}
     The persistent relation $\persrel\rel\colon\sigax\to\sigax\to\Prop$ for a relation $\rel\colon\sigax\to\sigax\to\Prop$ is defined as
     \[\persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)\]
 \end{definition}
+\noindent Thus we can create the following signature for \cref*{def:monofunc}.
+\[\persrel (\point \wandrel) \respect \point \wandrel\]
+Filling in a $\hopred$ as the proper element get the following statement.
+\[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \wand \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var \]
+Which is \cref*{def:monofunc} but using only wands, instead of entailments. We use the same structure for the signature of $\isMLL_\hopred$. But we add an extra pointwise to the left and right-hand side of the respectful relation for the extra argument.
+\[\persrel (\point\point \wandrel) \respect \point\point \wandrel\]
+We are thus able to write down the monotonicity of a functor using the combinators we have defined.
 
-\begin{itemize}
-    \item We can rewrite \cref*{lem:sepmonomar} using the relations we described above
-\end{itemize}
-\begin{lemma}[Separating conjuction monotone]
-    The separating conjunction is a proper element of the relation
-    $$\persrel{\wandrel} \respect \persrel{\wandrel} \respect {\wandrel}$$
+\paragraph*{Monotone proof search}
+To perform the monotone proof search we first have to add one additional lemma.
+\begin{lemma}{}{monoprop}
+    Any proposition, $\prop\colon \Prop$, is a proper element of the signature
+    $\wandrel$
 \end{lemma}
-\begin{itemize}
-    \item Writing out the above statement gives
-\end{itemize}
-\begin{align*}
-    \proves \All \prop,\propB. \always(\prop \wand \propB) \wand \All \prop',\propB'. \always(\prop' \wand \propB') \wand \prop * \propB \wand \prop' * \propB'
-\end{align*}
-\begin{itemize}
-    \item This is monotonicity on the left and right side of the separating conjunction at the same time
-\end{itemize}
-
-\begin{definition}[Pointwise relation]
-    The pointwise relation $\point \rel$ is a special case of a respectful relation defined as
-    \[\point \rel \eqdef (=\ \respect \rel)\]
-\end{definition}
-
-\begin{lemma}[Existential quantification monotone]
-    The existential quantification is a proper element of the relation \[\persrel(\point\wandrel) \respect {\wandrel}\]
-\end{lemma}
-
-\begin{example}[$\isMLL_\hopred$\ is monotone]
+\begin{proof}
+    Since $\wandrel$ is reflexive, any proposition is immediately a proper element.
+\end{proof}
+We now show a proof and then outline the steps we took.
+\begin{example}{$\isMLL_\hopred$\ is monotone}{}
     The predicate $\isMLL_\hopred$ is monotone in its first argument. Thus, $\isMLL_\hopred$ is a proper element of
     \[
         \persrel (\point \point \wandrel) \respect \point \point \wandrel
     \]
+    In other words
     \[
         \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \All \hd\, \vect{v}. \isMLL_\hopred\, \pred\, \hd\, \vect{v} \wand \isMLL_\hopred\, \predB\, \hd\, \vect{v}
     \]
+
+
+    \begin{proof}
+        We assume any premises, $\always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})}$, and then introduce the universal quantifiers. After unfolding $\isMLL_\hopred$ we have to prove the following.
+        \begin{align*}
+            \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \proves (\cdots \lor \cdots \pred \cdots) \wand (\cdots \lor \cdots \predB \cdots)
+        \end{align*}
+        Thus, the top level connective is the wand and the one below it is the disjunction. We now search for a signature ending on a magic wand and which has the disjunction as a proper element. We find the signature ${\wandrel \respect \wandrel \respect \wandrel}$ with $\lorrel$. We apply $(\wandrel \respect \wandrel \respect \wandrel) \lorrel \lorrel$ resulting in two statements to prove.
+        \begin{align*}
+            \always{(\cdots)} & \proves (\hd = \None * \vect{\val} = []) \wand (\hd = \None * \vect{\val} = [])                                \\
+            \always{(\cdots)} & \proves (\cdots \pred \cdots \lor \cdots  \pred \cdots) \wand (\cdots \predB \cdots \lor \cdots \predB \cdots)
+        \end{align*}
+        For the first statement we have as top relation $\wandrel$ with below it $\seprel$. We find the signature ${\wandrel \respect \wandrel \respect \wandrel}$ with $\seprel$. We apply it and get two new statements. Since both don't have aa almost top level connective we have a signature for we use \cref*{lem:monoprop} to prove both statements.
+
+        The second statement utilizes the same disjunction signature again, thus we just show the end results of applying it.
+        \begin{align*}
+            \always{(\cdots)} & \proves (\Exists \loc, \val', \tl. \cdots \pred \cdots) \wand (\Exists \loc, \val', \tl. \cdots \predB \cdots)                               \\
+            \always{(\cdots)} & \proves (\Exists \loc, \val', \vect{\val}'', \tl. \cdots \pred \cdots) \wand (\Exists \loc, \val', \vect{\val}'', \tl. \cdots \predB \cdots)
+        \end{align*}
+        Both statements have as top level relation $\wandrel$ with below it $\exists$. We apply the signature of $\exists$ with as result.
+        \begin{align*}
+            \always{(\cdots)} & \proves \All \loc. (\Exists \val', \tl. \cdots \pred \cdots) \wand (\Exists \val', \tl. \cdots \predB \cdots)                               \\
+            \always{(\cdots)} & \proves \All \loc. (\Exists \val', \vect{\val}'', \tl. \cdots \pred \cdots) \wand (\Exists \val', \vect{\val}'', \tl. \cdots \predB \cdots)
+        \end{align*}
+        We introduce $\loc$ and repeat these steps until the existential quantification is no longer tho almost top level connective.
+        \begin{align*}
+            \always{(\cdots)} \proves{} & (\hd = \Some l * l \fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{\val}) \wand \\
+                                        & (\hd = \Some l * l \fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{\val})      \\
+            \always{(\cdots)} \proves{} &
+            \left(\begin{array}{@{}l}
+                          \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac * \\
+                          \vect{\val} = \val' :: \vect{\val}'' * \pred\, \tl\, \vect{\val}''
+                      \end{array}\right)
+            \wand                                                                                                            \\
+                                        & \left(\begin{array}{@{}l}
+                                                        \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac * \\
+                                                        \vect{\val} = \val' :: \vect{\val}'' * \predB\, \tl\, \vect{\val}''
+                                                    \end{array}\right)
+        \end{align*}
+        We can now repeatedly apply the signature of $\seprel$ and deal with any created propositions without $\pred$ or $\predB$. This leaves us with
+        \begin{align*}
+            \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} & \proves \pred\, \tl\, \vect{\val} \wand \predB\, \tl\, \vect{\val}     \\
+            \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} & \proves \pred\, \tl\, \vect{\val}'' \wand \predB\, \tl\, \vect{\val}''
+        \end{align*}
+        These hold from the assumption.
+    \end{proof}
 \end{example}
-\begin{proof}
-    We assume $\always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})}$ holds and for arbitrary $\hd$ and $\vect{v}$, $\isMLL_\hopred\, \pred\, \hd\, \vect{v}$ holds.
-    After applying the definition of $\isMLL_\hopred$ we need to prove \[\isMLL_\hopred\, \predB\, \hd\, \vect{v}\]
-\end{proof}
+Thus, the steps to find a proof are the following. We apply the first step that works.
+\begin{enumerate}
+    \item Check if the conclusion follows from the premise, and then apply it.
+    \item Look for a signature of the almost top level connective where the last relation matches the top level connective of the conclusion. Apply it if we find one. Then introduce any universal quantifiers and modalities.
+    \item Apply \cref*{lem:monoprop}.
+\end{enumerate}
+Repeat the above steps for all created branches until it has been proven.
+
 
 \end{document}

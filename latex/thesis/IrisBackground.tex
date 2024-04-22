@@ -373,7 +373,7 @@ This program takes a value $n$ and then returns a closure which we can call with
 This rule expresses that to prove a weakest precondition of an expression in a context, while having a Hoare triple for that expression. We can apply the Hoare triple and use the postcondition to infer a value for the continued proof of the weakest precondition. This rule is derived by using the \ruleref{wp-frame}, \ruleref{wp-mono} and \ruleref{wp-bind} rules.
 
 We now give an example where a returned function is used twice, thus where the persistence of Hoare triples is needed.
-\begin{lemma}
+\begin{lemma}{}{}
   Given that the following Hoare triples holds $$\hoare{\TRUE}{\operatorname{refadd}\, n}{\Ret f. {\forall \loc.\ \hoare{\loc \fmapsto m}{f\, \loc}{\loc\fmapsto m + n}}}$$
   This specification holds.
   \[
@@ -505,7 +505,7 @@ The induction hypothesis in the last two cases is different from statements we h
 In this section we prove the specification of $\MLLdelete$. Recall the definition of $\MLLdelete$.
 \MLLDeleteProg
 \\
-\begin{lemma}
+\begin{lemma}{}{}
   For any index $i \ge 0$, $\vect{\val} \in \List(\Val)$  and $\hd\in\Val$,
   \[
     \hoare{\isMLL\, \hd\, \vect{\val}}{\MLLdelete\, \hd\; \iindex }{\isMLL\, \hd\; (\textlog{remove}\, \iindex\, \vect{v})}
