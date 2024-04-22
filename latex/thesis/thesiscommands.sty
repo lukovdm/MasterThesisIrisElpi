@@ -163,8 +163,13 @@
 }
 
 %%%%%%%%%%%%%%%%%% Theorems %%%%%%%%%%%%%%%%%%
+
+\usepackage[noabbrev]{cleveref}
+
+
 \newcounter{theorem}
 \NewTcbTheorem[number within=chapter]{theorem}{Theorem}{
+    label type=theorem,
     enhanced,
     sharp corners,
     breakable,  % Allows page break.
@@ -177,6 +182,7 @@
     coltitle=white,
 }{thm}
 \NewTcbTheorem[use counter from=theorem]{lemma}{Lemma}{
+    label type=lemma,
     enhanced,
     sharp corners,
     breakable,  % Allows page break.
@@ -218,6 +224,7 @@
 % \declaretheorem[numbered=no, style=remark]{remark}
 
 \NewTcbTheorem[use counter from=theorem]{example}{Example}{
+    label type=example,
     enhanced,
     sharp corners,
     breakable,  % Allows page break.
@@ -230,6 +237,7 @@
     coltitle=white
 }{ex}
 \NewTcbTheorem[use counter from=theorem]{definition}{Definition}{
+    label type=definition,
     enhanced,
     sharp corners,
     breakable,  % Allows page break.
