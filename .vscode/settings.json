@@ -977,5 +977,6 @@
     "elpii",
     "coqcode",
     "elpicode"
-  ]
+  ],
+  "explorer.excludeGitIgnore": true
 }

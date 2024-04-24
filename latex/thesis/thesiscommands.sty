@@ -23,7 +23,7 @@
 % \usepackage{thm-listof}
 \usepackage{tcolorbox}
 
-\tcbuselibrary{theorems,breakable,skins}
+\tcbuselibrary{theorems,breakable,skins,minted}
 
 \usepackage{xcolor}
 
@@ -46,7 +46,7 @@
 \setlength{\grammarindent}{12em} % increase separation between LHS/RHS 
 \hbadness=10000 % Disable underfull hbox badness messages
 
-% Minted settings
+%%%%%%%%%%%%%%%%% MINTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{etoolbox}
 
 \makeatletter
@@ -56,18 +56,52 @@
 
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 
-\newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
-\newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
+% \newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
+% \newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
 \newmintinline[elpii]{elpi}{}
 \newmintinline[coqi]{coq}{}
 
-% Names of projects
+\newtcblisting{coqcode}{
+    listing engine=minted,
+    minted language=coq,
+    minted options={linenos,autogobble,escapeinside=~~},
+    listing only,
+    enhanced,
+    sharp corners,
+    breakable,
+    borderline west={2pt}{0pt}{black},
+    colback=black!5,
+    boxrule=0pt,
+    frame hidden,
+    left=7mm,
+    overlay={\begin{tcbclipinterior}\fill[black!20] ([xshift=2pt]frame.south west)
+                rectangle ([xshift=5.5mm]frame.north west);\end{tcbclipinterior}}
+}
+
+\newtcblisting{elpicode}{
+    listing engine=minted,
+    minted language=elpi,
+    minted options={linenos,autogobble,escapeinside=~~},
+    listing only,
+    enhanced,
+    sharp corners,
+    breakable,
+    borderline west={2pt}{0pt}{black},
+    colback=black!5,
+    boxrule=0pt,
+    frame hidden,
+    left=7mm,
+    overlay={\begin{tcbclipinterior}\fill[black!20] ([xshift=2pt]frame.south west)
+                rectangle ([xshift=5.5mm]frame.north west);\end{tcbclipinterior}}
+}
+
+%%%%%%%%%%%%%%%%%%%%%% NAME ABREVIATIONS %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\elpi}{Elpi\xspace}
 \newcommand{\iris}{Iris\xspace}
 \newcommand{\ce}{Coq-Elpi\xspace}
 \newcommand{\coq}{Coq\xspace}
 
-% Todo notes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny,obeyFinal]{todonotes}
 
 \newcommand{\quest}[1]{\todo[color=blue!20]{Question: #1}}
