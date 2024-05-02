@@ -163,10 +163,8 @@ do-intro ID (hole Type Proof) C :-
 
 pred do-intro-anon i:hole, i:(hole -> prop).
 do-intro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
-  if-debug (coq.say "pre intro" Type),
   coq.name->id N' S,
   coq.ltac.fresh-id S Ty ID,
-  if-debug (coq.say "introducing" S "as" ID ": " Ty),
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
@@ -177,9 +175,7 @@ do-intro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
 
 pred do-intro-anon-external-hint i:string, i:hole, i:(hole -> prop).
 do-intro-anon-external-hint S (hole (prod _ Ty _ as Type) Proof) C :-
-  if-debug (coq.say "pre intro" Type),
   coq.ltac.fresh-id S Ty ID,
-  if-debug (coq.say "introducing" S "as" ID ": " Ty),
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),

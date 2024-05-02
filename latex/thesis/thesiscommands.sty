@@ -4,6 +4,7 @@
 \usepackage{xspace}
 \usepackage{float}
 \usepackage{ifdraft}
+\usepackage{fancyvrb}
 
 \usepackage{empheq}
 \usepackage{stmaryrd}
@@ -25,7 +26,7 @@
 
 \tcbuselibrary{theorems,breakable,skins,minted}
 
-\usepackage{xcolor}
+\usepackage[svgnames]{xcolor}
 
 \usepackage{anysize}
 \usepackage{bm}
@@ -58,48 +59,79 @@
 
 % \newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
 % \newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
-\newmintinline[elpii]{elpi}{}
-\newmintinline[coqi]{coq}{}
+\newmintinline[elpiii]{elpi}{}
+\newmintinline[coqii]{coq}{}
 
-\newtcblisting{coqcode}{
-    listing engine=minted,
-    minted language=coq,
-    minted options={linenos,autogobble,escapeinside=~~},
-    listing only,
+\NewTotalTCBox{\elpii}{ v }
+{verbatim,
     enhanced,
     sharp corners,
-    breakable,
-    borderline west={2pt}{0pt}{black},
+    borderline west={2pt}{0pt}{MediumBlue},
     colback=black!5,
     boxrule=0pt,
-    frame hidden,
-    left=7mm,
-    overlay={\begin{tcbclipinterior}\fill[black!20] ([xshift=2pt]frame.south west)
-                rectangle ([xshift=5.5mm]frame.north west);\end{tcbclipinterior}}
+    boxsep=0.5mm,
+    frame hidden}
+{\mintinline[fontsize=\small,ignorelexererrors=true]{elpi}{#1}}
+
+\NewTotalTCBox{\coqi}{ v }{
+    verbatim,
+    enhanced,
+    sharp corners,
+    borderline west={2pt}{0pt}{Green},
+    colback=black!5,
+    boxrule=0pt,
+    boxsep=0.5mm,
+    frame hidden
+}{
+    \mintinline[fontsize=\small,ignorelexererrors=true]{coq}{#1}
 }
 
-\newtcblisting{elpicode}{
-    listing engine=minted,
-    minted language=elpi,
-    minted options={linenos,autogobble,escapeinside=~~},
-    listing only,
-    enhanced,
-    sharp corners,
-    breakable,
-    borderline west={2pt}{0pt}{black},
-    colback=black!5,
-    boxrule=0pt,
-    frame hidden,
-    left=7mm,
-    overlay={\begin{tcbclipinterior}\fill[black!20] ([xshift=2pt]frame.south west)
-                rectangle ([xshift=5.5mm]frame.north west);\end{tcbclipinterior}}
+\NewTCBListing{coqcode}{ !O{} }{
+listing engine=minted,
+minted language=coq,
+minted options={
+        linenos,autogobble,escapeinside=~~,ignorelexererrors=true,fontsize=\small,#1},
+listing only,
+enhanced,
+sharp corners,
+breakable,
+borderline west={2pt}{0pt}{Green},
+colback=black!5,
+boxrule=0pt,
+frame hidden,
+left=7mm,
+overlay={\begin{tcbclipinterior}
+            \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
+            \node[text=gray] at ([xshift=-1.2em,yshift=-1em]frame.north east) {Coq};
+        \end{tcbclipinterior}},
+}
+
+\NewTCBListing{elpicode}{ !O{} }{
+listing engine=minted,
+minted language=elpi,
+minted options={linenos,autogobble,escapeinside=~~,ignorelexererrors=true,fontsize=\small,#1},
+listing only,
+enhanced,
+sharp corners,
+breakable,
+borderline west={2pt}{0pt}{MediumBlue},
+colback=black!5,
+boxrule=0pt,
+frame hidden,
+left=7mm,
+overlay={\begin{tcbclipinterior}
+            \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
+            \node[text=gray] at ([xshift=-1.4em,yshift=-1em]frame.north east) {Elpi};
+        \end{tcbclipinterior}},
 }
 
 %%%%%%%%%%%%%%%%%%%%%% NAME ABREVIATIONS %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\elpi}{Elpi\xspace}
 \newcommand{\iris}{Iris\xspace}
+\newcommand{\IPM}{IPM\xspace}
 \newcommand{\ce}{Coq-Elpi\xspace}
 \newcommand{\coq}{Coq\xspace}
+\newcommand{\eiind}{eiInd}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny,obeyFinal]{todonotes}
@@ -167,22 +199,24 @@
 \newcommand{\hd}{\langv{hd}}
 \newcommand{\tl}{\langv{tl}}
 
-\newcommand{\lfp}{\ensuremath{\mu}}
-\newcommand{\hopred}{\ensuremath{\textlog{F}}}
-\newcommand{\hopredB}{\ensuremath{\textlog{G}}}
+\newcommand{\lfp}{\mu}
+\newcommand{\hopred}{\textlog{F}}
+\newcommand{\hopredB}{\textlog{G}}
 
 \newcommand{\purered}{\longrightarrow_{\text{pure}}}
 
-\newcommand{\rel}{\ensuremath{R}}
+\newcommand{\rel}{R}
+\newcommand{\Rel}{\textdom{iRel}}
 
-\newcommand{\wandrel}{\ensuremath{(\wand)}}
-\newcommand{\eqrel}{\ensuremath{(=)}}
-\newcommand{\lorrel}{\ensuremath{(\lor)}}
-\newcommand{\seprel}{\ensuremath{(*)}}
+\newcommand{\wandrel}{(\wand)}
+\newcommand{\eqrel}{(=)}
+\newcommand{\lorrel}{(\lor)}
+\newcommand{\seprel}{(*)}
 
-\newcommand{\respect}{\ensuremath{\bm{\Longrightarrow}}}
-\newcommand{\point}{\ensuremath{\bm{\gtrdot}}}
-\newcommand{\persrel}{\ensuremath{\pmb{\always}}}
+\newcommand{\respect}{\mathrel{\bm{\Longrightarrow}}}
+\newcommand{\point}{\bm{\gtrdot}}
+\newcommand{\persrel}{\pmb{\always}}
+\newcommand{\flip}{\bm{\textlog{flip}}}
 
 \newcommand{\carprod}{\times}
 
@@ -198,6 +232,7 @@
 
 %%%%%%%%%%%%%%%%%% Theorems %%%%%%%%%%%%%%%%%%
 
+\usepackage{hyperref}
 \usepackage[noabbrev]{cleveref}
 
 
@@ -214,6 +249,7 @@
     title={\bfseries Title},
     colbacktitle=black,
     coltitle=white,
+    after={\noindent}
 }{thm}
 \NewTcbTheorem[use counter from=theorem]{lemma}{Lemma}{
     label type=lemma,
@@ -226,7 +262,8 @@
     frame hidden,
     title={\bfseries Title},
     colbacktitle=black!60,
-    coltitle=white
+    coltitle=white,
+    after={\noindent}
 }{lem}
 \NewTcbTheorem[use counter from=theorem]{corollary}{Corollary}{
     enhanced,
@@ -238,7 +275,8 @@
     frame hidden,
     title={\bfseries Title},
     colbacktitle=black,
-    coltitle=white
+    coltitle=white,
+    after={\noindent}
 }{cor}
 \NewTcbTheorem[no counter]{remark}{remark}{
     enhanced,
@@ -250,7 +288,8 @@
     frame hidden,
     title={\bfseries Title},
     colbacktitle=black,
-    coltitle=white
+    coltitle=white,
+    after={\noindent}
 }{rem}
 % \declaretheorem[within=chapter]{theorem}
 % \declaretheorem[sibling=theorem]{lemma}
@@ -268,7 +307,8 @@
     frame hidden,
     title={\bfseries Title},
     colbacktitle=black!60,
-    coltitle=white
+    coltitle=white,
+    after={\noindent}
 }{ex}
 \NewTcbTheorem[use counter from=theorem]{definition}{Definition}{
     label type=definition,
@@ -281,7 +321,8 @@
     frame hidden,
     title={\bfseries Title},
     colbacktitle=black,
-    coltitle=white
+    coltitle=white,
+    after={\noindent}
 }{def}
 % \declaretheorem[sibling=theorem, thmbox={bodystyle=\normalfont\noindent}]{example}
 % \declaretheorem[sibling=theorem]{definition}

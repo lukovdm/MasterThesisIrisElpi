@@ -8,7 +8,6 @@
 \setmonofont{Hack}  
 
 \usepackage{graphicx}
-\usepackage{listings}
 \usepackage[a4paper]{geometry}
 \usepackage[style=alphabetic]{biblatex}
 % use natbib
@@ -17,7 +16,6 @@
 \usepackage{xr-hyper}
 
 \usepackage{subfiles}
-\usepackage{hyperref}
 
 \usepackage{array}
 \setlength {\marginparwidth }{2cm}
@@ -46,7 +44,6 @@
 \setlength{\voffset}{0cm}
 \setlength{\headheight}{0cm}
 \setlength{\topmargin}{0cm} 
-\lstset{basicstyle = \footnotesize, breaklines = true}
 
 \graphicspath{{imgs/}}
 
@@ -54,6 +51,8 @@
 
 \setlength {\marginparwidth }{4cm}
 \begin{document}
+\VerbatimFootnotes
+
 \renewcommand{\sectionautorefname}{Section}
 \renewcommand{\subsectionautorefname}{Section}
 \renewcommand{\chapterautorefname}{Chapter}
@@ -106,12 +105,16 @@
 % \subfile{Induction}
 \subfile{ElpiImplementation}
 
+\chapter{Related work} \label{ch:relatedwork}
+\begin{itemize}
+    \item Knaster Tarksi fixpoin theorem
+    \item Generalized rewriting. They backtrack in their proof search, we don't
+\end{itemize}
+
 \chapter{Conclusion}
 \section{Application}
 \section{Evaluation of Elpi}
-\section{Related work}
 \section{Future work}
-
 
 \printbibliography
 

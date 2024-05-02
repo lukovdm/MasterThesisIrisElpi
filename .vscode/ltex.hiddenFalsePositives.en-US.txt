@@ -31,3 +31,25 @@
 {"rule":"WANT","sentence":"^\\QThe first mayor step we want to simplify is the uncurrying and currying we had to do\\E$"}
 {"rule":"WANT","sentence":"^\\QEvery action we take in the proof will only depend on the top level connective of what we want to prove.\\E$"}
 {"rule":"SENTENCE_FRAGMENT","sentence":"^\\QBefore starting the eiIntros tactic we need a quick interlude about how the Iris contexts are made.\\E$"}
+{"rule":"ACTUAL","sentence":"^\\QIn order to define a recursive formula we have to prove it actually exists.\\E$"}
+{"rule":"ACTUAL","sentence":"^\\QIn order to define a recursive predicate we have to prove it actually exists.\\E$"}
+{"rule":"EN_COMPOUNDS","sentence":"^\\QWe omit the premises in future proof states, but it is always there since it is persistent.\\E$"}
+{"rule":"AGREEMENT_SENT_START","sentence":"^\\QThis is where the HOAS is applied.\\E$"}
+{"rule":"EN_A_VS_AN","sentence":"^\\QWe thus introduce a new type for an hole.\\E$"}
+{"rule":"THIS_NNS","sentence":"^\\QTo accomplish this databases are used with commands to add extra reduction rules to the database.\\E$"}
+{"rule":"ADJECTIVE_ADVERB","sentence":"^\\QThen, it continuous executing the rest of the intro patterns.\\E$"}
+{"rule":"EN_A_VS_AN","sentence":"^\\QFirst it calls a proof generator that puts an universal quantifier at the front of the goal as a universal quantifier.\\E$"}
+{"rule":"THREE_NN","sentence":"^\\QConsider the separation logic statement.\\E$"}
+{"rule":"ADMIT_ENJOY_VB","sentence":"^\\QA few a few expansions were added as inspired by ssreflect \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, they are used to perform other common initial proof steps such as simpl, done and others.\\E$"}
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qthesis\\E$"}
+{"rule":"WHITESPACE_RULE","sentence":"^\\Qthesis\\E$"}
+{"rule":"THE_PUNCT","sentence":"^\\QThis chapter will function explain relevant inner working of the , give a tutorial on how works and how to create a tactic using , and finally set up the necessary functions for the commands and tactics around inductive predicates we will define in \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QThis chapter will function explain relevant inner working of the , give a tutorial on how works and how to create a tactic using , and finally set up the necessary functions for the commands and tactics around inductive predicates we will define in \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QImplementing an Iris tactic in .\\E$"}
+{"rule":"THE_SENT_END","sentence":"^\\QNext in \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q we explain how the context is implemented in the .\\E$"}
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qexample.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\QThe iIntros tactic acts as the intros tactic but on propositions and the contexts.\\E$"}
+{"rule":"ADMIT_ENJOY_VB","sentence":"^\\QA few expansions were added as inspired by ssreflect \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, they are used to perform other common initial proof steps such as simpl, done and others.\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QThus, in implementation of the separation logic , these two types of assumptions have been made into two contexts, the persistent and the spatial context.\\E$"}
+{"rule":"EN_QUOTES","sentence":"^\\QThe assumption \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is thus named \"HP\".\\E$"}
+{"rule":"EN_QUOTES","sentence":"^\\QWe can use iIntros \"HP HQ\", this will intelligently apply wand-IE twice.\\E$"}
