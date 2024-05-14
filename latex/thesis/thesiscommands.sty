@@ -66,22 +66,30 @@
 {verbatim,
     enhanced,
     sharp corners,
-    borderline west={2pt}{0pt}{MediumBlue},
+    % borderline west={2pt}{0pt}{MediumBlue},
     colback=black!5,
     boxrule=0pt,
     boxsep=0.5mm,
-    frame hidden}
-{\mintinline[fontsize=\small,ignorelexererrors=true]{elpi}{#1}}
+    frame hidden,
+    overlay={\begin{tcbclipinterior}
+                \fill[MediumBlue] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
+            \end{tcbclipinterior}},
+}{
+    \mintinline[fontsize=\small,ignorelexererrors=true]{elpi}{#1}
+}
 
 \NewTotalTCBox{\coqi}{ v }{
     verbatim,
     enhanced,
     sharp corners,
-    borderline west={2pt}{0pt}{Green},
+    % borderline west={2pt}{0pt}{Green},
     colback=black!5,
     boxrule=0pt,
     boxsep=0.5mm,
-    frame hidden
+    frame hidden,
+    overlay={\begin{tcbclipinterior}
+                \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
+            \end{tcbclipinterior}},
 }{
     \mintinline[fontsize=\small,ignorelexererrors=true]{coq}{#1}
 }

@@ -53,3 +53,4 @@
 {"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QThus, in implementation of the separation logic , these two types of assumptions have been made into two contexts, the persistent and the spatial context.\\E$"}
 {"rule":"EN_QUOTES","sentence":"^\\QThe assumption \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is thus named \"HP\".\\E$"}
 {"rule":"EN_QUOTES","sentence":"^\\QWe can use iIntros \"HP HQ\", this will intelligently apply wand-IE twice.\\E$"}
+{"rule":"A_INFINITIVE","sentence":"^\\QThus, the call on line 4 could fail, which would cause a backtrack and an incorrect split of the input, Pred X holds but rule 2 is used.\\E$"}
