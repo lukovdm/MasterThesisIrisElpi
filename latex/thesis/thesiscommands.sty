@@ -59,8 +59,8 @@
 
 % \newminted{elpi}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
 % \newminted{coq}{autogobble,bgcolor=bg,linenos=true,escapeinside=~~}
-\newmintinline[elpiii]{elpi}{}
-\newmintinline[coqii]{coq}{}
+\newmintinline[elpiii]{elpi}{fontsize=\small,ignorelexererrors=true}
+\newmintinline[coqii]{coq}{fontsize=\small,ignorelexererrors=true}
 
 \NewTotalTCBox{\elpii}{ v }
 {verbatim,
@@ -134,12 +134,8 @@ overlay={\begin{tcbclipinterior}
 }
 
 %%%%%%%%%%%%%%%%%%%%%% NAME ABREVIATIONS %%%%%%%%%%%%%%%%%%%%%%
-\newcommand{\elpi}{Elpi\xspace}
-\newcommand{\iris}{Iris\xspace}
 \newcommand{\IPM}{IPM\xspace}
 \newcommand{\ce}{Coq-Elpi\xspace}
-\newcommand{\coq}{Coq\xspace}
-\newcommand{\eiind}{eiInd}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage[shadow,loadshadowlibrary,textwidth=3cm,textsize=tiny,obeyFinal]{todonotes}

@@ -116,6 +116,7 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
+      coq.say I,
       create-iInductive [] I Fix I',
       % if-debug (coq.say "saving type" Fix I'),
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
@@ -129,6 +130,14 @@ Section Tests.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
+
+  EI.ind 
+  Inductive is_R_list {A} (R : val → A → iProp) : 
+                      val → list A → iProp :=
+    | empty_is_R_list : is_R_list R NONEV []
+    | cons_is_R_list l v tl x xs : 
+        l ↦ (v,tl) -∗ R v x -∗ is_R_list R tl xs -∗ 
+        is_R_list R (SOMEV #l) (x :: xs).
 
   EI.ind 
   Inductive is_list (q : Qp) : val → list val → iProp :=

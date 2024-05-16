@@ -6,7 +6,7 @@
 Goals in \ce are represented as three main parts. A context of existential variables (evars) together with added rules assigning a type or definition to each variable. A goal, represented as a unification variable applied on all evars, together with a pending constraint typing the goal as the type of the goal. Lastly, a list of arguments applied to a tactic is given as part of every goal. The arguments are part of the goal, since they can reference the evars, and thus can not be taken out of the scope of the existential variables. Thus, a tactic invocation on the left is translated to an Elpi goal on the right.
 \\\\
 \begin{minipage}[t]{0.2\linewidth}
-    \begin{minted}[escapeinside=||]{coq}
+  \begin{minted}[escapeinside=||]{coq}
 P : Prop
 H : P
 ===========
@@ -16,7 +16,7 @@ tac (P) asdf 12
 \end{minted}
 \end{minipage}
 \begin{minipage}[t]{0.45\linewidth}
-    \begin{minted}[escapeinside=||]{elpi}
+  \begin{minted}[escapeinside=||]{elpi}
 pi c1\ decl c1 `P` (sort prop) =>
     pi c2\ decl c2 `H` c1 =>
       declare_constraint (evar (T c1 c2) 
@@ -30,7 +30,7 @@ pi c1\ decl c1 `P` (sort prop) =>
                   (P c1 c2)
                   [trm c1, str "asdf", int 123])
 \end{minted}
-    \vspace{.1cm}
+  \vspace{.1cm}
 \end{minipage}
 
 This setup of the goal allows us to unify the trigger \mintinline{elpi}{T} with a proof term, which will trigger the elaboration of \mintinline{elpi}{T} against the type (here \mintinline{elpi}{c1}) and unification of the resulting term with our proof variable \mintinline{elpi}{P}. This resulting proof term will likely contain more unification variables, representing subgoals, which we can collect as our resulting goal list (Elpi has the built-in \mintinline{elpi}{coq.ltac.collect-goals} predicate, that does this for us).
@@ -40,7 +40,7 @@ We do have a problem with these goals. They are not very portable. Since they ne
 Sealed goals allow us to program our tactics in separate steps, where each step is an \mintinline{elpi}{open-tactic}. This is especially useful since we have to call quite some LTac code on our goals within Elpi to solve side-goals.
 
 \paragraph*{Calling LTac}
-There are built-in API's in \ce in our goal. This does mean we have to be careful to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which \ce has a type, and mapping. Thus, for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use \coq intro patterns or any other syntax, until support has been added for these in \ce.
+There are built-in API's in \ce in our goal. This does mean we have to be careful to remove the arguments of our tactics from the goal before we give it to any called tactics. Also, this limits us to arguments of which \ce has a type, and mapping. Thus, for now we are only able to pass strings, numbers, terms and lists of these to LTac tactics. We are not able to call any tactics that use Coq intro patterns or any other syntax, until support has been added for these in \ce.
 
 \paragraph*[Structure of iIntros]{Structure of \mintinline{coq}{iIntros}}
 \mintinline{coq}{iIntros} is based on the multi goal tactic from \ce. Since with multi goal tactics we get a sealed goal as input which we open when necessary, instead of having an already opened goal. We first call a predicate \mintinline{elpi}{parse_args} to parse the arguments and unset any arguments in the goal. Next we call the predicate \mintinline{elpi}{go_iIntros} which will interpret the intro pattern structure created and apply the necessary lemma's and tactics. \mintinline{elpi}{go_iIntros} will defer to other tactics in Elpi to apply the intro patterns.
@@ -56,29 +56,29 @@ type tAnon, tFrame, tBar, tBracketL, |$\cdots$| token.
 type tName string -> token.
        |$\vdots$|
 \end{minted}
-But we can actually write unification variables instead of names after \mintinline{elpi}{type}. This is valid \elpi and allows us to \dots. But when porting \coq code to \elpi, if you aren't careful you might end up with some Pascal Case names and no warning or error from \elpi, except for broken syntax highlighting.
+But we can actually write unification variables instead of names after \mintinline{elpi}{type}. This is valid Elpi and allows us to \dots. But when porting Coq code to Elpi, if you aren't careful you might end up with some Pascal Case names and no warning or error from Elpi, except for broken syntax highlighting.
 
 Now that we have our tokenized input, we can start parsing it. We use a reductive descent parser as the basis of our parser. The syntax we parse is
 \begin{grammar}
-    <intropattern\_list> ::= $\epsilon$
-    \alt <intropattern> <intropattern\_list>
+  <intropattern\_list> ::= $\epsilon$
+  \alt <intropattern> <intropattern\_list>
 
-    <intropattern> ::= <ident>
-    \alt `_' | `?' | `\$' | `*' | `**' | `/=' | `//' | `!\%'
-    \alt `!>' | `->' | `<-'
-    \alt `[' <intropattern\_list> `]'
-    \alt `(' <intropattern\_conj\_list> `)'
-    \alt `\%' <ident>
-    \alt `#' <intropattern> \% Wait this one is weird
-    \alt `-#' <intropattern>
-    \alt `>' <intropattern>
+  <intropattern> ::= <ident>
+  \alt `_' | `?' | `\$' | `*' | `**' | `/=' | `//' | `!\%'
+  \alt `!>' | `->' | `<-'
+  \alt `[' <intropattern\_list> `]'
+  \alt `(' <intropattern\_conj\_list> `)'
+  \alt `\%' <ident>
+  \alt `#' <intropattern> \% Wait this one is weird
+  \alt `-#' <intropattern>
+  \alt `>' <intropattern>
 
-    <intropattern\_list> ::= $\epsilon$
-    \alt <intropattern> `|' <intropattern\_list>
-    \alt <intropattern> <intropattern\_list>
+  <intropattern\_list> ::= $\epsilon$
+  \alt <intropattern> `|' <intropattern\_list>
+  \alt <intropattern> <intropattern\_list>
 
-    <intropattern\_conj\_list> ::= $\epsilon$
-    \alt <intropattern> `&' <intropattern\_conj\_list>
+  <intropattern\_conj\_list> ::= $\epsilon$
+  \alt <intropattern> `&' <intropattern\_conj\_list>
 \end{grammar}
 With the caveat that a $\langle intropattern\_conj\_list\rangle$ has to have at least length 2.
 
@@ -164,7 +164,7 @@ We will list some possible improvements that could be done or have been done to 
 \subsection*{Downsides of Elpi}
 One problem that often occurs when using a meta-programming language is the need to transform between data types in the original and meta-programming language \cite*{}. This adds some overhead to quite a few actions that have to be done.
 
-Also, not all API's are implemented yet in Elpi. For this project the most obvious missing thing is the support for \coq intro patterns. It would be very helpful to be able to manipulate \coq intro patterns and pass them to other tactics. Furthermore, support for the \coq parser would add the possibility for a lot of added functionality.
+Also, not all API's are implemented yet in Elpi. For this project the most obvious missing thing is the support for Coq intro patterns. It would be very helpful to be able to manipulate Coq intro patterns and pass them to other tactics. Furthermore, support for the Coq parser would add the possibility for a lot of added functionality.
 
 Another mayor downside is the current lack of documentation. A few happy paths are documented fairly well by a few tutorials. However, there are a lot of library functions and possibilities that exist in Elpi and \ce that have little to no documentation and make you have to read the source code to understand them. This point is somewhat lessened by the excellent support by the creator and other enthusiasts in the Zullip chat. A lot of the more pressing issues are resolved by asking them there. Also, the language is still young which explains a lot of these pain points.
 
@@ -179,5 +179,5 @@ The data type system is well put together and allows for easy construction of la
 
 The code tracer is an excellent tool that allows for much easier introspection into what is actually going on. It helps find many small bugs and also just gives a great feeling for how the language works.
 
-The quotation system allows for fairly easy inclusion of \coq terms into Elpi programs. This is very powerful tool allowing for matching of goals to take out values, constructing proof terms for use with \mintinline{elpi}{refine}, and creating \coq data types.
+The quotation system allows for fairly easy inclusion of Coq terms into Elpi programs. This is very powerful tool allowing for matching of goals to take out values, constructing proof terms for use with \mintinline{elpi}{refine}, and creating Coq data types.
 \end{document}

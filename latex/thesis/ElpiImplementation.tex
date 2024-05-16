@@ -1,44 +1,67 @@
 \documentclass[thesis.tex]{subfiles}
 
+\ifSubfilesClassLoaded{
+  \externaldocument{thesis}
+  \setcounter{chapter}{4}
+}{}
+
 \begin{document}
-\chapter{Elpi implementation of Inductive}\label{ch:inductiveimpl}`'
-\section{function}
+\chapter{Elpi implementation of Inductive}\label{ch:inductiveimpl}
+We discuss the implementation of the \coqi{eiInd} command together with integrations in the \coqi{eiIntros} tactic and the \coqi{eiInductive} tactic.
 
-\begin{itemize}
-  \item We can also make commands
-  \item What do we get as input for our commands
-  \item What do we need to turn it in to
-  \item Show example for $\textlog{isMLL}$
-\end{itemize}
+\paragraph{Structure of \coqii{eiInductive}}
+The \coqi{eiInductive} command consists of several steps we have outlined in the diagram below.
 
-\section{Monotone}
-\subsection{Proper}
-\begin{itemize}
-  \item Write tactic for solving IProper proofs
-  \item We write small tactics for different possible steps
-  \item Simple steps, for respectful, point-wise, persistent
-  \item Finishing steps for assumption and reflexive implication
-  \item Apply other proper instance
-  \item Find how many arguments to add to connective
-  \item Lemma to get IProper instance from IProperTop instance
-  \item Apply Lemma IProper
-  \item Compose till all goals proven
-\end{itemize}
+\paragraph{Inductive tactics}
+In the last two sections we discuss how the tactics to use an inductive predicate are made. We first discuss the \coqi{eiInduction} tactic in \cref{sec:inductiontactic}, which performs induction on the specified inductive predicate. Next, in \cref{sec:indintros}, we outline the extensions to the \coqi{eiIntros} tactic concerning inductive predicates.
 
-\subsection{Induction for proper}
-\begin{itemize}
-  \item Create Proper Type for fix-point
-  \item Add point-wise for every constructor using fold-map
-  \item Add this to left and right of respectful with a persistent around left-hand side
-  \item Apply proper solver
-\end{itemize}
+\section{Parsing inductive data structure}
+The \coqi{eiInd} command is called by writing a Coq inductive statement and prepending it with the \coqi{eiInd} command. We will use the below inductive statement as an example for this and any subsequent sections.
+\begin{coqcode}
+  eiInd
+  Inductive is_R_list {A} (R : val → A → iProp) : 
+                      val → list A → iProp :=
+    | empty_is_R_list : is_R_list R NONEV []
+    | cons_is_R_list l v tl x xs : 
+        l ↦ (v,tl) -∗ R v x -∗ is_R_list R tl xs -∗ 
+        is_R_list R (SOMEV #l) (x :: xs).
+\end{coqcode}
+This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
 
-\section{Least fix-point}
-\begin{itemize}
-  \item The basic structure is this \dots
-  \item We recurse over the type of the fix-point to introduce lambda's and existential quantification
-  \item As the last step we add lambda's for any parameters we have
-\end{itemize}
+When interpreting an inductive statement in Elpi, any binders in Coq are also binders in Elpi. Thus, every parameter consists of a binder. While descending into the binders we keep track of the list of binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
 
+
+In Elpi this is received as a data structure of type \elpii{indt-decl}.
+\begin{elpicode}
+  parameter `A` maximal 
+    X0 
+    (a \ parameter `R` explicit 
+      {{ val -> lp:a -> iProp }} 
+      (_ \ inductive `is_R_list` tt 
+        {{ val -> list lp:a -> iProp }}
+        (f \ [constructor `empty_is_R_list` 
+                (arity ~\ldots~), 
+              constructor `cons_is_R_list` 
+                (arity ~\ldots~)])))
+\end{elpicode}
+The contents of the constructors is removed from this example for conciseness. When encoding a Coq data structure in Elpi, \ce always translates a binder in Coq to a binder in Elpi. Thus, a parameter consists of the name, if it should be maximally inserted, the type, and the rest of the data structure. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable.  The second parameter depends on the first parameter in its type. Then the inductive statmen
+
+\section{Constructing the pre fixpoint function}
+
+\section{Creating and proving propers}
+
+\section{Constructing Fixpoint}
+
+\section{Unfolding lemmas}
+
+\section{Constructor lemmas}
+
+\section{Iteration lemma}
+
+\section{Induction lemma}
+
+\section{\coqii{eiInductive} tactic}\label{sec:inductiontactic}
+
+\section{\coqii{eiIntros} integrations}\label{sec:indintros}
 
 \end{document}

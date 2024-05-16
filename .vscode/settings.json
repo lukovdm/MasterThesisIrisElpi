@@ -858,48 +858,6 @@
       "command": "bibtex",
       "args": ["%DOCFILE%"],
       "env": {}
-    },
-    {
-      "name": "rnw2tex",
-      "command": "Rscript",
-      "args": [
-        "-e",
-        "knitr::opts_knit$set(concordance = TRUE); knitr::knit('%DOCFILE_EXT%')"
-      ],
-      "env": {}
-    },
-    {
-      "name": "jnw2tex",
-      "command": "julia",
-      "args": ["-e", "using Weave; weave(\"%DOC_EXT%\", doctype=\"tex\")"],
-      "env": {}
-    },
-    {
-      "name": "jnw2texminted",
-      "command": "julia",
-      "args": [
-        "-e",
-        "using Weave; weave(\"%DOC_EXT%\", doctype=\"texminted\")"
-      ],
-      "env": {}
-    },
-    {
-      "name": "pnw2tex",
-      "command": "pweave",
-      "args": ["-f", "tex", "%DOC_EXT%"],
-      "env": {}
-    },
-    {
-      "name": "pnw2texminted",
-      "command": "pweave",
-      "args": ["-f", "texminted", "%DOC_EXT%"],
-      "env": {}
-    },
-    {
-      "name": "tectonic",
-      "command": "tectonic",
-      "args": ["--synctex", "--keep-logs", "%DOC%.tex"],
-      "env": {}
     }
   ],
   "editor.formatOnSave": true,
@@ -907,52 +865,13 @@
   "latex-workshop.latex.recipe.default": "lastUsed",
   "latex-workshop.latex.recipes": [
     {
-      "name": "latexmk",
-      "tools": ["latexmk"]
-    },
-    {
-      "name": "latexmk (latexmkrc)",
-      "tools": ["latexmk_rconly"]
-    },
-    {
-      "name": "latexmk (lualatex)",
-      "tools": ["lualatexmk"]
-    },
-    {
       "name": "latexmk (xelatex)",
       "tools": ["xelatexmk"]
-    },
-    {
-      "name": "pdflatex -> bibtex -> pdflatex * 2",
-      "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"]
-    },
-    {
-      "name": "Compile Rnw files",
-      "tools": ["rnw2tex", "latexmk"]
-    },
-    {
-      "name": "Compile Jnw files",
-      "tools": ["jnw2tex", "latexmk"]
-    },
-    {
-      "name": "Compile Pnw files",
-      "tools": ["pnw2tex", "latexmk"]
-    },
-    {
-      "name": "tectonic",
-      "tools": ["tectonic"]
     }
   ],
-  "vscoq.completion.enable": true,
-  "vscoq.proof.mode": 0,
-  "vscoq.goals.diff.mode": "removed",
-  "vscoq.goals.messages.full": true,
-  "vscoq.proof.delegation": "None",
-  "vscoq.diagnostics.full": true,
-  "vscoq.trace.server": "verbose",
   "coq.proofViewDiff.addedTextIsItalic": true,
   "coq.proofViewDiff.removedTextIsStrikedthrough": true,
-  "coqtop.args": ["-bt"],
+  // "coqtop.args": ["-bt"],
   "ltex.latex.environments": {
     "elpicode": "ignore",
     "coqcode": "ignore",
@@ -967,7 +886,9 @@
     "ce": "dummy",
     "cref*": "dummy",
     "quest": "ignore",
-    "todoo": "ignore"
+    "todoo": "ignore",
+    "elpiii": "dummy",
+    "coqii": "dummy"
   },
   "latex-workshop.latex.verbatimEnvs": [
     "verbatim",
@@ -975,6 +896,8 @@
     "minted",
     "coqi",
     "elpii",
+    "coqii",
+    "elpiii",
     "coqcode",
     "elpicode"
   ],

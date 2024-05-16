@@ -105,12 +105,12 @@ When viewing this in terms of lists, the expression $\MLLdelete\, \loc\, 1$ dele
 
 \section{Separation logic}
 \label{sec:seplogic}
-We make use of a subset of \iris \cite{jungIrisGroundModular2018} as our seperation logiv. This subset includes separation logic as first presented by \Citeauthor*{ishtiaqBIAssertionLanguage2001} and \Citeauthor*{reynoldsSeparationLogicLogic2002} \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, together with higher order connectives, persistent propositions and weakest preconditions as introduced by \iris. This logic is presented below, starting with the syntax.
+We make use of a subset of Iris \cite{jungIrisGroundModular2018} as our seperation logiv. This subset includes separation logic as first presented by \Citeauthor*{ishtiaqBIAssertionLanguage2001} and \Citeauthor*{reynoldsSeparationLogicLogic2002} \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, together with higher order connectives, persistent propositions and weakest preconditions as introduced by Iris. This logic is presented below, starting with the syntax.
 \begin{align*}
     \prop \in \iProp \bnfdef{} & \FALSE \mid \TRUE \mid \prop \land \prop \mid \prop \lor \prop \mid \prop \Ra \prop \mid \Exists \var:\type. \prop \mid \All \var:\type. \prop \mid \\
                                & \pure{\pprop} \mid \loc \fmapsto \val \mid \prop * \prop \mid \prop \wand \prop \mid \always\prop \mid \wpre\expr{\pred}
 \end{align*}
-Separation logic contains all the usual higher order predicate logic connectives as seen on the first line. The symbol $\type$, represents any type we have seen, including $\Prop$ itself. The second row contains separation logic specific connectives. The \emph{pure} connective, $\pure{\pprop}$, embeds any \coq proposition, also called a pure proposition, into separation logic. \coq propositions include common connectives like equality, list manipulations and set manipulations. Whenever it is clear from context that a statement is pure, we may omit the pure brackets. The next two connectives, $\loc \fmapsto \val$ and $\prop * \prop$, are discussed in this section. The last three connectives, $\prop \wand \prop$, $\always\prop$ and $\wpre\expr{\pred}$, are discussed when they become relevant in \cref{sec:Hoare} and \cref{sec:nestedhoaretriple}.
+Separation logic contains all the usual higher order predicate logic connectives as seen on the first line. The symbol $\type$, represents any type we have seen, including $\Prop$ itself. The second row contains separation logic specific connectives. The \emph{pure} connective, $\pure{\pprop}$, embeds any Coq proposition, also called a pure proposition, into separation logic. Coq propositions include common connectives like equality, list manipulations and set manipulations. Whenever it is clear from context that a statement is pure, we may omit the pure brackets. The next two connectives, $\loc \fmapsto \val$ and $\prop * \prop$, are discussed in this section. The last three connectives, $\prop \wand \prop$, $\always\prop$ and $\wpre\expr{\pred}$, are discussed when they become relevant in \cref{sec:Hoare} and \cref{sec:nestedhoaretriple}.
 
 Separation logic reasons about ownership in heaps. Thus, a statement in separation logic describes a set of heaps for which the statement holds. Whenever a location exists in such a heap this is interpreted as owning that location with the unique permission to access its value. Using this semantic model of separation logic we give an intuition of the connectives.
 
@@ -190,7 +190,7 @@ Note that this rule works both ways, as signified by the double lined rule. It i
 
 We can now rewrite the specification of $\loc\gets\val$ using the weakest precondition.
 $$\loc\fmapsto\val \wand \wpre{\loc\gets\valB}{\loc\fmapsto\valB}$$
-This specification holds from \ruleref{wp-store} in \cref{fig:wp-rules}. The rules in this diagram follow a different style then is expected. We could have use the above specification of $\loc\gets\val$ as the rule. However, we make use of a ``backwards'' style \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, where we reason from conclusion to the assumptions. This is also the style used in the \coq implementation of \iris, and allows for more easy application of the rules. These rules can however be simplified to the style used above. The rules are listed in \cref{fig:wp-rules}. We will now highlight the rules shortly.
+This specification holds from \ruleref{wp-store} in \cref{fig:wp-rules}. The rules in this diagram follow a different style then is expected. We could have use the above specification of $\loc\gets\val$ as the rule. However, we make use of a ``backwards'' style \cite*{ishtiaqBIAssertionLanguage2001,reynoldsSeparationLogicLogic2002}, where we reason from conclusion to the assumptions. This is also the style used in the Coq implementation of Iris, and allows for more easy application of the rules. These rules can however be simplified to the style used above. The rules are listed in \cref{fig:wp-rules}. We will now highlight the rules shortly.
 
 \begin{figure}[th!]
     General rules.
@@ -309,7 +309,7 @@ In this section first we define Hoare triples using the weakest precondition and
 We replace the previous definition of Hoare triples with this one. This definition is very similar to how we used weakest preconditions with a precondition. However, we wrap the weakest precondition with precondition in a persistence modality, $\always$.
 
 \paragraph*{Persistent propositions}
-In separation logic many propositions we often use are ephemeral. They denote specific ownership and can't be duplicated. However, there are some statements in separation logic that do not denote ownership. These are statements like, $\TRUE$, $\pure{1 = 1}$ and program specifications. For propositions such as these it would be very useful if we could duplicate them. These propositions are called \emph{persistent} in \iris terminology.
+In separation logic many propositions we often use are ephemeral. They denote specific ownership and can't be duplicated. However, there are some statements in separation logic that do not denote ownership. These are statements like, $\TRUE$, $\pure{1 = 1}$ and program specifications. For propositions such as these it would be very useful if we could duplicate them. These propositions are called \emph{persistent} in Iris terminology.
 
 \begin{mathpar}
     \inferhref{presistence}{persistence}
@@ -524,87 +524,87 @@ In this section we prove the specification of $\MLLdelete$. Recall the definitio
     We need to prove three cases:
     \begin{description}
         \item[Empty MLL:] We need to prove the following
-            \[\wpre{\MLLdelete\, \None\; \iindex}{\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])}\]
-            We can now repeatedly use the \ruleref{wp-pure} rule and finish with the rule \ruleref{wp-value} to arrive at the following statement that we have to prove:
-            \[\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])\]
-            This follows from the definition of $\isMLL$
+              \[\wpre{\MLLdelete\, \None\; \iindex}{\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])}\]
+              We can now repeatedly use the \ruleref{wp-pure} rule and finish with the rule \ruleref{wp-value} to arrive at the following statement that we have to prove:
+              \[\isMLL\, \None\; (\textlog{remove}\, \iindex\, [])\]
+              This follows from the definition of $\isMLL$
         \item[Marked Head:] We know that $\loc \fmapsto (\val', \True, \tl)$ with disjointly as IH the following:
-            \[\left(\All \iindex. \wpre{\MLLdelete\, \tl\; \iindex}{\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val})}\right) \land \isMLL\, \tl\, \vect{\val}\]
-            And, we need to prove that:
-            \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}\]
-            By using the \ruleref{wp-pure} rule, we get that we need to prove:
-            \[\wpre{
-                    \left(
-                    \begin{array}{l}
-                            \Let (\lvar, \langv{mark}, \tl) = \deref \loc in  \\
-                            \If \langv{mark} = \False\ \&\&\ \iindex = 0 then \\
-                            \quad \loc \gets (\lvar, \True, \tl)              \\
-                            \Else \If \langv{mark} = \False then              \\
-                            \quad \MLLdelete\,\tl\ (\iindex - 1)              \\
-                            \Else                                             \\
-                            \quad \MLLdelete\,\tl\ \iindex
-                        \end{array}
-                    \right)
-                }{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}\]
-            We can now use \ruleref{wp-bind} and \ruleref{wp-load} with $\loc \fmapsto (\val, \True, \tl)$ to get our new statement that we need to prove:
-            \[
-                \wpre{\left(
-                    \begin{array}{l}
-                            \Let (\lvar, \langv{mark}, \tl) = (\val, \True, \tl) in \\
-                            \If \langv{mark} = \False\ \&\&\ \iindex = 0 then       \\
-                            \quad \loc \gets (\lvar, \True, \tl)                    \\
-                            \Else \If \langv{mark} = \False then                    \\
-                            \quad \MLLdelete\,\tl\ (\iindex - 1)                    \\
-                            \Else                                                   \\
-                            \quad \MLLdelete\,\tl\ \iindex
-                        \end{array}
-                    \right)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}
-            \]
-            We now repeatedly use \ruleref{wp-pure} to reach the following:
-            \[
-                \wpre{\MLLdelete\,\tl\ \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{\val})}
-            \]
-            Which is the left-hand side of our IH.
+              \[\left(\All \iindex. \wpre{\MLLdelete\, \tl\; \iindex}{\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val})}\right) \land \isMLL\, \tl\, \vect{\val}\]
+              And, we need to prove that:
+              \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}\]
+              By using the \ruleref{wp-pure} rule, we get that we need to prove:
+              \[\wpre{
+                      \left(
+                      \begin{array}{l}
+                              \Let (\lvar, \langv{mark}, \tl) = \deref \loc in  \\
+                              \If \langv{mark} = \False\ \&\&\ \iindex = 0 then \\
+                              \quad \loc \gets (\lvar, \True, \tl)              \\
+                              \Else \If \langv{mark} = \False then              \\
+                              \quad \MLLdelete\,\tl\ (\iindex - 1)              \\
+                              \Else                                             \\
+                              \quad \MLLdelete\,\tl\ \iindex
+                          \end{array}
+                      \right)
+                  }{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}\]
+              We can now use \ruleref{wp-bind} and \ruleref{wp-load} with $\loc \fmapsto (\val, \True, \tl)$ to get our new statement that we need to prove:
+              \[
+                  \wpre{\left(
+                      \begin{array}{l}
+                              \Let (\lvar, \langv{mark}, \tl) = (\val, \True, \tl) in \\
+                              \If \langv{mark} = \False\ \&\&\ \iindex = 0 then       \\
+                              \quad \loc \gets (\lvar, \True, \tl)                    \\
+                              \Else \If \langv{mark} = \False then                    \\
+                              \quad \MLLdelete\,\tl\ (\iindex - 1)                    \\
+                              \Else                                                   \\
+                              \quad \MLLdelete\,\tl\ \iindex
+                          \end{array}
+                      \right)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{v})}
+              \]
+              We now repeatedly use \ruleref{wp-pure} to reach the following:
+              \[
+                  \wpre{\MLLdelete\,\tl\ \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, \vect{\val})}
+              \]
+              Which is the left-hand side of our IH.
         \item[Unmarked head:] We know that $\loc \fmapsto (\val', \False, \tl)$ with disjointly as IH the following:
-            \[\All \iindex. \wpre{\MLLdelete\, \tl\; \iindex}{\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val}'')} \land \isMLL\, \tl\, \vect{\val}''\]
-            And, we need to prove that:
-            \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, (\val' :: \vect{\val}''))}\]
-            We repeat the steps from the previous case, except for using $\loc \fmapsto (\val, \False, \tl)$ with the \ruleref{wp-load} rule, until we repeatedly use \ruleref{wp-pure}. We instead use \ruleref{wp-pure} once to reach the following statement:
-            \[
-                \wpre{\left(
-                    \begin{array}{l}
-                            \If \False = \False\ \&\&\ \iindex = 0 then \\
-                            \quad \loc \gets (\val', \True, \tl)        \\
-                            \Else \If \False = \False then              \\
-                            \quad \MLLdelete\,\tl\ (\iindex - 1)        \\
-                            \Else                                       \\
-                            \quad \MLLdelete\,\tl\ \iindex
-                        \end{array}
-                    \right)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, (\val' :: \vect{\val}''))}
-            \]
-            Here we do a case distinction on whether $\iindex = 0$, thus if we want to delete the current head of the MLL.
-            \begin{description}
-                \item[Case $i = 0$:] We repeatedly use \ruleref{wp-pure} until we reach:
-                    \[
-                        \wpre{\loc \gets (\val, \True, \tl)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))}
-                    \]
-                    We then use \ruleref{wp-store} with $\loc \fmapsto (\val, \True, \tl)$, which we retained after the previous use of \ruleref{wp-load}, and \ruleref{wand-IE}. We now get that $\loc \fmapsto (\val', \False, \tl)$, and we need to prove:
-                    \[
-                        \wpre{()}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))}
-                    \]
-                    We use \ruleref{wp-value} to reach:
-                    \[
-                        \isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))
-                    \]
-                    This now follows from the fact that $(\textlog{remove}\, 0\, (\val' :: \vect{\val}'')) = \vect{\val}''$ together with the definition of $\isMLL$, $\loc \fmapsto (\val', \False, \tl)$ and the IH.
-                \item[Case $i > 0$:] We repeatedly use \ruleref{wp-pure} until we reach:
-                    \[
-                        \wpre{\MLLdelete\,\tl\ (\iindex - 1)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}''))}
-                    \]
-                    We use \ruleref{wp-mono} with as assumption our the left-hand side of the IH. We now need to prove the following:
-                    \[\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val}'') \proves \isMLL\, (\Some \loc)\; (\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}''))\]
-                    This follows from the fact that $(\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}'')) = \val' :: (\textlog{remove}\, \iindex\, \vect{\val}'')$ together with the definition of $\isMLL$ and $\loc \fmapsto (\val, \False, \tl)$, which we retained from \ruleref{wp-load}. \qedhere
-            \end{description}
+              \[\All \iindex. \wpre{\MLLdelete\, \tl\; \iindex}{\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val}'')} \land \isMLL\, \tl\, \vect{\val}''\]
+              And, we need to prove that:
+              \[\wpre{\MLLdelete\, (\Some \loc)\; \iindex}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, (\val' :: \vect{\val}''))}\]
+              We repeat the steps from the previous case, except for using $\loc \fmapsto (\val, \False, \tl)$ with the \ruleref{wp-load} rule, until we repeatedly use \ruleref{wp-pure}. We instead use \ruleref{wp-pure} once to reach the following statement:
+              \[
+                  \wpre{\left(
+                      \begin{array}{l}
+                              \If \False = \False\ \&\&\ \iindex = 0 then \\
+                              \quad \loc \gets (\val', \True, \tl)        \\
+                              \Else \If \False = \False then              \\
+                              \quad \MLLdelete\,\tl\ (\iindex - 1)        \\
+                              \Else                                       \\
+                              \quad \MLLdelete\,\tl\ \iindex
+                          \end{array}
+                      \right)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, \iindex\, (\val' :: \vect{\val}''))}
+              \]
+              Here we do a case distinction on whether $\iindex = 0$, thus if we want to delete the current head of the MLL.
+              \begin{description}
+                  \item[Case $i = 0$:] We repeatedly use \ruleref{wp-pure} until we reach:
+                        \[
+                            \wpre{\loc \gets (\val, \True, \tl)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))}
+                        \]
+                        We then use \ruleref{wp-store} with $\loc \fmapsto (\val, \True, \tl)$, which we retained after the previous use of \ruleref{wp-load}, and \ruleref{wand-IE}. We now get that $\loc \fmapsto (\val', \False, \tl)$, and we need to prove:
+                        \[
+                            \wpre{()}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))}
+                        \]
+                        We use \ruleref{wp-value} to reach:
+                        \[
+                            \isMLL\, (\Some \loc)\; (\textlog{remove}\, 0\, (\val' :: \vect{\val}''))
+                        \]
+                        This now follows from the fact that $(\textlog{remove}\, 0\, (\val' :: \vect{\val}'')) = \vect{\val}''$ together with the definition of $\isMLL$, $\loc \fmapsto (\val', \False, \tl)$ and the IH.
+                  \item[Case $i > 0$:] We repeatedly use \ruleref{wp-pure} until we reach:
+                        \[
+                            \wpre{\MLLdelete\,\tl\ (\iindex - 1)}{\isMLL\, (\Some \loc)\; (\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}''))}
+                        \]
+                        We use \ruleref{wp-mono} with as assumption our the left-hand side of the IH. We now need to prove the following:
+                        \[\isMLL\, \tl\; (\textlog{remove}\, \iindex\, \vect{\val}'') \proves \isMLL\, (\Some \loc)\; (\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}''))\]
+                        This follows from the fact that $(\textlog{remove}\, (\iindex - 1)\, (\val' :: \vect{\val}'')) = \val' :: (\textlog{remove}\, \iindex\, \vect{\val}'')$ together with the definition of $\isMLL$ and $\loc \fmapsto (\val, \False, \tl)$, which we retained from \ruleref{wp-load}. \qedhere
+              \end{description}
     \end{description}
 \end{proof}
 
