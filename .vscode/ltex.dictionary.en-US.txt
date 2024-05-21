@@ -47,3 +47,5 @@ reparsing
 LTaC
 ssreflect
 Elpi
+coinductive
+recursing

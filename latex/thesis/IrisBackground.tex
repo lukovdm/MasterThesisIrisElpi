@@ -505,7 +505,7 @@ The induction hypothesis in the last two cases is different from statements we h
 In this section we prove the specification of $\MLLdelete$. Recall the definition of $\MLLdelete$.
 \MLLDeleteProg
 \\
-\begin{lemma}{}{}
+\begin{lemma}{}{isMLLdelete}
     For any index $i \ge 0$, $\vect{\val} \in \List(\Val)$  and $\hd\in\Val$,
     \[
         \hoare{\isMLL\, \hd\, \vect{\val}}{\MLLdelete\, \hd\; \iindex }{\isMLL\, \hd\; (\textlog{remove}\, \iindex\, \vect{v})}

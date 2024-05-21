@@ -47,6 +47,7 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
+    (* eiInduction "His". *)
     eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".

@@ -131,13 +131,15 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind 
+  EI.ind
   Inductive is_R_list {A} (R : val → A → iProp) : 
                       val → list A → iProp :=
     | empty_is_R_list : is_R_list R NONEV []
     | cons_is_R_list l v tl x xs : 
         l ↦ (v,tl) -∗ R v x -∗ is_R_list R tl xs -∗ 
         is_R_list R (SOMEV #l) (x :: xs).
+
+  Check is_R_list_ind.
 
   EI.ind 
   Inductive is_list (q : Qp) : val → list val → iProp :=

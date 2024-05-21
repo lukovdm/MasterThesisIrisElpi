@@ -5,6 +5,7 @@
 \usepackage{float}
 \usepackage{ifdraft}
 \usepackage{fancyvrb}
+\usepackage{cprotect}
 
 \usepackage{empheq}
 \usepackage{stmaryrd}
@@ -39,7 +40,17 @@
 \usepackage{bussproofs}
 
 \usepackage{tikz}
-\usetikzlibrary{arrows,shapes.geometric,backgrounds,positioning,calc,matrix,chains,arrows.meta}
+\usetikzlibrary{
+    arrows,
+    shapes.geometric,
+    backgrounds,
+    positioning,
+    calc,
+    matrix,
+    chains,
+    arrows.meta,
+    fit,
+}
 
 \usemintedstyle{default}
 
@@ -67,15 +78,15 @@
     enhanced,
     sharp corners,
     % borderline west={2pt}{0pt}{MediumBlue},
-    colback=black!5,
+    colback=MediumBlue!50!black!5!white,
     boxrule=0pt,
     boxsep=0.5mm,
     frame hidden,
     overlay={\begin{tcbclipinterior}
-                \fill[MediumBlue] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
+                \fill[MediumBlue] ([yshift=-2pt]frame.north east) -- ([xshift=-2pt]frame.north east) -| cycle;
             \end{tcbclipinterior}},
 }{
-    \mintinline[fontsize=\small,ignorelexererrors=true]{elpi}{#1}
+    \mintinline[fontsize=\small,ignorelexererrors=true,escapeinside=~~]{elpi}{#1}
 }
 
 \NewTotalTCBox{\coqi}{ v }{
@@ -83,7 +94,7 @@
     enhanced,
     sharp corners,
     % borderline west={2pt}{0pt}{Green},
-    colback=black!5,
+    colback=Green!50!black!5!white,
     boxrule=0pt,
     boxsep=0.5mm,
     frame hidden,
@@ -91,7 +102,7 @@
                 \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
             \end{tcbclipinterior}},
 }{
-    \mintinline[fontsize=\small,ignorelexererrors=true]{coq}{#1}
+    \mintinline[fontsize=\small,ignorelexererrors=true,escapeinside=~~]{coq}{#1}
 }
 
 \NewTCBListing{coqcode}{ !O{} }{
@@ -111,6 +122,7 @@ left=7mm,
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.2em,yshift=-1em]frame.north east) {Coq};
+            \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
         \end{tcbclipinterior}},
 }
 
@@ -130,6 +142,7 @@ left=7mm,
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.4em,yshift=-1em]frame.north east) {Elpi};
+            \fill[MediumBlue] ([yshift=-2pt]frame.north east) -- ([xshift=-2pt]frame.north east) -| cycle;
         \end{tcbclipinterior}},
 }
 
@@ -384,6 +397,51 @@ overlay={\begin{tcbclipinterior}
                     (\tikzlastnode.two split north) edge (\tikzlastnode.south east)
                     (\tikzlastnode.two split south) edge (\tikzlastnode.north east)
                 }
+        },
+    obj/.style={
+            draw,
+            rectangle,
+            fill=black!5,
+            draw=black!5,
+            align=left,
+        },
+    c/.style={
+            append after command={
+                    \pgfextra{
+                        \begin{pgfonlayer}{foreground}
+                            \fill[Green] (\tikzlastnode.south east) rectangle ([xshift=-4pt,yshift=4pt]\tikzlastnode.south east);
+                        \end{pgfonlayer}
+                    }
+                }
+        },
+    e/.style={
+            append after command={
+                    \pgfextra{
+                        \begin{pgfonlayer}{foreground}
+                            \fill[MediumBlue] ([yshift=-4pt]\tikzlastnode.north east) -- ([xshift=-4pt]\tikzlastnode.north east) -| cycle;
+                        \end{pgfonlayer}
+                    }
+                }
+        },
+    ce/.style={
+            c,
+            e
+        },
+    alg/.style={
+            coordinate,
+            label={[align=left,fill=white]right:#1}
+        },
+    sec/.style= {
+            label={[draw,xshift=-3mm,fill=white]left:#1}
+        },
+    shortdown/.style= {
+            node distance=.5cm and 1cm
+        },
+    rldown/.style= {
+            to path={-- ({$(\tikztostart)!.5!(\tikztotarget)$} -| \tikztostart) -| (\tikztotarget)}
+        },
+    rldowntwo/.style= {
+            to path={-- ({$(\tikztostart)!.4!(\tikztotarget)$} -| \tikztostart) -| (\tikztotarget)}
         },
     >/.tip = Latex,
     p/.tip = Circle

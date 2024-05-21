@@ -18,7 +18,7 @@ The candidate argument for structural recursion in $\isMLL$ would be the list of
 \end{align*}
 Here the list of values is passed straight onto the recursive call to $\isMLL$. Thus, it is not structurally recursive.
 
-We need another approach to define non-structurally recursive predicates such as these. Iris has several approaches to fix this problem, as is discussed in \cref{ch:relatedwork}. The approach we use as the basis of \eiind is the least fixpoint, inspired by the Knaster-Tarski fixpoint theorem \cite*{tarskiLatticetheoreticalFixpointTheorem1955}. Given a monotone function on predicates, there exists a least fixpoint of this function. We can now choose a function such that the fixpoint corresponds to the recursive predicate we wanted to design. This procedure is explained thoroughly in the next section, \cref{sec:fixIris}.
+We need another approach to define non-structurally recursive predicates such as these. Iris has several approaches to fix this problem, as is discussed in \cref{ch:relatedwork}. The approach we use as the basis of eiInd is the least fixpoint, inspired by the Knaster-Tarski fixpoint theorem \cite*{tarskiLatticetheoreticalFixpointTheorem1955}. Given a monotone function on predicates, there exists a least fixpoint of this function. We can now choose a function such that the fixpoint corresponds to the recursive predicate we wanted to design. This procedure is explained thoroughly in the next section, \cref{sec:fixIris}.
 
 \section{Least fixpoint in Iris} \label{sec:fixIris}
 To define a least fixpoint in Iris the first step is to have a monotone function.

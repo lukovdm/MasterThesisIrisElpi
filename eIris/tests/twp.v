@@ -59,12 +59,15 @@ Section TWP.
   Implicit Types Φ : val Λ → iProp Σ.
   Implicit Types v : val Λ.
   Implicit Types e : expr Λ.
+  Check twp_pre_mono.
 
   Lemma twp_strong_mono s1 s2 E1 E2 e Φ Ψ :
     s1 ⊑ s2 → E1 ⊆ E2 →
     WPE e @ s1; E1 [{ Φ }] -∗ (∀ v, Φ v ={E2}=∗ Ψ v) -∗ WPE e @ s2; E2 [{ Ψ }].
   Proof.
-    iIntros (? HE) "H HΦ". iRevert (E2 Ψ HE) "HΦ".
+    iIntros (? HE) "H HΦ".
+    iApply twp_pre_mono.
+    iRevert (E2 Ψ HE) "HΦ".
     eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
     - iApply twp_some.

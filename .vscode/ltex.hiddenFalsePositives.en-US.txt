@@ -54,3 +54,9 @@
 {"rule":"EN_QUOTES","sentence":"^\\QThe assumption \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is thus named \"HP\".\\E$"}
 {"rule":"EN_QUOTES","sentence":"^\\QWe can use iIntros \"HP HQ\", this will intelligently apply wand-IE twice.\\E$"}
 {"rule":"A_INFINITIVE","sentence":"^\\QThus, the call on line 4 could fail, which would cause a backtrack and an incorrect split of the input, Pred X holds but rule 2 is used.\\E$"}
+{"rule":"PRP_VB","sentence":"^\\QWhen we interpret the inductive we descent into the binders.\\E$"}
+{"rule":"PRP_VB","sentence":"^\\QWhen we interpret the inductive, we descent into the binders.\\E$"}
+{"rule":"ACTUAL","sentence":"^\\QThus, to store the pre fixpoint function of is_R_list in the database we add the rule: Where instead of « \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q » we insert the variable containing the actual reference.\\E$"}
+{"rule":"ARTICLE_ADJECTIVE_OF","sentence":"^\\QWe store the references to any objects we create after any of the previous of following steps.\\E$"}
+{"rule":"THREE_NN","sentence":"^\\QWhenever a disjunction elimination intro pattern is used,\\E$"}
+{"rule":"SUBJECT_VERB_AGREEMENT_PLURAL","sentence":"^\\QThis introduction pattern checks if the current top level connective is an inductive predicate.\\E$"}

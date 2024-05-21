@@ -175,6 +175,8 @@ mk-unfold-2.proof-1 Ps N Proper Mono H :-
 
 pred mk-unfold-2.proof-2 i:int, i:int, i:term, i:term, i:ihole.
 mk-unfold-2.proof-2 Ps N Proper Mono IH :-
+  % std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  % do-iApplyLem (app [Proper | Holes]) IH [] [IH1, IH2],
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
   std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
