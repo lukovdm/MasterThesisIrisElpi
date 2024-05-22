@@ -21,5 +21,8 @@
 
 Iris is a separation logic \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}. It is implemented in Coq in what is called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}.
 
+We implement our tactic in the $\lambda$Prolog language Elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. Elpi implements $\lambda$prolog \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012} with a few additions. These additions are crucial for the workings of \ce but won't be discussed here as they are not directly used the created tactics and commands.
+
+To use Elpi as a Coq meta programming language, there exists the Elpi Coq connector, \ce \cite{tassiElpiExtensionLanguage2018}. We use \ce to implement the Elpi variant of \coqi{iIntros}, named \coqi{eiIntros}.
 
 \end{document}

@@ -13,7 +13,7 @@ We discuss the implementation of the \coqi{eiInd} command together with integrat
 
 \paragraph{Structure of \coqii{eiInd}}
 The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig:eiinddiagram}. Each of these steps are explained in the sections referenced in the diagram.
-\todoo{Insert diagram}
+
 \begin{figure}[th!]
   \centering
   \begin{tikzpicture}[node distance=1cm and 1cm]
@@ -24,13 +24,13 @@ The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig
     % Nodes
     \node[obj,e,shortdown] (inddecl) {indt-decl};
 
-    \node[alg={Interpret inductive}, sec={\labelcref{sec:inductivedata}}, below=of inddecl] (int) {};
+    \node[alg={Interpret inductive}, sec={\labelcref{sec:pff},\labelcref{sec:parameters}}, below=of inddecl] (int) {};
     \node[obj, e, below=of int] (typeterm) {Type term};
     \node[obj, right=of typeterm] (params) {Params};
     \node[obj, right=of params] (constructors) {Constructors};
 
     \begin{scope}[local bounding box=bbox]
-      \node[alg={Construct pre \\ fixpoint function}, sec={\labelcref{sec:pff}}, below right=1cm and .5cm of typeterm] (createpff) {};
+      \node[alg={Construct pre \\ fixpoint function}, sec={\labelcref{sec:pff}}, below right=1.5cm and .5cm of typeterm] (createpff) {};
       \node[obj, ce, below=of createpff] (pff) {Pre fixpoint function};
 
       \node[alg={Construct \& prove \\ signature}, sec={\labelcref{sec:constrsig}}, below left=of pff] (sigalg) {};
@@ -50,7 +50,7 @@ The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig
       \node[obj, ce, below=of genind] (ind) {Induction lemma\hspace{2pt}};
     \end{scope}
 
-    \node[draw,dashed,thick,rounded corners,fit=(bbox)] (box) {};
+    \node[draw,dashed,thick,rounded corners,fit=(bbox) ($(constructors)!.5!(createpff)$)] (box) {};
 
     \begin{scope}[on background layer]
       \path[draw, rounded corners]
@@ -63,6 +63,7 @@ The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig
       (typeterm) edge[->] (box.north-|typeterm)
       (params) edge[->] (box.north-|params)
 
+      (constructors) -- (constructors |- {$(constructors)!.6!(createpff)$}) -| (createpff)
       (box.north-|createpff) edge[rldown] (createpff)
       (createpff) edge[->,rldown] (pff)
 
@@ -95,55 +96,63 @@ The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig
 \paragraph{Inductive tactics}
 In the last two sections we discuss how the tactics to use an inductive predicate are made. We first discuss the \coqi{eiInduction} tactic in \cref{sec:inductiontactic}, which performs induction on the specified inductive predicate. Next, in \cref{sec:indintros}, we outline the extensions to the \coqi{eiIntros} tactic concerning inductive predicates.
 
-\section{Parsing inductive data structure}\label{sec:inductivedata}
-The \coqi{eiInd} command is called by writing a Coq inductive statement and prepending it with the \coqi{eiInd} command. We will use the below inductive statement as an example for this and any subsequent sections.
-\begin{coqcode}
-  eiInd
-  Inductive is_R_list {A} (R : val → A → iProp) : 
-                      val → list A → iProp :=
-    | empty_is_R_list : is_R_list R NONEV []
-    | cons_is_R_list l v tl x xs : 
-        l ↦ (v,tl) -∗ R v x -∗ is_R_list R tl xs -∗ 
-        is_R_list R (SOMEV #l) (x :: xs).
-\end{coqcode}
-This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
-\quest{Should this be a more detailed explanation?}
+% \section{Parsing inductive data structure}\label{sec:inductivedata}
 
-In Elpi this is received as a data structure of type \elpii{indt-decl}.
-\begin{elpicode}
-  parameter `A` maximal 
-    TYPE
-    (a \ parameter `R` explicit 
-          {{ val -> lp:a -> iProp }} 
-          (r \ inductive `is_R_list` tt 
-                (arity {{ val -> list lp:a -> iProp }})
-                (f \ [constructor `empty_is_R_list` 
-                        (arity ~\ldots~), 
-                      constructor `cons_is_R_list` 
-                        (arity ~\ldots~)])))
-\end{elpicode}
-The contents of the constructors is removed from this example for conciseness. A parameter consists of the name, if it should be maximally inserted, the type, and a function that given a binder returns the rest of the term. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable. The second parameter \coqi{R} depends on the first parameter in its type, \elpii{{{ val -> lp:a -> iProp }}}.
+% This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
+% \quest{Should this be a more detailed explanation?}
 
-The first step of \coqi{eiInd} is interpreting the inductive into usable terms.
-This interpretation is done by descending into the binders. During the recursive steps, we keep track of the binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
+% In Elpi this is received as a data structure of type \elpii{indt-decl}.
 
-The inductive starts on line 5. It consists of its name, \elpii{`is_R_list`}, if its inductive, \elpii{tt}, its type, and a function containing the constructors.
-The next step in \coqi{eiInd} is normalizing the type to a term from a term with its own parameters. A lot of further steps are based on this term containing the type of the inductive predicate, called the \emph{type term} from now on.
+% The contents of the constructors is removed from this example for conciseness. A parameter consists of the name, if it should be maximally inserted, the type, and a function that given a binder returns the rest of the term. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable. The second parameter \coqi{R} depends on the first parameter in its type, \elpii{{{ val -> lp:a -> iProp }}}.
 
-We now a have the list of parameters, the type of the inductive predicate and a list of the constructors under a binder. These are the ingredients needed to construct any further terms and proofs.
-\quest{This is a bit of a cluttered, structure. But how to add more structure?}
+% The first step of \coqi{eiInd} is interpreting the inductive into usable terms.
+% This interpretation is done by descending into the binders. During the recursive steps, we keep track of the binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
+
+% The inductive starts on line 5. It consists of its name, \elpii{`is_R_list`}, if its inductive, \elpii{tt}, its type, and a function containing the constructors.
+% The next step in \coqi{eiInd} is normalizing the type to a term from a term with its own parameters. A lot of further steps are based on this term containing the type of the inductive predicate, called the \emph{type term} from now on.
+
+% We now a have the list of parameters, the type of the inductive predicate and a list of the constructors under a binder. These are the ingredients needed to construct any further terms and proofs.
+% \quest{This is a bit of a cluttered, structure. But how to add more structure?}
 
 \section{Constructing the pre fixpoint function}\label{sec:pff}
-In this step we want to transform the inductive definition of \coqi{is_R_list} into the function we take a fixpoint of called the pre fixpoint function. This step results in a function of the form of $\isMLL_\hopred$ in \cref{ex:irisisMLL}.
-From the previous step we got a function producing the two constructors.
+The \coqi{eiInd} command is called by writing a Coq inductive statement and prepending it with the \coqi{eiInd} command. The below inductive statement implements the $\isMLL$ inductive predicate from \cref{ch:fixpoints} in Coq.
+\begin{coqcode}
+  eiInd
+  Inductive is_MLL : val → list val → iProp :=
+      | empty_is_MLL : is_MLL NONEV []
+      | mark_is_MLL v vs l tl : 
+        l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
+        is_MLL (SOMEV #l) vs
+      | cons_is_MLL v vs tl l : 
+        l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
+        is_MLL (SOMEV #l) (v :: vs).
+\end{coqcode}
+The inductive statement is received in Elpi as the following value of type \elpii{indt-decl}, unimportant fields of constructors are filled in with an \elpii{_}.
+\begin{elpicode}
+  inductive `is_MLL` _ 
+    (arity {{ val -> list val -> iProp }})
+    (f \ [constructor `empty_is_MLL` 
+            (arity {{ lp:f NONEV [] }}), 
+          constructor `mark_is_MLL` 
+            (parameter `v` _ Type (v\ ~\ldots~)),
+          constructor `cons_is_MLL` 
+            (parameter `v` _ Type (v\ ~\ldots~))])
+\end{elpicode}
+The inductive consists of its name, \elpii{`is_MLL`}, its type, and a function containing the constructors with their names. Both the constructors and the type contain possible Coq binders. The constructor \coqi{mark_is_MLL} has the Coq binders \coqi{v}, \coqi{vs}, \coqi{l} and \coqi{tl}, these are represented with the parameter constructor. The parameter constructor takes the name, type and a function giving the rest of the term.
+
+The first step is to normalize the type and constructors into terms. Any Coq binders in the type are prepended as depended products, any Coq binders in the constructors are transformed into Iris existential quantifiers. The normalized type is referenced as the \emph{type term} in this chapter. The resulting constructors under a binder become:
 \begin{elpicode}
   f \ [
     {{ lp:f (InjLV #()) [] }},
-    {{ l v tl x xs : l ↦ (v, tl) -∗ R v x -∗ lp:f tl xs 
-                     -∗ lp:f (InjRV #l) (x :: xs) }}
+    {{ ∃ v vs l tl, l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
+                    is_MLL (SOMEV #l) vs }},
+    {{ ∃ v vs l tl, l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
+                    is_MLL (SOMEV #l) (v :: vs) }},
   ]
 \end{elpicode}
-Note that the parameter arguments to \coqi{is_R_list} are included in the function \elpii{f}. The first step is to transform any Coq binders in a constructor, such as \coqi{l}, \coqi{v} or \coqi{tl} into Iris existential quantifiers. Next, the magic wands in the constructors are replaced with separating conjunctions. Lastly, we connect all constructors using Iris disjunctions. This results in the following intermediate Elpi function.
+
+The next major step we take is to transform the constructors into the pre fixpoint function. \todoo{Name this function the pre fixpoint function earlier} This step results in a function of the form of $\isMLL_\hopred$ in \cref{ex:irisisMLL}.
+The first step is to replace the magic wands in the constructors with separating conjunctions. Then, we connect all constructors using Iris disjunctions. This results in the following intermediate Elpi function.
 \begin{elpicode}
   Body = f \ {{
       lp:f (InjLV #()) []
@@ -473,5 +482,7 @@ The resulting goal first gets general introduction steps and then either applies
 The \coqi{eiIntros} tactic gets additional cases for destructing induction predicates. Whenever a disjunction elimination introduction pattern is used, the tactic first checks if the connective to destruct is an inductive predicate. If this is the case, it first applies the unfolding lemma before doing the disjunction elimination.
 
 We also add a new introduction pattern \coqi{"**"}. This introduction pattern checks if the current top level connective is an inductive predicate. If this is the case, it uses unfolding and disjunction elimination to eliminate the predicate.
+
+\section{Parameters}\label{sec:parameters}
 
 \end{document}

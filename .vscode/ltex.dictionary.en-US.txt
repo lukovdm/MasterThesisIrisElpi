@@ -49,3 +49,5 @@ ssreflect
 Elpi
 coinductive
 recursing
+quantifications
+kinded
