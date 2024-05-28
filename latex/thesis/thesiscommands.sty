@@ -73,18 +73,26 @@
 \newmintinline[elpiii]{elpi}{fontsize=\small,ignorelexererrors=true}
 \newmintinline[coqii]{coq}{fontsize=\small,ignorelexererrors=true}
 
+\newcommand{\elpisymbol}{
+    \fill[MediumBlue] ([yshift=-2pt]frame.north east) -- ([xshift=-2pt]frame.north east) -| cycle;
+}
+
+\newcommand{\coqsymbol}{
+    \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
+}
+
 \NewTotalTCBox{\elpii}{ v }
 {verbatim,
     enhanced,
     sharp corners,
-    % borderline west={2pt}{0pt}{MediumBlue},
+    borderline west={1pt}{0pt}{MediumBlue!30},
     colback=MediumBlue!50!black!5!white,
     boxrule=0pt,
     boxsep=0.5mm,
     frame hidden,
-    overlay={\begin{tcbclipinterior}
-                \fill[MediumBlue] ([yshift=-2pt]frame.north east) -- ([xshift=-2pt]frame.north east) -| cycle;
-            \end{tcbclipinterior}},
+    % overlay={\begin{tcbclipinterior}
+    %             \elpisymbol
+    %         \end{tcbclipinterior}},
 }{
     \mintinline[fontsize=\small,ignorelexererrors=true,escapeinside=~~]{elpi}{#1}
 }
@@ -93,14 +101,14 @@
     verbatim,
     enhanced,
     sharp corners,
-    % borderline west={2pt}{0pt}{Green},
+    borderline west={1pt}{0pt}{Green!30},
     colback=Green!50!black!5!white,
     boxrule=0pt,
     boxsep=0.5mm,
     frame hidden,
-    overlay={\begin{tcbclipinterior}
-                \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
-            \end{tcbclipinterior}},
+    % overlay={\begin{tcbclipinterior}
+    %             \coqsymbol
+    %         \end{tcbclipinterior}},
 }{
     \mintinline[fontsize=\small,ignorelexererrors=true,escapeinside=~~]{coq}{#1}
 }
@@ -122,7 +130,7 @@ left=7mm,
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.2em,yshift=-1em]frame.north east) {Coq};
-            \fill[Green] (frame.north east) rectangle ([xshift=-2pt,yshift=-2pt]frame.north east);
+            % \coqsymbol
         \end{tcbclipinterior}},
 }
 
@@ -142,7 +150,7 @@ left=7mm,
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.4em,yshift=-1em]frame.north east) {Elpi};
-            \fill[MediumBlue] ([yshift=-2pt]frame.north east) -- ([xshift=-2pt]frame.north east) -| cycle;
+            % \elpisymbol
         \end{tcbclipinterior}},
 }
 

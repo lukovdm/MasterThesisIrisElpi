@@ -87,7 +87,7 @@ This definition of monotone follows the definition of monotone in other fields w
 \end{example}
 Now that we have a definition of a function, we can prove that a least fixpoint of a monotone function always exists.
 \begin{theorem}{Least fixpoint}{leastfixpoint}
-  Given a monotone function $\hopred\colon (A \to \iProp) \to  A \to \iProp$, there exists a least fixpoint $\lfp\hopred\colon  A \to \iProp$ such that
+  Given a monotone function $\hopred\colon (A \to \iProp) \to  A \to \iProp$, called the \emph{pre fixpoint function}, there exists a least fixpoint $\lfp\hopred\colon  A \to \iProp$ such that
   \begin{enumerate}
     \item The fixpoint equality holds
           \[ \lfp\hopred\, \var \provesIff \hopred\, (\lfp\hopred)\, \var \]
@@ -120,7 +120,7 @@ We can now use the above steps to define $\isMLL$
   \begin{align*}
     \isMLL\, \hd\, \vect{\val} & = \isMLLRecDef
   \end{align*}
-  The first step is creating the function. We do this by adding an argument to $\isMLL$ transforming it into a function. We then substitute any recursive calls to $\isMLL$ with this argument.
+  The first step is creating the pre fixpoint function. We do this by adding an argument to $\isMLL$ transforming it into a function. We then substitute any recursive calls to $\isMLL$ with this argument.
   \begin{align*}
     \isMLL_\hopred\, \pred\, \hd\, \vect{v} & \eqdef
     \isMLLFDef
@@ -227,7 +227,7 @@ To create a monotone function for the least fixpoint we need to be able to at le
 \end{definition}
 Thus we can create the following signature for \cref{def:monofunc}.
 \[\persrel (\point \wandrel) \respect \point \wandrel\]
-Filling in a $\hopred$ as the proper element get the following statement.
+Filling in an $\hopred$ as the proper element get the following statement.
 \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \wand \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var \]
 Which is \cref{def:monofunc} but using only wands, instead of entailments. We use the same structure for the signature of $\isMLL_\hopred$. But we add an extra pointwise to the left and right-hand side of the respectful relation for the extra argument.
 \[\persrel (\point\point \wandrel) \respect \point\point \wandrel\]

@@ -60,3 +60,4 @@
 {"rule":"ARTICLE_ADJECTIVE_OF","sentence":"^\\QWe store the references to any objects we create after any of the previous of following steps.\\E$"}
 {"rule":"THREE_NN","sentence":"^\\QWhenever a disjunction elimination intro pattern is used,\\E$"}
 {"rule":"SUBJECT_VERB_AGREEMENT_PLURAL","sentence":"^\\QThis introduction pattern checks if the current top level connective is an inductive predicate.\\E$"}
+{"rule":"ACTUAL","sentence":"^\\QThus, to store the pre fixpoint function of is_MLL in the database we add the rule: Where instead of « \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q » we insert the variable containing the actual reference.\\E$"}

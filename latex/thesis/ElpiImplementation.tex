@@ -89,30 +89,12 @@ The \coqi{eiInd} command consists of several steps we have outlined in \cref{fig
       (genind) edge[->] (ind);
     \end{scope}
   \end{tikzpicture}
-  \cprotect\caption{The structure of the \coqi{eiInd} command. Arrows are steps in the command and boxes are the objects that are being created. If a box has a \coqi{green box}, it is defined in Coq. If a box has a \elpii{blue triangle}, it is stored in the Elpi database. All arrows reference the section in which they are explained.}
+  \cprotect\caption{The structure of the \coqi{eiInd} command. Arrows are steps in the command and boxes are the objects that are being created. If a box has a green box, it is defined in Coq. If a box has a blue triangle, it is stored in the Elpi database. All arrows reference the section in which they are explained.}
   \label{fig:eiinddiagram}
 \end{figure}
 
 \paragraph{Inductive tactics}
 In the last two sections we discuss how the tactics to use an inductive predicate are made. We first discuss the \coqi{eiInduction} tactic in \cref{sec:inductiontactic}, which performs induction on the specified inductive predicate. Next, in \cref{sec:indintros}, we outline the extensions to the \coqi{eiIntros} tactic concerning inductive predicates.
-
-% \section{Parsing inductive data structure}\label{sec:inductivedata}
-
-% This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
-% \quest{Should this be a more detailed explanation?}
-
-% In Elpi this is received as a data structure of type \elpii{indt-decl}.
-
-% The contents of the constructors is removed from this example for conciseness. A parameter consists of the name, if it should be maximally inserted, the type, and a function that given a binder returns the rest of the term. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable. The second parameter \coqi{R} depends on the first parameter in its type, \elpii{{{ val -> lp:a -> iProp }}}.
-
-% The first step of \coqi{eiInd} is interpreting the inductive into usable terms.
-% This interpretation is done by descending into the binders. During the recursive steps, we keep track of the binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
-
-% The inductive starts on line 5. It consists of its name, \elpii{`is_R_list`}, if its inductive, \elpii{tt}, its type, and a function containing the constructors.
-% The next step in \coqi{eiInd} is normalizing the type to a term from a term with its own parameters. A lot of further steps are based on this term containing the type of the inductive predicate, called the \emph{type term} from now on.
-
-% We now a have the list of parameters, the type of the inductive predicate and a list of the constructors under a binder. These are the ingredients needed to construct any further terms and proofs.
-% \quest{This is a bit of a cluttered, structure. But how to add more structure?}
 
 \section{Constructing the pre fixpoint function}\label{sec:pff}
 The \coqi{eiInd} command is called by writing a Coq inductive statement and prepending it with the \coqi{eiInd} command. The below inductive statement implements the $\isMLL$ inductive predicate from \cref{ch:fixpoints} in Coq.
@@ -140,46 +122,47 @@ The inductive statement is received in Elpi as the following value of type \elpi
 \end{elpicode}
 The inductive consists of its name, \elpii{`is_MLL`}, its type, and a function containing the constructors with their names. Both the constructors and the type contain possible Coq binders. The constructor \coqi{mark_is_MLL} has the Coq binders \coqi{v}, \coqi{vs}, \coqi{l} and \coqi{tl}, these are represented with the parameter constructor. The parameter constructor takes the name, type and a function giving the rest of the term.
 
-The first step is to normalize the type and constructors into terms. Any Coq binders in the type are prepended as depended products, any Coq binders in the constructors are transformed into Iris existential quantifiers. The normalized type is referenced as the \emph{type term} in this chapter. The resulting constructors under a binder become:
+We first normalize the type and constructors into terms. Any Coq binders in the type are prepended as depended products, any Coq binders in the constructors are transformed into Iris existential quantifiers. The normalized type is referenced as the \emph{type term} in this chapter. The resulting constructors under a binder become:
 \begin{elpicode}
   f \ [
     {{ lp:f (InjLV #()) [] }},
-    {{ ∃ v vs l tl, l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
-                    is_MLL (SOMEV #l) vs }},
-    {{ ∃ v vs l tl, l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
-                    is_MLL (SOMEV #l) (v :: vs) }},
+    {{ ∃ v vs l tl, l ↦ (v, #true, tl) -∗ lp:f tl vs -∗ 
+                    lp:f (SOMEV #l) vs }},
+    {{ ∃ v vs l tl, l ↦ (v, #false, tl) -∗ lp:f tl vs -∗ 
+                    lp:f (SOMEV #l) (v :: vs) }},
   ]
 \end{elpicode}
 
-The next major step we take is to transform the constructors into the pre fixpoint function. \todoo{Name this function the pre fixpoint function earlier} This step results in a function of the form of $\isMLL_\hopred$ in \cref{ex:irisisMLL}.
+Next, we transform the constructors into the pre fixpoint function. This results in a function of the form of $\isMLL_\hopred$ in \cref{ex:irisisMLL}.
 The first step is to replace the magic wands in the constructors with separating conjunctions. Then, we connect all constructors using Iris disjunctions. This results in the following intermediate Elpi function.
 \begin{elpicode}
   Body = f \ {{
       lp:f (InjLV #()) []
-    ∨ ∃ l v tl x xs, 
-        l ↦ (v, tl) ∗ R v x ∗ lp:f tl xs ∗ 
-        lp:f (InjRV #l) (x :: xs)
+    ∨ ∃ v vs l tl, l ↦ (v, #true, tl) ∗ lp:f tl vs ∗ 
+                     lp:f (SOMEV #l) vs
+    ∨ ∃ v vs l tl, l ↦ (v, #false, tl) ∗ lp:f tl vs ∗ 
+                   lp:f (SOMEV #l) (v :: vs)
   }}
 \end{elpicode}
-Note that no types have been calculated at this point, as can be seen by the absence of types in the existential quantifiers.
-The next step is to transform this Elpi function into a term containing a Coq function over \elpii{f} and the two arguments of the inductive predicate. The type is transformed into a function by replacing the \elpii{prod} constructor with the \elpii{fun} constructor in the type term. The function binders are now created as follows, where \elpii{TypeTerm} is the term containing the type of the inductive predicate and \elpii{FunTerm} is that type transformed into a function. Thus, \elpii{FunTerm} has type \elpii{term -> term}, it takes a term and inserts that term as the body of the function.
+The next step is to transform this Elpi function into a term containing a Coq function over \elpii{f} and the two arguments of the inductive predicate. The type term is transformed into a function by replacing dependent products, the \elpii{prod} constructor, with function, the \elpii{fun} constructor, in the type term. The function binders are now created as follows, where \elpii{FunTerm} is the type term transformed into a function.
 \begin{elpicode}
+  FunTerm b = {{ λ (v : val) (vs : list val), lp:b }},
   F' = (fun `F` TypeTerm (f \ FunTerm (Body f)))
 \end{elpicode}
-We create a Coq function that takes the recursive argument, \coqi{F}. The body of the function is the previously created \elpii{FunTerm}. We fill the body with the created \elpii{Body}, where we fill in the recursive argument.
+We create a Coq function that takes the recursive argument, \coqi{F}. The body of the function is the previously created \elpii{FunTerm}. We fill the body with the created \elpii{Body}, in which we fill the recursive argument.
 
-Lastly, we need to replace the final recursive call of every constructor with equalities. They relate the arguments of function to the values used in the constructor. They are created by descending into the functions and keeping track of the binders. By recursively descending into each constructor and always taking the right side of a separating conjunction we can find the last recursive call. We then replace it with an equality for each of its arguments.
-
-If necessary, we abstract the created term over the parameters of the inductive. We type check this term and get the following pre fixpoint function.
+Lastly, we need to replace the final recursive call of every constructor with equalities. They relate the arguments of function to the values used in the constructor. They are created by descending into the functions and keeping track of the binders. By recursively descending into each constructor and always taking the right side of a separating conjunction we can find the last recursive call. We then replace it with an equality for each of its arguments. This results in the following term.
 \begin{coqcode}
-  λ (A : Type) (R : val → A → iProp) 
-    (F : val → list A → iProp) (H : val) (H0 : list A),
-      ⌜H = InjLV #()⌝ ∗ ⌜H0 = []⌝
-    ∨ ∃ l (v tl : val) (x : A) (xs : list A), 
-        l ↦ (v, tl) ∗ R v x ∗ F tl xs ∗ 
-        ⌜H = InjRV #l⌝ ∗ ⌜H0 = x :: xs⌝
+  λ (F : val → list val → iProp) (v : val) (vs : list val),
+    (⌜v = InjLV #()⌝ ∗ ⌜vs = []⌝
+      ∨ (∃ (v' : val) (vs' : list val) l (tl : val), 
+            l ↦ (v', #true, tl) ∗ F tl vs' ∗ 
+            ⌜v = InjRV #l⌝ ∗ ⌜vs = vs⌝)
+      ∨ ∃ (v' : val) (vs' : list val) (tl : val) l, 
+            l ↦ (v', #false, tl) ∗ F tl vs' ∗ 
+            ⌜v = InjRV #l⌝ ∗ ⌜vs = v' :: vs⌝)
 \end{coqcode}
-This Coq term is defined as \coqi{is_R_list_pre}.
+This term is defined as \coqi{is_MLL_pre}.
 
 \section{Creating and proving proper signatures}\label{sec:constrsig}
 In this section we describe how a proper is created and proven for the previously defined function. This implements the theory as defined in \cref{sec:monoproofsearch}.
@@ -207,9 +190,8 @@ Given a relation \coqi{R} and connective \coqi{m} we find a function \coqi{f} th
 \paragraph{Creating a signature}
 Using these Coq definitions we transform the type into an \coqi{IProper}. A Proper relation for a function as described above will always have the shape \coqi{(□> R ==> R)}. The relation \coqi{R} is constructed by wrapping a wand with as many pointwise relations as there are arguments in the inductive predicate. The full \coqi{IProper} term is constructed by giving this relation to \coqi{IProper} together with the pre fixpoint function. Any parameters are quantified over and given to the fixpoint function.
 \begin{coqcode}
-  ∀ (A : Type) (R : val → A → iProp),
-    IProper (□> .> .> bi_wand ==> .> .> bi_wand) 
-            (is_R_list_pre A R)
+  IProper (□> .> .> bi_wand ==> .> .> bi_wand) 
+          (is_MLL_pre)
 \end{coqcode}
 
 \paragraph{Proving a signature}
@@ -242,16 +224,15 @@ Lastly on line 6, we continue the algorithm. We don't want to backtrack into the
 The predicate \elpii{do-iApplyProper} follows the same pattern as the other Iris proof generators we defined in \cref{ssec:applier}. It mirrors a simplified version of the IPM \coqi{iApply} tactic while also finding the appropriate \coqi{IProper} instance to apply.
 
 \paragraph{Defining the pre fixpoint function monotone}
-With the signature and the proof term for monotonicity of the pre fixpoint function we define a new lemma in Coq called \coqi{is_R_list_pre_mono}. Thus allowing any further proof in the command and outside it to make use of the monotonicity of \coqi{is_R_list_pre}.
+With the signature and the proof term for monotonicity of the pre fixpoint function we define a new lemma in Coq called \coqi{is_MLL_pre_mono}. Thus allowing any further proof in the command and outside it to make use of the monotonicity of \coqi{is_MLL_pre}.
 
 \section{Constructing the fixpoint}\label{sec:constrfixpoint}
-\coqi{eiInd} generates the fixpoint as defined in \cref{sec:monoproofsearch}. The fixpoint is generated by recursing through the type term multiple times using the ideas of the previous sections. Afterwards we abstract over the parameters of the inductive. This results in creating the following fixpoint statement defined as \coqi{is_R_list}.
+\coqi{eiInd} generates the fixpoint as defined in \cref{sec:monoproofsearch}. The fixpoint is generated by recursing through the type term multiple times using the ideas of the previous sections. Afterwards we abstract over the parameters of the inductive. This results in creating the following fixpoint statement defined as \coqi{is_MLL}.
 \begin{coqcode}
-  λ (A : Type) (R : val → A → iProp) 
-    (v : val) (l : list A),
-    (∀ F : val → list A → iProp, 
-      □ (∀ (v' : val) (l' : list A), 
-            is_R_list_pre A R F v' l' -∗ F v' l') 
+  λ (v : val) (l : list val),
+    (∀ F : val → list val → iProp, 
+      □ (∀ (v' : val) (l' : list val), 
+            is_MLL_pre F v' l' -∗ F v' l') 
       -∗ F v l)
 \end{coqcode}
 
@@ -269,10 +250,10 @@ With the signature and the proof term for monotonicity of the pre fixpoint funct
     pred inductive-type o:gref, o:indt-decl.
   }}.
 \end{coqcode}
-The rules are always defined such that the fixpoint definition is the first argument and the objects we want to associate to it are next. Thus, to store the pre fixpoint function of \coqi{is_R_list} in the database we add the rule:
+The rules are always defined such that the fixpoint definition is the first argument and the objects we want to associate to it are next. Thus, to store the pre fixpoint function of \coqi{is_MLL} in the database we add the rule:
 \begin{elpicode}
-  inductive-pre (const «is_R_list») 
-                (const «is_R_list_pre»)
+  inductive-pre (const «is_MLL») 
+                (const «is_MLL_pre»)
 \end{elpicode}
 Where instead of \elpii{«~$\cdots$~»} we insert the variable containing the actual reference. We store the references to any objects we create after any of the previous of following steps. We also include some extra information in some rules, like \elpii{inductive-unfold} includes the amount of constructors the fixpoint has, and \elpii{inductive-type} contains only the Coq inductive. When retrieving information about an object, we can simply check in the database by calling the appropriate predicate.
 
@@ -281,10 +262,9 @@ In this section we prove the unfolding property of the fixpoint from \cref{thm:l
 
 Generating the proof goal is done by recursing over the type term, this results in the following statements to prove. Where the other unfolding lemmas either flip the entailment flipped or replace it with a double entailment.
 \begin{coqcode}
-  ∀ (A : Type) (R : val → A → iProp) 
-    (v : val) (l : list A),
-      is_R_list_pre A R (is_R_list A R) v l 
-    ⊢ is_R_list A R v l
+  ∀ (v : val) (l : list val),
+      is_MLL_pre (is_MLL) v l 
+    ⊢ is_MLL v l
 \end{coqcode}
 
 The proof term is generated by chaining proof generators such that no holes exist in the proof term.
@@ -295,7 +275,7 @@ The proof term is generated by chaining proof generators such that no holes exis
     do-intros-forall (hole Type Proof) 
                      (mk-unfold.r->l.1 Ps N Proper Mono).
 \end{elpicode}
-This predicate performs the first step in the proof generation before calling the next step. It takes the amount of parameters, \elpii{Ps}, the amount of arguments the fixpoint takes, \elpii{N}, the \coqi{IProper} signature, \elpii{Proper}, a reference to the monotonicity proof \coqi{Mono} and the hole for the proof. It then introduces any universal quantifiers at the start of the proof. The rest of the proof has to happen under the binder of these quantifiers, thus we use CPS to continue the proof in the predicate \elpii{mk-unfold.r->l.1}.
+This predicate performs the first step in the proof generation before calling the next step. It takes the amount of parameters, \elpii{Ps}, which we discuss \cref{sec:parameters}, the amount of arguments the fixpoint takes, \elpii{N}, the \coqi{IProper} signature, \elpii{Proper}, a reference to the monotonicity proof \coqi{Mono} and the hole for the proof. It then introduces any universal quantifiers at the start of the proof. The rest of the proof has to happen under the binder of these quantifiers, thus we use CPS to continue the proof in the predicate \elpii{mk-unfold.r->l.1}.
 
 \begin{elpicode}
   pred mk-unfold.r->l.1 i:int, i:int, 
@@ -309,18 +289,18 @@ This predicate performs the first step in the proof generation before calling th
 \end{elpicode}
 This proof generator performs all steps possible using the \coqi{do-iIntros} proof generator. It takes the same arguments as \elpii{mk-unfold.r->l}. On line 3, it initializes the Iris context and thus creates an Iris hole, \elpii{IH}. Next, we apply several proof steps using de \elpii{do-iIntros} proof generator. This again results in a continuation into a new proof generator. We are now in the following proof state.
 \begin{coqcode}
-  "HI" : ∀ (v : val) (l : list A), 
-          is_R_list_pre A R F v l -∗ F v l
+  "HI" : ∀ (v : val) (l : list val), 
+          is_MLL_pre F v l -∗ F v l
   ------------------------------------------------□
-  "HF" : is_R_list_pre A R (is_R_list A R) l' v'
+  "HF" : is_MLL_pre (is_MLL) l' v'
   ------------------------------------------------∗
-  is_R_list_pre A R F l' v'
+  is_MLL_pre F l' v'
 \end{coqcode}
-We need to apply monotonicity of \coqi{is_R_list_pre} on the goal and \coqi{"HF"}.
+We need to apply monotonicity of \coqi{is_MLL_pre} on the goal and \coqi{"HF"}.
 \begin{elpicode}
-  pred mk-unfold-2.proof-2 i:int, i:int, 
+  pred mk-unfold.r->l.2 i:int, i:int, 
                            i:term, i:term, i:ihole.
-  mk-unfold-2.proof-2 Ps N Proper Mono IH :-
+  mk-unfold.r->l.2 Ps N Proper Mono IH :-
     ((copy {{ @IProper }} {{ @iProper }} :- !) => 
       copy Proper IProper'),
     type-to-fun IProper' IProper,
@@ -343,64 +323,63 @@ We need to apply monotonicity of \coqi{is_R_list_pre} on the goal and \coqi{"HF"
       IH1 (ih\ true).
 \end{elpicode}
 We won't discuss this last proof generator in full detail but explain what is generally accomplished by the different lines of code. The proof generator again takes the same arguments as the previous two steps.
-Lines 4-7 transform the signature of the pre fixpoint function into the following statement we can apply to the goal.
+Lines 4-7 transform the signature of the pre fixpoint function into a statement we can apply to the goal. The complexity comes from dealing with parameters, which we discuss in \cref{sec:parameters}.
 \quest{Long version: On lines 4 and 5 to signature is transformed into a term that can be applied to the current hole. The type class is replaced by the type class constructor and any universal quantifiers are transformed into lambda expressions with the same type binder. On line 7 a list of holes is generated to append to the monotonicity statement we apply. These holes fill in the parameter arguments in the statement. We are thus applying the following statement.}
 \begin{coqcode}
-  (λ (A : Type) (R : val → A → iProp),
-    iProper (□> .> .> bi_wand ==> .> .> bi_wand) 
-            (is_R_list_pre A R)
-  ) _ _
+  iProper (□> .> .> bi_wand ==> .> .> bi_wand) 
+          (is_MLL_pre)
 \end{coqcode}
 Line 8 applies this statement resulting in 3 holes we need to solve. The first hole is a non-Iris hole that resulted from transforming the goal into an Iris entailment. This hole has to be solved in CPS. This is done in lines 9-15. Lines 9-15 apply the proof of monotonicity to solve the \coqi{IProper} condition\footnote{This section of code can't make use spilling, thus creating many more lines and temporary variables. We can't use spilling since the hidden temporary variables created by spilling are defined at the top level of the predicate. Thus, they can't hold any binders that we might be under. So solve this we define any temporary variables ourselves using the \elpii{sigma X\} connective.}.
 
 Line 17 ensures that the monotonicity is applied on \coqi{"HF"}. Next, lines 18-23 solve the following goal using another instance of the \elpii{do-iIntros} proof generator.
 \begin{coqcode}
-  "HI" : ∀ (H : val) (H0 : list A), 
-          is_R_list_pre A R a H H0 -∗ a H H0
+  "HI" : ∀ (v : val) (vs : list val), 
+          is_MLL_pre f v vs -∗ f v vs
   ------------------------------------------------□
-  (□> .> .> bi_wand)%i_signature (is_R_list A R) a
+  (□> .> .> bi_wand)%i_signature (is_MLL) f
 \end{coqcode}
-Thus proving the right to left unfolding property. This proof together with the other two proofs of this section are defined as \coqi{is_R_list_unfold_1}, \coqi{is_R_list_unfold_2} and \coqi{is_R_list_unfold}.
+Thus proving the right to left unfolding property. This proof together with the other two proofs of this section are defined as \coqi{is_MLL_unfold_1}, \coqi{is_MLL_unfold_2} and \coqi{is_MLL_unfold}.
 
 \section{Constructor lemmas}\label{sec:constrconstr}
 The constructors of the inductive predicate are transformed into lemmas that can be applied during a proof utilizing inductive predicates. By again recursing on the type term a lemma is generated per constructor.
 \begin{coqcode}
-  ∀ (A : Type) (R : val → A → iProp) 
-    (v : val) (l : list A),
-    ⌜v = InjLV #()⌝ ∗ ⌜l = []⌝ -∗ is_R_list A R v l
+  ∀ (v : val) (vs : list val),
+    ⌜v = InjLV #()⌝ ∗ ⌜vs = []⌝ -∗ is_MLL v vs
 
-  ∀ (A : Type) (R : val → A → iProp) 
-    (v : val) (l : list A),
-       (∃ l' (v' tl : val) (x : A) (xs : list A), 
-          l' ↦ (v', tl) ∗ R v' x ∗ is_R_list A R tl xs ∗ 
-          ⌜v = InjRV #l'⌝ ∗ ⌜l = x :: xs⌝) 
-    -∗ is_R_list A R v l
+  ∀ (v : val) (vs : list val),
+    (∃ (v : val) (vs : list val) l (tl : val), 
+          l ↦ (v, #true, tl) ∗ is_MLL tl vs ∗ 
+          ⌜v = InjRV #l⌝ ∗ ⌜vs = vs⌝) 
+       -∗ is_MLL v vs
+
+  ∀ (v : val) (vs : list val),
+    (∃ (v : val) (vs : list val) (tl : val) l, 
+          l ↦ (v, #false, tl) ∗ is_MLL tl vs ∗ 
+          ⌜v = InjRV #l⌝ ∗ ⌜vs = v :: vs⌝) 
+       -∗ is_MLL v vs
 \end{coqcode}
-Both constructor lemmas are an wand of the associated constructor to the fixpoint. They are defined with the name of their respective constructor, \coqi{empty_is_R_list} and \coqi{cons_is_R_list}.\quest{Mention that equalities could be resolved, but that it is not done?}
+Both constructor lemmas are a wand of the associated constructor to the fixpoint. They are defined with the name of their respective constructor, \coqi{empty_is_MLL}, \coqi{mark_is_MLL} and \coqi{cons_is_MLL}.\quest{Mention that equalities could be resolved, but that it is not done?}
 
 \section{Iteration and induction lemmas}\label{sec:constriterind}
 The iteration and induction lemmas follow the same strategy as the previous sections. The iteration property that we prove is:
 \begin{coqcode}
-  ∀ (A : Type) (R : val → A → iProp) 
-    (Φ : val → list A → iProp),
-    □ (∀ (H : val) (H0 : list A), 
-         is_R_list_pre A R Φ H H0 -∗ Φ H H0) -∗
-    ∀ (H : val) (H0 : list A), 
-      is_R_list A R H H0 -∗ Φ H H0
+  ∀ Φ : val → list val → iProp,
+       □ (∀ (v : val) (vs : list val), 
+            is_MLL_pre Φ v vs -∗ Φ v vs) 
+    -∗ ∀ (v : val) (vs : list val), is_MLL v vs -∗ Φ v vs
 \end{coqcode}
 The induction lemma that we prove is:
 \begin{coqcode}
-  ∀ (A : Type) (R : val → A → iProp) 
-    (Φ : val → list A → iProp),
-    □ (∀ (H : val) (H0 : list A),
-        is_R_list_pre A R
-          (λ (H1 : val) (H2 : list A), 
-             Φ H1 H2 ∧ is_R_list A R H1 H2) H
-          H0 -∗ Φ H H0) -∗
-    ∀ (H : val) (H0 : list A), 
-      is_R_list A R H H0 -∗ Φ H H0
+  ∀ Φ : val → list val → iProp,
+       □ (∀ (v : val) (vs : list val), 
+               is_MLL_pre 
+                  (λ (v' : val) (vs' : list val), 
+                    Φ v' vs' ∧ is_MLL v' vs') 
+                  v vs 
+            -∗ Φ v vs) 
+    -∗ ∀ (v : val) (vs : list val), is_MLL v vs -∗ Φ v vs
 \end{coqcode}
-These both mirror the iteration property and induction lemma from \cref{sec:monoproofsearch}. They are defined as \coqi{is_R_list_iter} and \coqi{is_R_list_ind}.
+These both mirror the iteration property and induction lemma from \cref{sec:monoproofsearch}. They are defined as \coqi{is_MLL_iter} and \coqi{is_MLL_ind}.
 \quest{Maybe explain in more detail? But they are basically the same as in 3.3. If I do switch to isMLL for this chapter, would it then be fine?}
 
 \section{\coqii{eiInductive} tactic}\label{sec:inductiontactic}\quest{I switch example which is not so nice, but I don't know how to properly do fix this}
@@ -484,5 +463,79 @@ The \coqi{eiIntros} tactic gets additional cases for destructing induction predi
 We also add a new introduction pattern \coqi{"**"}. This introduction pattern checks if the current top level connective is an inductive predicate. If this is the case, it uses unfolding and disjunction elimination to eliminate the predicate.
 
 \section{Parameters}\label{sec:parameters}
+The \coqi{eiInd} command is able to handle Coq binders for the whole Coq inductive statement, also called \emph{parameters} in this chapter. Consider this modified inductive predicate for MLL.
+\begin{coqcode}
+  EI.ind
+  Inductive is_R_MLL {A} (R : val -> A -> iProp) :
+                     val → list A → iProp :=
+    | empty_is_R_MLL : is_R_MLL R NONEV []
+    | mark_is_R_MLL v xs l tl : 
+        l ↦ (v, #true, tl) -∗ is_R_MLL R tl xs -∗ 
+        is_R_MLL R (SOMEV #l) xs
+    | cons_is_R_MLL v x xs tl l : 
+        l ↦ (v, #false, tl) -∗ R v x -∗ 
+        is_R_MLL R tl xs -∗ 
+        is_R_MLL R (SOMEV #l) (x :: xs).
+\end{coqcode}
+Instead of equating the values in the MLL to a list of values, we instead use an explicit relation to relate the values in the MLL to the list. To accomplish this we add two parameters, \coqi{{A}} and \coqi{(R : val -> A -> iProp)}. These values of \coqi{is_R_MLL} do not change during the inductive, and thus they are handled differently.
+
+When receiving the inductive value in the command, the \elpii{inductive} constructor is wrapped in binders for each parameter. Thus, when interpreting the inductive statement we keep track of all binders of parameters and add the type of the binder to the Elpi type context.
+
+Now, whenever we make a term which we define in Coq, we have to put add the parameters. Consider the pre fixpoint function of \coqi{is_R_MLL} before adding the fixpoints.
+\begin{elpicode}
+  F' = {{
+    λ (F : val → list lp:a → iProp) 
+      (v : val) (xs : list lp:a),
+      ~\ldots~
+    ∨ ∃ v' x xs' tl l, 
+        l ↦ (v', #false, tl) ∗ lp:r v' x ∗ F tl xs' ∗ 
+        ⌜v = InjRV #l⌝ ∗ ⌜xs = x :: xs'⌝
+  }}
+\end{elpicode}
+We only consider the interesting constructor. The term still contains Elpi binders which are not bound in the term. We solve this problem using the following Elpi predicate.
+\begin{elpicode}
+  pred replace-params-bo i:list param, i:term, o:term.
+  replace-params-bo [] T T.
+  replace-params-bo [(par ID _ Type C) | Params] 
+                    Term (fun N Type FTerm) :-
+    replace-params-bo Params Term Term',
+    (pi x\ (copy C x :- !) => copy Term' (FTerm x)),
+    coq.id->name ID N.
+\end{elpicode}
+It takes a list of parameters containing the name, type, and binder of the constant, and the term we want to bind parameters in. If there are still parameters left to bind, we first recursively bind the rest of the parameters. Next, we copy the term with the other parameters bound into the function \elpii{FTerm}, however when we encounter the parameter during copying we instead use the binder of \elpii{FTerm}. Lastly, we fix the type of the name of the parameter. The returned term is a Coq function based on \elpii{FTerm} and the name and type of the parameter. We have a similar predicate, \elpii{replace-params-ty} to bind parameters in dependent products, instead of lambda functions.
+
+We make use of the above predicate to transform \elpii{F'} into the pre fixpoint function.
+\begin{coqcode}
+  λ (A : Type) (R : val → A → iProp) 
+    (F : val → list A → iProp) 
+    (H : val) (H0 : list A),
+      (⌜H = InjLV #()⌝ ∗ ⌜H0 = []⌝)
+    ∨ (∃ (v : val) (xs : list A) l (tl : val), 
+         l ↦ (v, #true, tl) ∗ F tl xs ∗ 
+         ⌜H = InjRV #l⌝ ∗ ⌜H0 = xs⌝)
+    ∨ ∃ (v : val) (x : A) (xs : list A) (tl : val) l, 
+        l ↦ (v, #false, tl) ∗ R v x ∗ F tl xs ∗ 
+        ⌜H = InjRV #l⌝ ∗ ⌜H0 = x :: xs⌝
+\end{coqcode}
+
+We use \elpii{replace-params-bo} and \elpii{replace-params-ty} to bind parameters in any terms created during \coqi{eiInd}. During proof generation we also need to keep parameters in mind. When applying lemmas generated during creation of the inductive predicate, we have to add holes for any parameters of the inductive predicate. An example of this procedure can be found on line 7 of \elpii{mk-unfold.r->l.2} in \cref{sec:unfolding}.
+
+% \section{Parsing inductive data structure}\label{sec:inductivedata}
+
+% This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
+% \quest{Should this be a more detailed explanation?}
+
+% In Elpi this is received as a data structure of type \elpii{indt-decl}.
+
+% The contents of the constructors is removed from this example for conciseness. A parameter consists of the name, if it should be maximally inserted, the type, and a function that given a binder returns the rest of the term. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable. The second parameter \coqi{R} depends on the first parameter in its type, \elpii{{{ val -> lp:a -> iProp }}}.
+
+% The first step of \coqi{eiInd} is interpreting the inductive into usable terms.
+% This interpretation is done by descending into the binders. During the recursive steps, we keep track of the binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
+
+% The inductive starts on line 5. It consists of its name, \elpii{`is_MLL`}, if its inductive, \elpii{tt}, its type, and a function containing the constructors.
+% The next step in \coqi{eiInd} is normalizing the type to a term from a term with its own parameters. A lot of further steps are based on this term containing the type of the inductive predicate, called the \emph{type term} from now on.
+
+% We now a have the list of parameters, the type of the inductive predicate and a list of the constructors under a binder. These are the ingredients needed to construct any further terms and proofs.
+% \quest{This is a bit of a cluttered, structure. But how to add more structure?}
 
 \end{document}

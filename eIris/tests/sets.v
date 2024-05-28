@@ -22,6 +22,16 @@ Section SkipQueue.
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
+  Check empty_is_MLL.
+
+  EI.ind
+  Inductive is_R_MLL {A} (R : val -> A -> iProp) : val → list A → iProp :=
+      | empty_is_R_MLL : is_R_MLL R NONEV []
+      | mark_is_R_MLL v xs l tl : l ↦ (v, #true, tl) -∗ is_R_MLL R tl xs -∗ is_R_MLL R (SOMEV #l) xs
+      | cons_is_R_MLL v x xs tl l : l ↦ (v, #false, tl) -∗ R v x -∗ is_R_MLL R tl xs -∗ is_R_MLL R (SOMEV #l) (x :: xs).
+    
+  Print is_R_MLL_pre.
+  Check is_MLL_ind.
   Definition MLL_insert : val :=
     rec: "MLL_insert" "l" "i" "v" :=
       match: "l" with
