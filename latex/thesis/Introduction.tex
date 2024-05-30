@@ -18,18 +18,21 @@
 % - Doelvol zijn
 
 
-A significant part of computing science has the goal of minimizing bugs in software. Formal verification systems are a promising approach towards this goal. They allow one to formally prove that a program abides by a specification. The formal verification system we use for this thesis is the separation logic Iris \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}.
+A significant part of computing science has the goal of minimizing bugs in software. Formal verification systems are a promising approach towards this goal. They allow one to formally prove that a program abides by a specification.
+Separation logic \cite{ohearnLocalReasoningPrograms2001,reynoldsSeparationLogicLogic2002b} has been a promising basis for formal verification systems. It represents the state of the heap using a logic with extra connectives.
+The formal verification system we use on top of separation logic is Iris \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}.
+Iris has recently been used to formally verify properties of Scala \cite{giarrussoScalaStepbystepSoundness2020}. It is also used in to ongoing project to formally verify the programming language Rust, called RustBelt \cite{jungRustBeltSecuringFoundations2017,dangRustBeltMeetsRelaxed2019,matsushitaRustHornBeltSemanticFoundation2022}.
 
-Iris is implemented in Coq in what is called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. It allows for interactively verifying specifications of programs. In this thesis we are interested in programs involving recursive data structures, such as linked lists. Reasoning about recursive data structures in a separation logic involves reasoning with inductive predicates. They allow one to represent the heap containing the recursive data structure using constructs in the separation logic.
+Iris is implemented in Coq in what is called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. It allows for interactive verification of the specifications of the programs. In this thesis we are interested in programs involving recursive data structures, such as linked lists. Reasoning about recursive data structures in a separation logic involves reasoning with inductive predicates. They allow one to represent the heap containing the recursive data structure using constructs in the separation logic.
 
-\paragraph{Problem statement}
-Defining inductive predicates in Iris is a very manual task. Several trivial proofs must be performed, and several intermediate objects must be defined. Furthermore, using the inductive predicates in a proof involves additional manual steps.
+%\paragraph{Problem statement}
+Unfortunately, defining inductive predicates in Iris is a very manual and labor-intensive task. Several trivial proofs must be performed, and several intermediate objects must be defined. Furthermore, using the inductive predicates in a proof requires additional manual steps.
 
 This thesis aims to solve this problem by adding several commands and tactics to Coq that simplify and streamline working with inductive predicates. We implement our commands and tactics in the $\lambda$Prolog language Elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. Elpi implements $\lambda$Prolog \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012} with some additions. To use Elpi as a Coq meta-programming language, there exists the Elpi Coq connector, \ce \cite{tassiElpiExtensionLanguage2018}.
 
-\section{Preview}
-In this section we will give a preview of the system we developed. We also will set up the central example used for this thesis, \emph{marked linked lists}.
-\begin{figure}[ht]
+\section{Central example}
+The central example used in this thesis is \emph{marked linked lists}, (MLLs). We will use it here to give a preview of system we developed.
+\begin{figure}[t]
   \centering
   \begin{tikzpicture}
     \node [MLL] (x0) at (0,0) {$\val_0$};
@@ -48,9 +51,9 @@ In this section we will give a preview of the system we developed. We also will 
   \label{fig:MLLdiag}
 \end{figure}
 
-Marked linked lists, (MLLs), are linked lists where each node has an additional mark bit. When a node is marked, i.o.w. the bit is set, the node is considered deleted. An example of a MLL can be found in \cref{fig:MLLdiag}. An MLL allows for deleting a node out of a list without modifying any of the other nodes, helping with concurrent usages. MLLs are an intermediary step in a paper by \Citeauthor{fomitchevLockfreeLinkedLists2004a} \cite{fomitchevLockfreeLinkedLists2004a}.
+MLLs, are linked lists where each node has an additional mark bit. When a node is marked, and thus the bit is set, the node is considered deleted. An example of a MLL can be found in \cref{fig:MLLdiag}. An MLL allows for deleting a node out of a list without modifying any of the other nodes, helping with concurrent usages. MLLs are an intermediary data structure in a paper by \Citeauthor{fomitchevLockfreeLinkedLists2004a} \cite{fomitchevLockfreeLinkedLists2004a}.
 
-In order to reason about MLLs in separation logic we want to relate a heap containing an MLL to a list in the separation logic in the IPM. Using our system this can be achieved similarly to writing any other inductive predicate.
+In order to reason about MLLs in separation logic, we relate a heap containing an MLL to a list in the separation logic in the IPM. Using our newly developed system, this can be achieved similarly to writing any other inductive predicate.
 \begin{coqcode}
   eiInd
   Inductive is_MLL : val → list val → iProp :=
@@ -62,20 +65,28 @@ In order to reason about MLLs in separation logic we want to relate a heap conta
         l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
         is_MLL (SOMEV #l) (v :: vs).
 \end{coqcode}
-The command \coqi{eiInd} is prepended to the inductive statement and defines the inductive predicate \coqi{is_MLL}, together with the unfolding lemmas, constructor lemmas and induction lemma. When we have a goal requiring induction on an \coqi{is_MLL} statement, we can simply call the \coqi{eiInduction} tactic on it. We then get goals for all the cases in the inductive predicate with the proper induction hypotheses.
+The command \coqi{eiInd} is prepended to the inductive statement and defines the inductive predicate \coqi{is_MLL}, together with the unfolding lemmas, constructor lemmas, and induction lemma. When we have a goal requiring induction on an \coqi{is_MLL} statement, we can simply call the \coqi{eiInduction} tactic on it. We then get goals for all the cases in the inductive predicate with the proper induction hypotheses.
+
 
 \section{Contributions}
 This thesis contains the following contributions.
 \begin{description}
-  \item[Generation of Iris inductive predicates] We develop a system written in Elpi which given an inductive definition in Coq, defines the inductive predicate with associated unfolding, constructor and induction lemmas. In addition, tactics are created which automate unfolding the inductive predicate and applying the induction lemma. \emph{(\hyperref[ch:inductiveimpl]{Ch.~\ref*{ch:inductiveimpl}})}
+  \item[Generation of Iris inductive predicates] We develop a system written in Elpi which, given an inductive definition in Coq, defines the inductive predicate with associated unfolding, constructor and induction lemmas. In addition, tactics are created which automate unfolding the inductive predicate and applying the induction lemma. \emph{(\hyperref[ch:inductiveimpl]{Ch.~\ref*{ch:inductiveimpl}})}
   \item[Modular tactics in Elpi] We present a way to define steps in a tactic, called \emph{proof generators}, such that they can easily be composed. Allowing one to define simple proof generators which can be reused in many tactics. \emph{(\hyperref[ssec:applier]{Sec.~\ref*{ssec:applier}})}
   \item[Generate monotonicity proof of n-ary predicates] We present an algorithm which given an n-ary predicate can find a proof of monotonicity. \emph{(\hyperref[sec:monoproofsearch]{Sec.~\ref*{sec:monoproofsearch}})}
   \item[Evaluation of Elpi] Lastly, we evaluate Elpi with Coq-Elpi as a meta-language for Coq. We also discuss replacing LTaC with Elpi in IPM. \emph{(\hyperref[ch:evalelpi]{Ch.~\ref*{ch:evalelpi}})}
 \end{description}
 
 \section{Outline}
-We start by giving a background on Separation logic in \cref{ch:backgroundseplogic}. The chapter discusses the Iris separation logic while specifying and proving a program on MLLs. Next, in \cref{ch:fixpoints}, we discuss defining representation predicates in a separation logic using least fixpoints. Thus, we show how to define a representation predicate as an inductive predicate, and then give a novel algorithm to prove it monotone. In \cref{ch:IrisElpi}, we give a tutorial on Elpi by implementing an IPM tactic, \coqi{iIntros}, in Elpi. Building on the foundations of \cref{ch:IrisElpi}, we create the command and tactics to define inductive predicates in \cref{ch:inductiveimpl}. In \cref{ch:evalelpi}, we evaluate what was nice of Elpi and what could be improved. We also discuss how and if Elpi can be used in IPM. Lastly, we discuss related work in \cref{ch:relatedwork} and show the capabilities and shortcomings of the created commands and tactics in \cref{ch:conclusion}, together with any future work.
+We start by giving a background on Separation logic in \cref{ch:backgroundseplogic}. The chapter discusses the Iris separation logic while specifying and proving a program on MLLs. Next, in \cref{ch:fixpoints}, we discuss defining representation predicates in a separation logic using least fixpoints. Thus, we show how to define a representation predicate as an inductive predicate, and then give a novel algorithm to prove it monotone. In \cref{ch:IrisElpi}, we give a tutorial on Elpi by implementing an IPM tactic, \coqi{iIntros}, in Elpi. Building on the foundations of \cref{ch:IrisElpi}, we create the command and tactics to define inductive predicates in \cref{ch:inductiveimpl}. In \cref{ch:evalelpi}, we evaluate what was usefull in Elpi and what could be improved. We also discuss how and if Elpi can be used in IPM. Lastly, we discuss related work in \cref{ch:relatedwork} and show the capabilities and shortcomings of the created commands and tactics in \cref{ch:conclusion}, together with any future work.
 
-During the thesis we will be working in two different programming languages. In order to always differentiate between them, the inline displays have a different color. Any \coqi{Coq displays} have a light green line next to them. Any \elpii{Elpi displays} have a light blue line next to them. Full width listings also differentiate using green and blue lines respectively.
+During the thesis, we will be working in two different programming languages. In order to always distinguish between them, the inline displays have a different color. Any \coqi{Coq displays} have a light green line next to them. Any \elpii{Elpi displays} have a light blue line next to them. Full-width listings also differentiate using green and blue lines respectively.
+
+% The main contribution of this thesis are the following. 
+% The generation of Iris inductive predicates involves developing a system written in Elpi. This system, given an inductive definition in Coq, defines the inductive predicate with associated unfolding, constructor, and induction lemmas. Additionally, tactics are created to automate unfolding the inductive predicate and applying the induction lemma (Chapter \ref{ch
+% }). In the area of modular tactics in Elpi, we present a method to define steps in a tactic, called proof generators, allowing them to be easily composed. This approach enables the definition of simple proof generators that can be reused in various tactics (Section \ref{ssec
+% }). We also introduce an algorithm capable of finding a proof of monotonicity for n-ary predicates (Section \ref{sec
+% }). Finally, we evaluate Elpi with Coq-Elpi as a meta-language for Coq, discussing the potential replacement of LTaC with Elpi in IPM (Chapter \ref{ch
+% }). These contributions are evaluated in the discussion chapter. 
 
 \end{document}

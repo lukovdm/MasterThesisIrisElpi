@@ -313,7 +313,7 @@ Before we get to building proofs, we first discuss how Coq terms and the Coq con
 
 
 \subsection{\ce HOAS} \label{ssec:cehoas}
-\ce makes use of Higher-order abstract syntax (HOAS) in order to represent Coq terms in Elpi. Thus, it makes use of the binders in Elpi to represent binders in Coq terms. In this section we will discuss the structure of this HOAS and show how to call the Coq type checker in Elpi.
+\ce makes use of Higher-order abstract syntax (HOAS) \cite{pfenningHigherorderAbstractSyntax1988} in order to represent Coq terms in Elpi. Thus, it makes use of the binders in Elpi to represent binders in Coq terms. In this section we will discuss the structure of this HOAS and show how to call the Coq type checker in Elpi.
 
 Take the following Coq term: \coqi{0+1}, which when expanding any notation becomes \coqi{Nat.add O (S O)}. In Elpi this term is represented as follows.
 \begin{elpicode}

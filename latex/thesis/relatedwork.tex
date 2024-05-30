@@ -1,0 +1,42 @@
+\documentclass[thesis.tex]{subfiles}
+
+\ifSubfilesClassLoaded{
+  \externaldocument{thesis}
+  \setcounter{chapter}{6}
+}{}
+
+\begin{document}
+\VerbatimFootnotes
+
+\chapter{Related work} \label{ch:relatedwork}
+
+\section{Other projects using Elpi}
+\begin{itemize}
+    \item \cite{tassiDerivingProvedEquality2019} Derive
+    \item \cite{blotCompositionalPreprocessingAutomated2023} Trakt
+    \item \cite{cohenHierarchyBuilderAlgebraic2020} Hierarchy builder
+\end{itemize}
+
+\section{Fixpoints}
+\begin{itemize}
+    \item \cite{brotherstonFormalisedInductiveReasoning2007,brotherstonCyclicProofsProgram2008} Defines inductive predicates in a BI logic \quest{What is this exactly? I know Iris is one?}. Follows simliar steps, fiven a pre fixpoint function, called an operator. Proves it monotone and then takes the least fixpoint. \quest{I don't understand how it generates the function, because it seems to do so.}
+\end{itemize}
+
+\section{Inductive predicates in other separation logic proof systems}
+
+\begin{itemize}
+    \item \cite{caoVSTFloydSeparationLogic2018} mentions representation predicates and shows how to define simple variants. Only works when it has a strictly decreasing recursive call.
+    \item \cite{berdineSmallfootModularAutomatic2005} is a tool for checking a subset of separation logic specifications. It includes several built in representation predicates. You are not able to define more.
+    \item \cite{leinoDafnyAutomaticProgram2010} uses an SMT based automatic program verifier, with added hints if necessary. It automatically can handle recursive data types and do induction on them.
+    \item \cite{filliatreOneLogicUse2013} They support inductive predicates. But doesn't use separation logic I think.
+    \item \cite{mullerViperVerificationInfrastructure2016,summersAutomatingDeductiveVerification2018} Viper, is based on separation logic. It allows for automatic definition of inductive predicates. Not clear how, never explained as far as I can tell.
+    \item \cite{jacobsVeriFastPowerfulSound2011} is based on separation logic.
+\end{itemize}
+
+\section{Generalized rewriting, Propers}
+\begin{itemize}
+    \item \cite{sozeauNewLookGeneralized2009} Generalized rewriting. They backtrack in their proof search, we do not.
+\end{itemize}
+
+
+\end{document}
