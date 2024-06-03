@@ -382,7 +382,7 @@ The induction lemma that we prove is:
 These both mirror the iteration property and induction lemma from \cref{sec:monoproofsearch}. They are defined as \coqi{is_MLL_iter} and \coqi{is_MLL_ind}.
 \quest{Maybe explain in more detail? But they are basically the same as in 3.3. If I do switch to isMLL for this chapter, would it then be fine?}
 
-\section{\coqii{eiInductive} tactic}\label{sec:inductiontactic}\quest{I switch example which is not so nice, but I don't know how to properly do fix this}
+\section{\coqii{eiInduction} tactic}\label{sec:inductiontactic}
 The \coqi{eiInduction} tactic will apply the induction lemma and perform follow-up proof steps such that we get base and inductive cases to prove. We first show an example of applying the induction lemma and then show how the \coqi{eiInduction} tactic implements the same and more.
 
 \begin{example}{}{}
@@ -520,22 +520,37 @@ We make use of the above predicate to transform \elpii{F'} into the pre fixpoint
 
 We use \elpii{replace-params-bo} and \elpii{replace-params-ty} to bind parameters in any terms created during \coqi{eiInd}. During proof generation we also need to keep parameters in mind. When applying lemmas generated during creation of the inductive predicate, we have to add holes for any parameters of the inductive predicate. An example of this procedure can be found on line 7 of \elpii{mk-unfold.r->l.2} in \cref{sec:unfolding}.
 
-% \section{Parsing inductive data structure}\label{sec:inductivedata}
+\section{Application to other inductive predicates}
+In this section we show how the system we developed for defining inductive predicates in Iris is applicable on a more real world example than MLLs.
 
-% This inductive predicate relates a linked list to a Coq list by relation \coqi{R}. Since the Coq list can have an arbitrary type \coqi{A} and the predicate \coqi{R} is constant, we add them as parameters to the predicate.
-% \quest{Should this be a more detailed explanation?}
+In the IPM the total weakest precondition proof rules are not axioms. They are derived from the definition of the total weakest precondition, and, the total weakest precondition is defined in terms of the base Iris logic. This definition is a fixpoint following the procedure in \cref{sec:fixIris}.
 
-% In Elpi this is received as a data structure of type \elpii{indt-decl}.
+We can fully define the total weakest precondition using the following \coqi{eiInd} command.
+\begin{coqcode}
+  eiInd
+  Inductive twp (s : stuckness) : 
+      coPset -> expr Λ -> 
+      (val Λ -> iProp Σ) -> iProp Σ :=
+    | twp_some E v e1 Φ : 
+      (|={E}=> Φ v) -∗ 
+      ⌜to_val e1 = Some v⌝ -∗ 
+      twp s E e1 Φ
+    | twp_none E e1 Φ : 
+      (∀ σ1 ns κs nt,
+         state_interp σ1 ns κs nt ={E,∅}=∗
+         ⌜if s is NotStuck then reducible_no_obs e1 σ1 
+                           else True⌝ ∗
+         ∀ κ e2 σ2 efs, 
+           ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
+           ⌜κ = []⌝ ∗
+           state_interp σ2 (S ns) κs (length efs + nt) ∗
+           twp s E e2 Φ ∗
+           [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) 
+      -∗ ⌜to_val e1 = None⌝ 
+      -∗ twp s E e1 Φ.
+\end{coqcode}
+It contains several Iris connectives we have not seen so far, and thus need to provide a signature for them. On line 11 and 15 we have the fancy update connective, \coqi{={_,_}=∗}, and on line 19 we have the iterated separating conjunction, \coqi{[∗ list]}. That is the only addition to the commands and tactics we need.
 
-% The contents of the constructors is removed from this example for conciseness. A parameter consists of the name, if it should be maximally inserted, the type, and a function that given a binder returns the rest of the term. The first parameter has the name \elpii{`A`}, is maximally inserted, and the type is not yet calculated, thus a variable. The second parameter \coqi{R} depends on the first parameter in its type, \elpii{{{ val -> lp:a -> iProp }}}.
-
-% The first step of \coqi{eiInd} is interpreting the inductive into usable terms.
-% This interpretation is done by descending into the binders. During the recursive steps, we keep track of the binders, together with the name and type of each binder. Later, whenever we construct a term we use this list of parameters to abstract the term over the parameters.
-
-% The inductive starts on line 5. It consists of its name, \elpii{`is_MLL`}, if its inductive, \elpii{tt}, its type, and a function containing the constructors.
-% The next step in \coqi{eiInd} is normalizing the type to a term from a term with its own parameters. A lot of further steps are based on this term containing the type of the inductive predicate, called the \emph{type term} from now on.
-
-% We now a have the list of parameters, the type of the inductive predicate and a list of the constructors under a binder. These are the ingredients needed to construct any further terms and proofs.
-% \quest{This is a bit of a cluttered, structure. But how to add more structure?}
+Resulting from this inductive statement, we get all the properties of the fixpoint and the induction lemma for the total weakest precondition. These allow us to define all the proof rules of the total weakest precondition except for one.
 
 \end{document}

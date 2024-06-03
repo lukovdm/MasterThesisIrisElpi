@@ -19,13 +19,14 @@ Section TWP.
   Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
     | twp_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
     | twp_none E e1 Φ : (∀ σ1 ns κs nt,
-                    state_interp σ1 ns κs nt ={E,∅}=∗
-                      ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
-                      ∀ κ e2 σ2 efs, ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
-                        ⌜κ = []⌝ ∗
-                        state_interp σ2 (S ns) κs (length efs + nt) ∗
-                        twp s E e2 Φ ∗
-                        [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) -∗ ⌜to_val e1 = None⌝ 
+                          state_interp σ1 ns κs nt ={E,∅}=∗
+                            ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
+                            ∀ κ e2 σ2 efs, ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
+                              ⌜κ = []⌝ ∗
+                              state_interp σ2 (S ns) κs (length efs + nt) ∗
+                              twp s E e2 Φ ∗
+                              [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) 
+                          -∗ ⌜to_val e1 = None⌝ 
                           -∗ twp s E e1 Φ.
 
   Notation "'WPE' e @ s ; E [{ Φ } ]" := (twp s E e%E Φ)
@@ -60,13 +61,13 @@ Section TWP.
   Implicit Types v : val Λ.
   Implicit Types e : expr Λ.
   Check twp_pre_mono.
+  Print twp_pre.
 
   Lemma twp_strong_mono s1 s2 E1 E2 e Φ Ψ :
     s1 ⊑ s2 → E1 ⊆ E2 →
     WPE e @ s1; E1 [{ Φ }] -∗ (∀ v, Φ v ={E2}=∗ Ψ v) -∗ WPE e @ s2; E2 [{ Ψ }].
   Proof.
     iIntros (? HE) "H HΦ".
-    iApply twp_pre_mono.
     iRevert (E2 Ψ HE) "HΦ".
     eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
@@ -92,9 +93,9 @@ Section TWP.
 
   Lemma fupd_twp s E e Φ : (|={E}=> WPE e @ s; E [{ Φ }]) ⊢ WPE e @ s; E [{ Φ }].
   Proof.
-    iIntros "H".
-    rewrite twp_unfold /=.
-    Admitted.
+    rewrite twp_unfold /twp_pre. iIntros "H". destruct (to_val e) as [v|] eqn:?.
+  Admitted.
+
   Lemma twp_fupd s E e Φ : WPE e @ s; E [{ v, |={E}=> Φ v }] ⊢ WPE e @ s; E [{ Φ }].
   Proof. iIntros "H". iApply (twp_strong_mono with "H"); auto. Qed.
 

@@ -15,6 +15,7 @@
     \item \cite{tassiDerivingProvedEquality2019} Derive
     \item \cite{blotCompositionalPreprocessingAutomated2023} Trakt
     \item \cite{cohenHierarchyBuilderAlgebraic2020} Hierarchy builder
+    \item Troq
 \end{itemize}
 
 \section{Fixpoints}
@@ -33,9 +34,25 @@
     \item \cite{jacobsVeriFastPowerfulSound2011} is based on separation logic.
 \end{itemize}
 
+\paragraph{Embedded things}
+\begin{itemize}
+    \item \cite{appelTacticsSeparationLogic} Uses Coq inductive directly. This only works if the PROP you are working in is a concrete sort, often heap to Prop. iProp uses a record as PROP, thus does not work. But we even define it for the BI logic, which is not concrete at all.
+    \item \cite{chlipalaMostlyautomatedVerificationLowlevel2011} Bedrock, uses Coq fixpoint I think
+    \item \cite{bengtsonCharge2012} Charge, also Coq fixpoint, but need to read further.
+    \item \cite{appelProgramLogicsCertified2014} Need to read
+    \item \cite{rouvoetIntrinsicallyTypedCompilation2021} Also concrete Prop, and uses inductive, but in Agda
+\end{itemize}
+
 \section{Generalized rewriting, Propers}
 \begin{itemize}
     \item \cite{sozeauNewLookGeneralized2009} Generalized rewriting. They backtrack in their proof search, we do not.
+\end{itemize}
+
+\section{Other IPM implementations}
+\begin{itemize}
+    \item MTac2
+    \item LTac2
+    \item Lean
 \end{itemize}
 
 
