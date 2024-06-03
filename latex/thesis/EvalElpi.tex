@@ -1,0 +1,45 @@
+\documentclass[thesis.tex]{subfiles}
+
+\ifSubfilesClassLoaded{
+  \externaldocument{thesis}
+  \setcounter{chapter}{5}
+}{}
+
+\begin{document}
+\VerbatimFootnotes
+
+\chapter{Evaluation of Elpi} \label{ch:evalelpi}
+In this chapter we give an evaluation of Elpi based on our experiences during this thesis.
+
+\section{What worked well}
+We will highlight Logic programming and Elpi's debugging capabilities.
+
+\paragraph{Logic programming in Elpi}
+Elpi is a logic programming language, similar to Prolog. It is not a functional programming language or an imperative language. It works best when making full use of the features of a logic programming language. This includes structuring predicates around backtracking and fully utilizing unification.
+
+Debugging can be a pain point in programs with a lot of backtracking. It often happens that an error only surfaces later after backtracking a few times. However, Elpi includes the excellent Elpi tracer, together with the Elpi trace browser extension \cite{tassiLPCICElpilang2023} for the editor VSCode. It allows one to visually inspect all paths taken by the interpreter while executing the program. This greatly helps in understanding where backtracking happened by mistake. This is very helpful when starting out with a new programming concept like logic programming.
+
+Several additions Elpi made to $\lambda$Prolog have made it easier and more concise to program in. Spilling helps to greatly reduce explicit intermediary variables.
+
+\paragraph{Interacting with Coq}
+
+
+\begin{itemize}
+    \item Prolog way of programming (embrace backtracking)
+    \item Giving variables types and typechecking
+    \item Elpi DB
+    \item HOAS
+    \item Calling Coq api's
+    \item Debugging small programms
+\end{itemize}
+
+\section{What was difficult}
+\begin{itemize}
+    \item LTaC - Elpi interaction (Using LTaC as an intermediary step in an Elpi proof)
+    \item binders in Elpi variables (unintuitive and gives weird error messages)
+    \item Small anonymous predicates
+    \item Error messaging
+    \item Debugging large programms (Elpi tracer cannot handle large traces, and tracing becomes very slow, limiting tracing to one predicate does not give a large enough picture to understand what is happening and where things are going wrong)
+\end{itemize}
+
+\end{document}
