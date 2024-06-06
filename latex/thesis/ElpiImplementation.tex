@@ -552,7 +552,6 @@ We can fully define the total weakest precondition using the following \coqi{eiI
 It contains several Iris connectives we have not seen so far, and thus need to provide a signature for them. On line 11 and 15 we have the fancy update connective, \coqi{={_,_}=∗}, and on line 19 we have the iterated separating conjunction, \coqi{[∗ list]}. That is the only addition to the commands and tactics we need.
 
 Resulting from this inductive statement, we get all the properties of the fixpoint and the induction lemma for the total weakest precondition. These allow us to define all the proof rules.
-\todoo{If fudp_twp is not possible mention it here}
 
 We can thus use \coqi{eiInd} with the associated tactics to define useful and large inductive predicates and provide proofs about them.
 

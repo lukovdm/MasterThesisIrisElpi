@@ -1,7 +1,6 @@
-\documentclass[11pt,a4paper]{report}
+\documentclass[11pt]{report}
 
-\usepackage[rgb]{xcolor}
-\usepackage{url}
+\usepackage{geometry}
 
 \usepackage{fontspec, newunicodechar}
 \usepackage{microtype}
@@ -17,18 +16,15 @@
 \usepackage{silence} 
 \WarningsOff[latexfont]
 
-\usepackage{graphicx}
-\usepackage[a4paper]{geometry}
-\usepackage[style=alphabetic]{biblatex}
-% use natbib
+\usepackage[rgb]{xcolor}
+\usepackage{url}
 
+\usepackage{graphicx}
+\usepackage[style=alphabetic]{biblatex}
 \usepackage{refcount}
 \usepackage{xr-hyper}
-
 \usepackage{subfiles}
-
 \usepackage{array}
-\setlength {\marginparwidth }{2cm}
 \usepackage{mathpartir}
 \usepackage{pftools}
 \usepackage{iris}
@@ -39,20 +35,21 @@
 
 \interfootnotelinepenalty=10000
      
-\makeatletter %otherwise geometry resets everything
-\Gm@restore@org
-\makeatother
+% \makeatletter %otherwise geometry resets everything
+% \Gm@restore@org
+% \makeatother
 
-\setlength{\itemsep}{0cm}
-\setlength{\voffset}{0cm}
-\setlength{\headheight}{0cm}
-\setlength{\topmargin}{0cm} 
+% \setlength{\itemsep}{0cm}
+% \setlength{\voffset}{0cm}
+% \setlength{\headheight}{0cm}
+% \setlength{\topmargin}{0cm} 
+
+\geometry{a4paper,hscale=0.7,bottom=3cm}
 
 \graphicspath{{imgs/}}
 
 \addbibresource{iris-elpi.bib}
 
-\setlength {\marginparwidth }{4cm}
 \begin{document}
 \VerbatimFootnotes
 
@@ -86,7 +83,8 @@
                 dr. Robbert Krebbers\\
                 \texttt{robbert@cs.ru.nl}\\[1.3cm]
                 \textit{Assessor:}\\
-                \dots\\
+                dr. Freek Wiedijk\\
+                \texttt{freek@cs.ru.nl}
                 \texttt{\dots}
             \end{flushright}
         \end{minipage}

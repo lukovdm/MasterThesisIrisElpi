@@ -11,49 +11,37 @@
 \chapter{Related work} \label{ch:relatedwork}
 
 \section{Other projects using Elpi}
-\begin{itemize}
-    \item \cite{tassiDerivingProvedEquality2019} Derive
-    \item \cite{blotCompositionalPreprocessingAutomated2023} Trakt
-    \item \cite{cohenHierarchyBuilderAlgebraic2020} Hierarchy builder
-    \item Troq
-\end{itemize}
+There have been several projects which have used Elpi to creates commands and tactics. Both Derive \cite{tassiDerivingProvedEquality2019} and Hierarchy Builder \cite{cohenHierarchyBuilderAlgebraic2020} center around creating definitions and do not involve creating tactics. The project Trocq \cite{cohenTrocqProofTransfer2024} creates commands and a tactic to facilitate proof transfer in Coq. They, do not focus on creating modular proof generators and only generate one large proof term.
 
-\section{Fixpoints}
-\begin{itemize}
-    \item \cite{brotherstonFormalisedInductiveReasoning2007,brotherstonCyclicProofsProgram2008} Defines inductive predicates in a BI logic \quest{What is this exactly? I know Iris is one?}. Follows simliar steps, fiven a pre fixpoint function, called an operator. Proves it monotone and then takes the least fixpoint. \quest{I don't understand how it generates the function, because it seems to do so.}
-\end{itemize}
+\section{Inductive predicates in program verification systems}
+We will discuss the different approaches to program verification and how they represent inductive predicates.
+There are several approaches to program verification used in the last 30 years. They can be roughly categorized into three categories when looking at inductive predicates. Program verifiers which don't use separation logic. Program verifiers which use separation logic in their own verifier. And, program verifiers which embed separation logic in an interactive proof assistant.
 
-\section{Inductive predicates in other separation logic proof systems}
+\paragraph{Program verifier without separation logic}
+Program verifiers in this category are for example Dafny \cite{leinoDafnyAutomaticProgram2010}, and Spec\# \cite{barnettSpecProgrammingSystem2004,leinoUsingSpecLanguage2010}. These program verifiers do not have to deal with representation predicates and thus do not create inductive predicates.
 
-\begin{itemize}
-    \item \cite{caoVSTFloydSeparationLogic2018} mentions representation predicates and shows how to define simple variants. Only works when it has a strictly decreasing recursive call.
-    \item \cite{berdineSmallfootModularAutomatic2005} is a tool for checking a subset of separation logic specifications. It includes several built in representation predicates. You are not able to define more.
-    \item \cite{leinoDafnyAutomaticProgram2010} uses an SMT based automatic program verifier, with added hints if necessary. It automatically can handle recursive data types and do induction on them.
-    \item \cite{filliatreOneLogicUse2013} They support inductive predicates. But doesn't use separation logic I think.
-    \item \cite{mullerViperVerificationInfrastructure2016,summersAutomatingDeductiveVerification2018} Viper, is based on separation logic. It allows for automatic definition of inductive predicates. Not clear how, never explained as far as I can tell.
-    \item \cite{jacobsVeriFastPowerfulSound2011} is based on separation logic.
-\end{itemize}
+\paragraph{Separation logic program verifiers without a proof assistant}
+These program verifiers do not have to embed the separation logic into another logic. Thus, they add inductive predicates and induction as axioms to the separation logic. Projects in this category are VeriFast \cite{jacobsVeriFastPowerfulSound2011}, Viper \cite{mullerViperVerificationInfrastructure2016,summersAutomatingDeductiveVerification2018}, and Smallfoot \cite{berdineSmallfootModularAutomatic2005}.
 
-\paragraph{Embedded things}
-\begin{itemize}
-    \item \cite{appelTacticsSeparationLogic} Uses Coq inductive directly. This only works if the PROP you are working in is a concrete sort, often heap to Prop. iProp uses a record as PROP, thus does not work. But we even define it for the BI logic, which is not concrete at all.
-    \item \cite{chlipalaMostlyautomatedVerificationLowlevel2011} Bedrock, uses Coq fixpoint I think
-    \item \cite{bengtsonCharge2012} Charge, also Coq fixpoint, but need to read further.
-    \item \cite{appelProgramLogicsCertified2014} Need to read
-    \item \cite{rouvoetIntrinsicallyTypedCompilation2021} Also concrete Prop, and uses inductive, but in Agda
-\end{itemize}
+\paragraph{Separation logic program verifier in a proof assistant}
+These program verifiers embed the separation logic into the logic of the proof assistant. This can be done in several ways. Both work by \Citeauthor{appelTacticsSeparationLogic} \cite{appelTacticsSeparationLogic}, and \Citeauthor{rouvoetIntrinsicallyTypedCompilation2021} \cite{rouvoetIntrinsicallyTypedCompilation2021}, embed separation logic as propositions from a concrete heap to the proof assistant propositions. Thus, they can both use the inductive definition components of the respective proof assistant for defining inductive predicates in the separation logic.
 
-\section{Generalized rewriting, Propers}
-\begin{itemize}
-    \item \cite{sozeauNewLookGeneralized2009} Generalized rewriting. They backtrack in their proof search, we do not.
-\end{itemize}
+The work by \Citeauthor{chlipalaMostlyautomatedVerificationLowlevel2011} \cite{chlipalaMostlyautomatedVerificationLowlevel2011} and \Citeauthor{bengtsonCharge2012} \cite{bengtsonCharge2012}, both embed a separation logic in Coq. Both use embedding of separation logics which don't allow for using the Coq \coqi{Inductive} statement. They only support defining representation predicates using the Coq \coqi{Fixpoint}. Thus, using structural recursion.
 
-\section{Other IPM implementations}
-\begin{itemize}
-    \item MTac2
-    \item LTac2
-    \item Lean
-\end{itemize}
+Lastly \Citeauthor{appelProgramLogicsCertified2014} \cite{appelProgramLogicsCertified2014} defines inductive predicates similarly to Iris. Thus, they define a monotone pre fixpoint function and take the fixpoint.
 
+\section{Other implementations of the IPM}
+In this thesis we reimplemented several tactics of the IPM. This replication of \cite{krebbersInteractiveProofsHigherorder2017} has been done several times before in the meta programming languages LTac2 and MTac2. And in the proof assistant Lean. The implementation in LTac2 was done in the master thesis of \Citeauthor{liesnikovExtendingAutomatingIris2020} \cite{liesnikovExtendingAutomatingIris2020}. They keep the same structure in their tactics as the IPM while also adding some tactics of their own.
+
+The MTac2 meta programming language creates fully typed tactics. In the paper introducing MTac2 by \Citeauthor{kaiserMtac2TypedTactics2018} \cite{kaiserMtac2TypedTactics2018} several tactics of the IPM where reimplemented in MTac2. This implementation focussed on showing the capabilities of MTac2 by solving several known faults in the original IPM.
+
+Lastly, the IPM was also implemented in Lean by \Citeauthor{koenigImprovedInterfaceInteractive2022} \cite{koenigImprovedInterfaceInteractive2022}. Unlike the previous two reimplementations of the IPM, this instance also had to replicate all definitions and lemmas since it uses a different proof assistant as its base logic.
+
+All three reimplementations of the IPM did not consider inductive predicates. The first two reimplementations can make use of the same strategy of defining inductive separation logic predicates as used in Iris. The last reimplementations of the IPM can make use of the Lean structural recursion or a similar fixpoint construction as in Iris, to define inductive predicates.
+
+\section{Algorithms based on proper elements and signatures}
+The concept of proper elements and signatures was taken from the work by \Citeauthor{sozeauNewLookGeneralized2009} \cite{sozeauNewLookGeneralized2009}. They use proper elements and signatures (called Propers in their work), to create a tactic for generalized rewriting in Coq. This tactic extends the existing \coqi{rewrite} tactic from Coq by allowing one to rewrite lemmas under terms for which an appropriate \coqi{Proper} instance is given.
+
+This is a fairly different use of the same base definitions of signatures, and respectful, and pointwise relations. But, it informed our approach to automatically proving monotonicity pre fixpoint functions.
 
 \end{document}

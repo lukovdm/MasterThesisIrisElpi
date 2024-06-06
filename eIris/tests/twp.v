@@ -93,8 +93,19 @@ Section TWP.
 
   Lemma fupd_twp s E e Φ : (|={E}=> WPE e @ s; E [{ Φ }]) ⊢ WPE e @ s; E [{ Φ }].
   Proof.
-    rewrite twp_unfold /twp_pre. iIntros "H". destruct (to_val e) as [v|] eqn:?.
-  Admitted.
+    iIntros "H". destruct (to_val e) as [v|] eqn:?.
+    - iApply twp_some.
+      iExists E, v, e, Φ.
+      repeat iSplit; try done.
+      iMod "H".
+      eiDestruct "H" as "[% % % % H % [% %] % | % % % H % [% %] %]"; by simplify_eq.
+    - iApply twp_none.
+      iExists E, e, Φ.
+      repeat iSplit; try done.
+      iIntros (σ1 ns κs nt) "Hσ1". iMod "H".
+      eiDestruct "H" as "[% % % % H % [% %] % | % % % H % [% %] %]"; simplify_eq.
+      by iApply "H".
+  Qed.      
 
   Lemma twp_fupd s E e Φ : WPE e @ s; E [{ v, |={E}=> Φ v }] ⊢ WPE e @ s; E [{ Φ }].
   Proof. iIntros "H". iApply (twp_strong_mono with "H"); auto. Qed.

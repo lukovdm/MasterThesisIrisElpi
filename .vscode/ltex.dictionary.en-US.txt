@@ -51,3 +51,9 @@ coinductive
 recursing
 quantifications
 kinded
+undebuggable
+VSCode
+verifiers
+VeriFast
+Dafny
+Smallfoot
