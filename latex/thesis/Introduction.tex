@@ -17,21 +17,23 @@
 % - Meetbaar zijn
 % - Doelvol zijn
 
+Induction on inductive predicates is a fundamental aspect of reasoning about recursive structures within a logic. Separation logic \cite{ohearnLocalReasoningPrograms2001,reynoldsSeparationLogicLogic2002b} has proven to be a promising basis for program verification. It employs an affine logic, with additional connectives to reason about the heap of a program. Inductive predicates are an essential part of this logic, they allow one to reason about recursive data structures present in the program.
 
-A significant part of computing science has the goal of minimizing bugs in software. Formal verification systems are a promising approach towards this goal. They allow one to formally prove that a program abides by a specification.
-Separation logic \cite{ohearnLocalReasoningPrograms2001,reynoldsSeparationLogicLogic2002b} has been a promising basis for formal verification systems. It represents the state of the heap using a logic with extra connectives.
-The formal verification system we use on top of separation logic is Iris \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}.
-Iris has recently been used to formally verify properties of Scala \cite{giarrussoScalaStepbystepSoundness2020}. It is also used in to ongoing project to formally verify the programming language Rust, called RustBelt \cite{jungRustBeltSecuringFoundations2017,dangRustBeltMeetsRelaxed2019,matsushitaRustHornBeltSemanticFoundation2022}.
+We make use of an embedding of separation logic in an interactive proof assistant. As a result, inductive predicates in the separation logic cannot be an axiom, and have to follow from the base logic of the proof assistant. Three mayor approaches have been found to define inductive predicates: structural recursion, the Banach fixpoint \cite{jungIrisGroundModular2018}, the least fixpoint \cite{appelProgramLogicsCertified2014}.
+\begin{itemize}
+  \item Structural recursion defines an inductive predicate by recursion on an inductive type in the base logic, e.g., defining an inductive predicate by recursion on lists defined by the proof assistant.
+  \item The Banach fixpoint define inductive predicates by guarding the recursion behind the step-indexing present in some separation logics.
+  \item The least fixpoint is the most general approach, it takes a monotone function, the \emph{pre fixpoint function}, describing the behavior of the inductive predicate. Then, the least fixpoint of this function corresponds to the inductive predicate. The least fixpoint also allows for proving total correctness, whereas Banach fixpoints only allow proving partial correctness. Thus, in this thesis we focus on the least fixpoint approach.
+\end{itemize}
 
-Iris is implemented in Coq in what is called the Iris Proof Mode (IPM) \cite*{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. It allows for interactive verification of the specifications of the programs. In this thesis we are interested in programs involving recursive data structures, such as linked lists. Reasoning about recursive data structures in a separation logic involves reasoning with inductive predicates. They allow one to represent the heap containing the recursive data structure using constructs in the separation logic.
+Separation logic has been implemented several times in proof assistants \cite{appelTacticsSeparationLogic,rouvoetIntrinsicallyTypedCompilation2021,chlipalaMostlyautomatedVerificationLowlevel2011,bengtsonCharge2012}. We make use of the separation logic Iris \cite*{jungIrisMonoidsInvariants2015a,jungHigherorderGhostState2016,krebbersEssenceHigherOrderConcurrent2017,jungIrisGroundModular2018}, implemented in the proof assistant Coq as the Iris Proof Mode/MoSeL \cite{krebbersInteractiveProofsHigherorder2017,krebbersMoSeLGeneralExtensible2018}. Iris has been applied for verification of Rust~\cite{jungRustBeltSecuringFoundations2017,dangRustBeltMeetsRelaxed2019,matsushitaRustHornBeltSemanticFoundation2022}, Go~\cite{chajedVerifyingConcurrentCrashsafe2019}, Scala~\cite{giarrussoScalaStepbystepSoundness2020}, C~\cite{sammlerRefinedCAutomatingFoundational2021}, and WebAssemble~\cite{raoIrisWasmRobustModular2023}
 
-%\paragraph{Problem statement}
-Unfortunately, defining inductive predicates in Iris is a very manual and labor-intensive task. Several trivial proofs must be performed, and several intermediate objects must be defined. Furthermore, using the inductive predicates in a proof requires additional manual steps.
+Defining inductive predicates using the least fixpoint in Iris is a very manual process. Several trivial proofs must be performed, and several intermediary objects must be defined. Furthermore, using the inductive predicates in a proof requires additional manual steps.
 
-This thesis aims to solve this problem by adding several commands and tactics to Coq that simplify and streamline working with inductive predicates. We implement our commands and tactics in the $\lambda$Prolog language Elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. Elpi implements $\lambda$Prolog \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012} with some additions. To use Elpi as a Coq meta-programming language, there exists the Elpi Coq connector, \ce \cite{tassiElpiExtensionLanguage2018}.
+This thesis aims to solve this problem by adding several commands and tactics to Coq that simplify and streamline working with inductive predicates. We implement our commands and tactics in the $\lambda$Prolog language Elpi \cite{dunchevELPIFastEmbeddable2015,guidiImplementingTypeTheory2019}. Elpi is a $\lambda$Prolog dialect \cite{millerHigherorderLogicProgramming1986,millerUniformProofsFoundation1991,belleanneePragmaticReconstructionLProlog1999,millerProgrammingHigherOrderLogic2012}. To use Elpi as a Coq meta-programming language, there exists the Elpi Coq connector, \ce \cite{tassiElpiExtensionLanguage2018}.
 
 \section{Central example}
-The central example used in this thesis is \emph{marked linked lists}, (MLLs). We will use it here to give a preview of system we developed.
+\emph{Marked linked lists}, (MLLs), develop by \Citeauthor{harrisPragmaticImplementationNonblocking2001b} \cite{harrisPragmaticImplementationNonblocking2001b}, are non-blocking concurrent linked lists. They are the central example used in this thesis. We will use them here to give a preview of system we developed.
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}
@@ -51,7 +53,7 @@ The central example used in this thesis is \emph{marked linked lists}, (MLLs). W
   \label{fig:MLLdiag}
 \end{figure}
 
-MLLs, are linked lists where each node has an additional mark bit. When a node is marked, and thus the bit is set, the node is considered deleted. An example of a MLL can be found in \cref{fig:MLLdiag}. An MLL allows for deleting a node out of a list without modifying any of the other nodes, helping with concurrent usages. MLLs are an intermediary data structure in a paper by \Citeauthor{fomitchevLockfreeLinkedLists2004a} \cite{fomitchevLockfreeLinkedLists2004a}.
+MLLs, are linked lists where each node has an additional mark bit. When a node is marked, and thus the bit is set, the node is considered deleted. An example of a MLL can be found in \cref{fig:MLLdiag}. An MLL allows for deleting a node out of a list without modifying any of the other nodes, helping with concurrent usages.
 
 In order to reason about MLLs in separation logic, we relate a heap containing an MLL to a list in the separation logic in the IPM. Using our newly developed system, this can be achieved similarly to writing any other inductive predicate.
 \begin{coqcode}
@@ -65,8 +67,14 @@ In order to reason about MLLs in separation logic, we relate a heap containing a
         l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
         is_MLL (SOMEV #l) (v :: vs).
 \end{coqcode}
-The command \coqi{eiInd} is prepended to the inductive statement and defines the inductive predicate \coqi{is_MLL}, together with the unfolding lemmas, constructor lemmas, and induction lemma. When we have a goal requiring induction on an \coqi{is_MLL} statement, we can simply call the \coqi{eiInduction} tactic on it. We then get goals for all the cases in the inductive predicate with the proper induction hypotheses.
+The command \coqi{eiInd} (for ``Elpi Iris Inductive'') is prepended to the inductive statement and defines the inductive predicate \coqi{is_MLL}, together with the unfolding lemmas, constructor lemmas, and induction lemma. When we have a goal requiring induction on an \coqi{is_MLL} statement, we can simply call the \coqi{eiInduction} tactic on it. We then get goals for all the cases in the inductive predicate with the proper induction hypotheses.
 
+\section{Approach}
+To generate inductive properties from their inductive definition using the least fixpoint we will take the following approach. We create the command, \coqi{eiInd}, as shown above. Which, given an inductive definition in Coq, generates the pre fixpoint function, proofs in monotone and defines the fixpoint for the arity of the pre fixpoint function. Next, it proves the fixpoint properties of the defined fixpoint and generates constructor lemmas. Lastly, it generates and proves the induction lemma.
+
+To use the inductive predicate we create two tactics. The \coqi{eiInduction} tactics, which applies the induction lemma on the specified hypothesis. And, the \coqi{eiDestruct} tactic, which eliminates an inductive predicate into its possible constructors.
+
+To accomplish these goals we reimplement a subset of the IPM tactics in Elpi as \emph{proof generators}, i.e., taking a goal in Elpi and producing a proof term which inhabits that goal. We also use these proof generators to reimplement several other IPM tactics, namely \coqi{eiIntros}, \coqi{eiSplit}, \coqi{eiEvalIn}, \coqi{eiModIntro}, \coqi{eiExFalso}, \coqi{eiClear}, \coqi{eiPure}, \coqi{eiApply} (without full specialization), \coqi{eiIntuitionistic}, and \coqi{eiExact}.
 
 \section{Contributions}
 This thesis contains the following contributions.
@@ -80,6 +88,7 @@ This thesis contains the following contributions.
 \section{Outline}
 We start by giving a background on Separation logic in \cref{ch:backgroundseplogic}. The chapter discusses the Iris separation logic while specifying and proving a program on MLLs. Next, in \cref{ch:fixpoints}, we discuss defining representation predicates in a separation logic using least fixpoints. Thus, we show how to define a representation predicate as an inductive predicate, and then give a novel algorithm to prove it monotone. In \cref{ch:IrisElpi}, we give a tutorial on Elpi by implementing an IPM tactic, \coqi{iIntros}, in Elpi. Building on the foundations of \cref{ch:IrisElpi}, we create the command and tactics to define inductive predicates in \cref{ch:inductiveimpl}. In \cref{ch:evalelpi}, we evaluate what was usefull in Elpi and what could be improved. We also discuss how and if Elpi can be used in IPM. Lastly, we discuss related work in \cref{ch:relatedwork} and show the capabilities and shortcomings of the created commands and tactics in \cref{ch:conclusion}, together with any future work.
 
+\paragraph{Notation}
 During the thesis, we will be working in two different programming languages. In order to always distinguish between them, the inline displays have a different color. Any \coqi{Coq displays} have a light green line next to them. Any \elpii{Elpi displays} have a light blue line next to them. Full-width listings also differentiate using green and blue lines respectively.
 
 % The main contribution of this thesis are the following. 
