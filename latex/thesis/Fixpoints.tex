@@ -7,27 +7,27 @@
 
 \begin{document}
 \chapter{Fixpoints for representation predicates} \label{ch:fixpoints}
-In this chapter we show how non-structurally recursive representation predicates can be defined using least fixpoints. In \cref{sec:fixproblem} we explain why it is hard to define non-structurally recursive predicates and generally explain the approach that is taken. Next, in \cref{sec:fixIris} we show the way least fixpoints are defined in Iris. Lastly, in \cref{sec:monoproofsearch} we explain the improvements we made to the approach of Iris in order for the process to be automated.
+In this chapter we show how non-structurally recursive representation predicates can be defined using least fixpoints. In \cref{sec:fixproblem}, we explain why it is difficult to define non-structurally recursive predicates and generally explain the approach that is taken. Next, in \cref{sec:fixIris}, we show the way least fixpoints are defined in Iris. Lastly, in \cref{sec:monoproofsearch} we explain the improvements we made to the approach of Iris in order for the process to be automated.
 
 \section{Problem statement} \label{sec:fixproblem}
-In order to define a recursive predicate we have to prove it actually exists. One way of defining recursive predicates is by structural recursion. Thus, every recursive call in the predicate has to be on a structurally smaller part of the arguments.
+In order to define a recursive predicate, we have to prove it actually exists. One way of defining recursive predicates is by structural recursion. Thus, every recursive call in the predicate has to be on a structurally smaller part of the arguments.
 
 The candidate argument for structural recursion in $\isMLL$ would be the list of values used to represent the MLL. However, this does not work given the second case of the recursion.
 \begin{align*}
   \isMLL\,\hd\,\vect{\val} = \cdots \lor (\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val}) \lor \cdots
 \end{align*}
-Here the list of values is passed straight onto the recursive call to $\isMLL$. Thus, it is not structurally recursive.
+Here, the list of values is passed straight onto the recursive call to $\isMLL$. Thus, it is not structurally recursive.
 
-We need another approach to define non-structurally recursive predicates such as these. Iris has several approaches to fix this problem, as is discussed in \cref{ch:relatedwork}. The approach we use as the basis of eiInd is the least fixpoint, inspired by the Knaster-Tarski fixpoint theorem \cite*{tarskiLatticetheoreticalFixpointTheorem1955}. Given a monotone function on predicates, there exists a least fixpoint of this function. We can now choose a function such that the fixpoint corresponds to the recursive predicate we wanted to design. This procedure is explained thoroughly in the next section, \cref{sec:fixIris}.
+We need another approach to define non-structurally recursive predicates such as these. Iris has several approaches to resolve this problem, as is discussed in \cref{ch:relatedwork}. The approach we use as the basis of \coqi{eiInd} is the least fixpoint, inspired by the Knaster-Tarski fixpoint theorem \cite*{tarskiLatticetheoreticalFixpointTheorem1955}. Given a monotone function on predicates, there exists a least fixpoint of this function. We can now choose a function such that the fixpoint corresponds to the recursive predicate we wanted to design. This procedure is explained thoroughly in the next section, \cref{sec:fixIris}.
 
 \section{Least fixpoint in Iris} \label{sec:fixIris}
-To define a least fixpoint in Iris the first step is to have a monotone function.
+To define a least fixpoint in Iris, the first step is to have a monotone function.
 \begin{definition}{Monotone function}{monofunc}
   Function $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is monotone when for any $\pred, \predB\colon A \to \iProp$, it holds that
   \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \proves \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var\]
   In other words, $\hopred$ is monotone in its first argument.
 \end{definition}
-This definition of monotone follows the definition of monotone in other fields with one exception. The assumption has an additional restriction, it has to be persistent. The persistence is necessary since $\hopred$ could use its monotone argument multiple times.
+This definition of monotone follows the definition of monotone in other fields, with one exception. The assumption has an additional restriction, it has to be persistent. The persistence is necessary since $\hopred$ could use its monotone argument multiple times.
 \begin{example}{}{treemono}
   Take the following function.
   \begin{align*}
@@ -56,7 +56,7 @@ This definition of monotone follows the definition of monotone in other fields w
         \loc_2 \fmapsto \val_2 * \predB\,\val_1 * \predB\,\val_2
       \end{array}\right)
     \end{align*}
-    The first statement holds directly. For the second statement we eliminate the existentials in the assumption and use the created variables to introduce the existentials in the conclusion.
+    The first statement holds directly. For the second statement, we eliminate the existentials in the assumption and use the created variables to introduce the existentials in the conclusion.
     \begin{align*}
        & \always(\All \valB. \pred\,\valB \wand \predB\,\valB) *
       \begin{array}{l}
@@ -120,7 +120,7 @@ We can now use the above steps to define $\isMLL$
   \begin{align*}
     \isMLL\, \hd\, \vect{\val} & = \isMLLRecDef
   \end{align*}
-  The first step is creating the pre fixpoint function. We do this by adding an argument to $\isMLL$ transforming it into a function. We then substitute any recursive calls to $\isMLL$ with this argument.
+  The first step is creating the pre fixpoint function. We accomplish this by adding an argument to $\isMLL$ and then transforming it into a function. Next, we substitute any recursive calls to $\isMLL$ with this argument.
   \begin{align*}
     \isMLL_\hopred\, \pred\, \hd\, \vect{v} & \eqdef
     \isMLLFDef
@@ -160,14 +160,14 @@ We can now use the above steps to define $\isMLL$
 
 \section{Syntactic monotone proof search}
 \label{sec:monoproofsearch}%
-As we discussed in \cref{ch:introduction}, the goal of this thesis is to show how to automate the definition of representation predicates from inductive definitions. The major hurdle in this process can be seen in \cref{ex:irisisMLL}, proving a function monotone. In this section we show how a monotonicity proof can be found by using syntactic proof search.
+As we discussed in \cref{ch:introduction}, the goal of this thesis is to show how to automate the definition of representation predicates from inductive definitions. The major hurdle in this process can be seen in \cref{ex:irisisMLL}, proving a function monotone. In this section, we show how a monotonicity proof can be found by using syntactic proof search.
 
 We base our strategy on the work by \Citeauthor{sozeauNewLookGeneralized2009} \cite{sozeauNewLookGeneralized2009}. They create a system for rewriting expressions in goals in Coq under generalized relations, instead of just equality. Many definitions are equal, but do them in separation logic instead of the logic of Coq. The proof search itself is not based on the generalized rewriting of \Citeauthor{sozeauNewLookGeneralized2009}.
 
 We take the following strategy. We prove the monotonicity of all the connectives once. We now prove the monotonicity of the function by making use of the monotonicity of the connectives with which it is built.
 
 \paragraph*{Monotone connectives}
-We don't want to uncurry every connective when using that it is monotone, thus we take a different approach on what is monotone. For every connective we give a signature telling us how it is monotone. We show a few of these signatures below.
+We don't want to uncurry every connective when using that it is monotone, and thus we take a different approach to what is monotone. For every connective we give a signature telling us how it is monotone. We show a few of these signatures below.
 
 \begin{center}
   \begin{tabular}{lll}
@@ -179,7 +179,7 @@ We don't want to uncurry every connective when using that it is monotone, thus w
     $\exists$  & $(\sigax \to \Prop) \to \Prop$ & $(\eqrel \respect \wandrel) \respect \wandrel$
   \end{tabular}
 \end{center}
-We make use of the Haskell prefix notation, $(\wand)$, to turn an infix operator into a prefix function. The signature of a connective defines the requirements for monotonicity a connective has. The signatures are based on building relations which we can apply on the connectives.
+We make use of the Haskell prefix notation, $(\wand)$, to turn an infix operator into a prefix function. The signature of a connective defines the requirements for monotonicity a connective has. The signatures are based on building relations, which we can apply on the connectives.
 \begin{definition}{Relation in $\iProp$}{irel}
   A relation in separation logic on type $\sigax$ is defined as
   \[\Rel\ \sigax \eqdef \sigax \to \sigax \to \Prop\]
@@ -220,27 +220,27 @@ The new signature for the existential quantification becomes
 \[\point \wandrel \respect \wandrel\]
 
 \paragraph*{Monotone functions}
-To create a monotone function for the least fixpoint we need to be able to at least define \cref{def:monofunc} in terms of the proper element of a signature. We already have most the combinators needed, but we are missing a way to mark a relation as persistent.
+To create a monotone function for the least fixpoint we need to be able to at least define \cref{def:monofunc} in terms of the proper element of a signature. We already have most of the combinators needed, but we are missing a way to mark a relation as persistent.
 \begin{definition}{Persistent relation}{persrel}
   The persistent relation $\persrel\rel\colon\Rel\ \sigax$ for a relation $\rel\colon\Rel\ \sigax$ is defined as
   \[\persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)\]
 \end{definition}
 Thus we can create the following signature for \cref{def:monofunc}.
 \[\persrel (\point \wandrel) \respect \point \wandrel\]
-Filling in an $\hopred$ as the proper element get the following statement.
+Filling in an $\hopred$ as the proper element, we get the following statement.
 \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \wand \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var \]
 Which is \cref{def:monofunc} but using only wands, instead of entailments. We use the same structure for the signature of $\isMLL_\hopred$. But we add an extra pointwise to the left and right-hand side of the respectful relation for the extra argument.
 \[\persrel (\point\point \wandrel) \respect \point\point \wandrel\]
-We are thus able to write down the monotonicity of a function without explicit currying and uncurrying.
+We can thus write down the monotonicity of a function without explicit currying and uncurrying.
 
-\paragraph*{Monotone proof search}
-The monotone proof search is based on identifying the top level relation and the top level function beneath it. Thus, in the below proof state, the wand is the top level relation and the disjunction is the top level function.
+\paragraph{Monotone proof search}
+The monotone proof search is based on identifying the top-level relation and the top-level function beneath it. Thus, in the below proof state, the wand is the top-level relation and the disjunction is the top-level function.
 \begin{center}
   \begin{tikzpicture}
     \node (text) at (0,0) {$\always{(\cdots)} \proves (\cdots \lor \cdots) \wand (\cdots \lor \cdots)$};
-    \node (rel) at (.85,-1) {Top level relation};
+    \node (rel) at (.85,-1) {Top-level relation};
     \draw[->] (rel) -- (.85,-.15);
-    \node (func) at (.775,1) {Top level function};
+    \node (func) at (.775,1) {Top-level function};
     \draw[->] (func) -- (-.17, .18);
     \draw[->] (func) -- (1.72, .18);
   \end{tikzpicture}
@@ -262,22 +262,22 @@ Using these descriptions we show a proof using our monotone proof search. Then, 
     \begin{align*}
       (\cdots \lor \cdots \pred \cdots) \wand (\cdots \lor \cdots \predB \cdots)
     \end{align*}
-    Thus, the top level connective is the wand and the one below it is the disjunction. We now search for a signature ending on a magic wand and which has the disjunction as a proper element. We find the signature ${\wandrel \respect \wandrel \respect \wandrel}$ with $\lorrel$. We apply $(\wandrel \respect \wandrel \respect \wandrel) \lorrel \lorrel$ resulting in two statements to prove.
+    Thus, the top-level connective is the wand and the one below it is the disjunction. We now search for a signature ending on a magic wand and which has the disjunction as a proper element. We find the signature ${\wandrel \respect \wandrel \respect \wandrel}$ with $\lorrel$. We apply $(\wandrel \respect \wandrel \respect \wandrel) \lorrel \lorrel$, resulting in two statements to prove.
     \begin{align*}
        & (\hd = \None * \vect{\val} = []) \wand (\hd = \None * \vect{\val} = [])                                \\
        & (\cdots \pred \cdots \lor \cdots  \pred \cdots) \wand (\cdots \predB \cdots \lor \cdots \predB \cdots)
     \end{align*}
-    The first statement follows directly from reflexivity of the magic wand. The second statement utilizes the same disjunction signature again, thus we just show the end results of applying it.
+    The first statement follows directly from reflexivity of the magic wand. The second statement utilizes the same disjunction signature again. Thus, we just show the result of applying it.
     \begin{align*}
        & (\Exists \loc, \val', \tl. \cdots \pred \cdots) \wand (\Exists \loc, \val', \tl. \cdots \predB \cdots)                               \\
        & (\Exists \loc, \val', \vect{\val}'', \tl. \cdots \pred \cdots) \wand (\Exists \loc, \val', \vect{\val}'', \tl. \cdots \predB \cdots)
     \end{align*}
-    Both statements have as top level relation $\wandrel$ with below it $\exists$. We apply the signature of $\exists$ with as result.
+    Both statements have as top-level relation $\wandrel$ with below it $\exists$. We apply the signature of $\exists$ with as result.
     \begin{align*}
        & \All \loc. (\Exists \val', \tl. \cdots \pred \cdots) \wand (\Exists \val', \tl. \cdots \predB \cdots)                               \\
        & \All \loc. (\Exists \val', \vect{\val}'', \tl. \cdots \pred \cdots) \wand (\Exists \val', \vect{\val}'', \tl. \cdots \predB \cdots)
     \end{align*}
-    We introduce $\loc$ and repeat these steps until the existential quantification is no longer the top level function.
+    We introduce $\loc$ and repeat these steps until the existential quantification is no longer the top-level function.
     \begin{align*}
        & (\hd = \Some l * l \fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{\val}) \wand \\
        & (\hd = \Some l * l \fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{\val})      \\
@@ -292,7 +292,7 @@ Using these descriptions we show a proof using our monotone proof search. Then, 
                    \vect{\val} = \val' :: \vect{\val}'' * \predB\, \tl\, \vect{\val}''
                  \end{array}\right)
     \end{align*}
-    We can now repeatedly apply the signature of $\seprel$ and apply reflexivity for any created propositions without $\pred$ or $\predB$. This leaves us with
+    We can now repeatedly apply the signature of $\seprel$ and apply reflexivity to any created propositions without $\pred$ or $\predB$. This leaves us with
     \begin{align*}
       \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} & \proves \pred\, \tl\, \vect{\val} \wand \predB\, \tl\, \vect{\val}     \\
       \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} & \proves \pred\, \tl\, \vect{\val}'' \wand \predB\, \tl\, \vect{\val}''
@@ -302,18 +302,18 @@ Using these descriptions we show a proof using our monotone proof search. Then, 
 \end{example}
 The strategy we use for proof search consists of two steps. We have a normalization step, and we have an application step.
 \begin{description}
-  \item[Normalization] Introduce any universal quantifiers, extra created wands and modalities. Afterwards, do an application step.
+  \item[Normalization] Introduce any universal quantifiers, extra created wands and modalities. Afterward, do an application step.
   \item[Application] We apply the first option that works.
         \begin{enumerate}
-          \item If left and right-hand side of the relation are equal, and the relation is reflexive, apply reflexivity.
+          \item If the left and right-hand side of the relation are equal, and the relation is reflexive, apply reflexivity.
           \item Check if the conclusion follows from a premise, and then apply it.
-          \item Look for a signature of the top level function where the last relation matches the top level relation of the conclusion. Apply it if we find one. Next, do a normalization step.
+          \item Look for a signature of the top-level function where the last relation matches the top-level relation of the conclusion. Apply it if we find one. Next, do a normalization step.
         \end{enumerate}
 \end{description}
 We start the proof with the normalization step and continue until all created branches are proven.
 
 \paragraph{Generating the fixpoints theorem}
-Given the above proof of monotonicity of $\isMLL_\hopred$, \cref{thm:leastfixpoint} does not give a least fixpoint for $\isMLL_\hopred$. We change the definition to add an arbitrary amount of arguments to the fixpoint and its properties.
+Given the above proof of monotonicity of $\isMLL_\hopred$, \cref{thm:leastfixpoint} does not give a least fixpoint for $\isMLL_\hopred$. We change the definition to add an arbitrary number of arguments to the fixpoint and its properties.
 \[
   \lfp\hopred\,\var_1\,\cdots\,\var_n \eqdef \All \pred. \always(\All \varB_1,\cdots,\varB_n. \hopred\, \pred\, \varB_1\,\cdots\,\varB_n \wand \pred\, \varB_1\,\cdots\,\varB_n) \wand \pred \, \var_1\,\cdots\,\var_n
 \]
@@ -324,6 +324,6 @@ This is not a valid definition in our logic for an arbitrary $n$. Thus, we creat
   We use the above definition of the least fixpoint with $n = 2$.
   \[ \lfp\isMLL_\hopred\,\hd\,\vect{\val} \eqdef \All \pred. \always(\All \hd',\vect{\val}'. \isMLL_\hopred\, \pred\, \hd'\, \vect{\val}' \wand \pred\, \hd'\, \vect{\val}') \wand \pred\, \hd\, \vect{\val} \]
 \end{example}
-For the induction principle we apply the same strategy. For $\isMLL$ we get the induction principle as described in \cref{ex:irisisMLL}.
+For the induction principle, we apply the same strategy. With $\isMLL$, we get the induction principle as described in \cref{ex:irisisMLL}.
 
 \end{document}

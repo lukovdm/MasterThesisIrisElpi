@@ -1,6 +1,10 @@
 \begin{abstract}
-    Field, current gap, direction of solution, Results, Genererailzation of results and where else to apply it.
+    %Field, current gap, direction of solution, Results, Genererailzation of results and where else to apply it.
+    Separation logic gives a framework for defining and proving specifications for programs. In separation logic, representation predicates are used to relate a data structure in the heap to an object in the logic. When dealing with recursive data structures, inductive representation predicates are needed to represent them.
 
-    This is an abstract. It is very abstract. And now a funny pun about Iris from github copilot:
-    "Why did the mathematician bring Iris to the formal methods conference? Because they wanted to be a 'proof-essional' with the most 'Irisistible' Coq proofs!"
+    Software verification systems that embed separation logic into a proof assistant have to embed the separation logic into the logic of the proof assistant. Consequently, inductive predicates must be derived from the base logic. This derivation can be done using three distinct fixpoints, each having downsides. Both using the fixpoint of the base logic and using Banach fixpoints impose significant limitations on the inductive predicates that can be defined. Using the least fixpoint, on the other hand, imposes many manual proofs.
+
+    This thesis develops a command and tactics to automate inductive predicates using the least fixpoint in Iris\cite{jungIrisGroundModular2018}, which is embedded in the Coq proof assistant as the Iris Proof Mode (IPM) \cite{krebbersMoSeLGeneralExtensible2018}. We use the Coq meta-programming language \ce \cite{tassiElpiExtensionLanguage2018} to generate the least fixpoint and prove the induction principle of this inductive predicate. Furthermore, we introduce tactics that automate applying using the inductive predicate. Lastly, we use our system of commands and tactics to redefine the total weakest precondition in Iris.
+
+    During the creation of our system, we reimplement a significant part of the tactics from the IPM and evaluate if Elpi would be a good fit for reimplementing the full IPM.
 \end{abstract}
