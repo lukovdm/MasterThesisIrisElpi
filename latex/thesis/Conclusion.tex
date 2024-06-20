@@ -9,18 +9,27 @@
 \VerbatimFootnotes
 
 \chapter{Conclusion}\label{ch:conclusion}
-In this thesis we showed how to create inductive predicates automatically in the Iris logic in Coq using Elpi. To accomplish this, we created a command, \coqi{eiInd}, which, given a standard Coq inductive statement on the Iris separation logic, defines the inductive predicate with its associated lemmas. Next, we created tactics that allow one to easily eliminate the inductive predicate, apply constructors, and perform induction. These tactics were integrated into a novel partial reimplementation of the IPM in Elpi to allow the inductive predicates to be tightly integrated. Lastly, we showed that the system created for defining inductive predicates can define complicated predicates like the total weakest precondition, as originally defined by the IPM.
+In this thesis we showed how to create inductive predicates automatically in the Iris logic in Coq using Elpi. To accomplish this, we created a command, \coqi{eiInd}, which, given a standard Coq inductive statement on the Iris separation logic, defines the inductive predicate with its associated lemmas. Next, we created tactics that allow one to easily eliminate the inductive predicate, apply constructors, and perform induction. These tactics were integrated into a novel partial reimplementation of the IPM in Elpi to allow the inductive predicates to be tightly integrated. Lastly, we showed that the system created for defining inductive predicates can define complicated predicates like the total weakest precondition, defined manually in the IPM.
 
 \section{Future work}
-We see three possible directions for feature work. Implement more advanced tactics and definitions related to inductive predicates in the Elpi implementation of the IPM. Add the non-expansive property to relevant definitions and lemmas. Generalize the fixpoint generation to coinductive predicates and the Banach fixpoint.
+We see three possible directions for feature work.
 
-\paragraph{Advanced inductive definitions and tactics}
-The Coq inductive command has support for mutually defined inductive types. These are two inductive predicates that are mutually dependent on each other, i.e., you cannot define one before you define the other. Creating these types of inductive predicates is not currently possible in the system we developed. Adding this to our system might require features from Elpi that are not yet implemented. Another feature of Coq inductive predicates is the \coqi{inversion} tactic. This tactic derives the possible constructors with which an inductive predicate was created given its arguments \cite{cornesAutomatingInversionInductive1996}. The \coqi{inversion} tactic is an essential part of many Coq proofs about inductive predicates and could be interesting to implement for Iris inductive predicates.
-
-\paragraph{Non-expansive inductive predicates}
-The Iris definitions for the fixpoint included a non-expansive requirement for the pre fixpoint function. A pre fixpoint function, $\hopred$, is non-expansive if $\All \pred, \predB. (\All \var. \pred\, \var\, \iff \predB\, \var) \wand (\All \var. \hopred\, \pred\, \var \iff \hopred\, \predB\, \var)$. This property has to be expanded to any arity as was done for monotonicity and automatically solved. This would allow for a larger class of inductive predicates to be defined, namely ones where the fixpoint properties depend on the fixpoint being non-expansive.
+Implement more advanced tactics and definitions related to inductive predicates in the Elpi implementation of the IPM. Add the non-expansive property to relevant definitions and lemmas. Generalize the fixpoint generation to coinductive predicates and the Banach fixpoint.
+\todoo{fix this}
 
 \paragraph{Coinductive and Banach inductive predicates}
-Besides the inductive predicates we defined based on the least fixpoint, there are two other non-automated classes of (co)inductive predicates available in Iris. These are the inductive predicates based on the Banach fixpoint, and coinductive predicates based on the greatest fixpoint. These allow for more types of (co)inductive predicates and other notions of (co)induction on these predicates.
+Besides the inductive predicates we defined based on the least fixpoint, there are two other non-automated classes of (co)inductive predicates available in Iris. These are the inductive predicates based on the Banach fixpoint, and coinductive predicates based on the greatest fixpoint. These allow for more types of (co)inductive predicates and other notions of (co)induction on these predicates. In future work, these two types of inductive predicates could be generated using the same \coqi{eiInd} command, depending on the arguments given to it. We expect the least fixpoint to not pose a significant challenge, while the Banach fixpoint might be a bit more interesting.
+
+\paragraph{Mutual inductive definitions}
+The Coq inductive command has support for mutually defined inductive types. These are two inductive predicates that are mutually dependent on each other, i.e., you cannot define one before you define the other. Creating these types of inductive predicates is not currently possible in the system we developed. Adding this to our system might require features from Elpi that are not yet implemented.
+
+\paragraph{Nested inductive predicates}
+Nested inductive predicates in relation to Iris have been used in work by \Citeauthor{gaherSimulirisSeparationLogic2022} \cite{gaherSimulirisSeparationLogic2022}. These inductive predicates require certain recursive calls to be made using the least fixpoint, and other recursive calls to be made using the greatest fixpoint. In future work, support could be added for nested predicates. This work might benefit from more flexibility in the parsing of \coqi{Inductive} Coq statements by Elpi, to specify which recursive calls have to be least and which have to be the greatest fixpoint.
+
+\paragraph{Advanced tactics using inductive predicates}
+Another feature of Coq inductive predicates is the \coqi{inversion} tactic. This tactic derives the possible constructors with which an inductive predicate was created, given its arguments \cite{cornesAutomatingInversionInductive1996}. This tactic is an essential part of many Coq proofs about inductive predicates and could be interesting to implement for Iris inductive predicates.
+
+\paragraph{Non-expansive inductive predicates}
+The Iris definitions for the fixpoint included a non-expansive requirement for the pre fixpoint function. Our system does not include this non-expansive property in its definitions and proofs. Adding non-expansiveness would mostly be more of the same, but would allow for full feature equality with the Iris least fixpoint.
 
 \end{document}

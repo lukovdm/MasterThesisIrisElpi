@@ -9,39 +9,50 @@
 \VerbatimFootnotes
 
 \chapter{Related work} \label{ch:relatedwork}
+This thesis is related to other works in several aspects. There have been multiple program verification systems that support inductive predicates, which are discussed in \cref{sec:othersfs}. In \cref{sec:OtherElpiProj}, we discuss other works using Elpi in Coq to develop commands and tactics. In \cref{sec:IPMimpl}, we discuss reimplementations of the IPM using other meta-programming languages. Lastly, in \cref{sec:propersigproj}, we relate our algorithm, which proves the monotonicity of pre fixpoint functions, to other algorithms using signatures and proper elements.
 
-\section{Other projects using Elpi}
-There have been several projects that have used Elpi to create commands and tactics. Both Derive \cite{tassiDerivingProvedEquality2019} and Hierarchy Builder \cite{cohenHierarchyBuilderAlgebraic2020} center around creating definitions and do not involve creating tactics. The project Trocq \cite{cohenTrocqProofTransfer2024} creates commands and a tactic to facilitate proof transfer in Coq. They do not focus on creating modular proof generators and only generate one large proof term.
-
-\section{Inductive predicates in program verification systems}
+\section{Inductive predicates in program verification systems}\label{sec:othersfs}
 We will discuss the different approaches to program verification and how they represent inductive predicates.
-There have been various approaches to program verification used in the past 30 years. They can be roughly categorized into three categories when looking at inductive predicates. Program verifiers that don't use separation logic. Program verifiers that use separation logic, but in their own verifier. And program verifiers that embed separation logic in an interactive proof assistant.
-
-\paragraph{Program verifier without separation logic}
-Program verifiers in this category are, for example, Dafny \cite{leinoDafnyAutomaticProgram2010}, and Spec\# \cite{barnettSpecProgrammingSystem2004,leinoUsingSpecLanguage2010}. These program verifiers do not have to deal with representation predicates and thus do not create inductive predicates.
+There have been various approaches to program verification used in the past 30 years. They can be roughly categorized into three categories when looking at inductive predicates. Program verifiers that do not use separation logic. Program verifiers that use separation logic, but in their own verifier. And program verifiers that embed separation logic in an interactive proof assistant. Program verifiers which do not use separation logic are not relevant for this thesis, and thus we will start at the second category.
 
 \paragraph{Separation logic program verifiers without a proof assistant}
 These program verifiers do not have to embed the separation logic into another logic. Thus, they add inductive predicates and induction as axioms to the separation logic. Projects in this category are VeriFast \cite{jacobsVeriFastPowerfulSound2011}, Viper \cite{mullerViperVerificationInfrastructure2016,summersAutomatingDeductiveVerification2018}, and Smallfoot \cite{berdineSmallfootModularAutomatic2005}.
 
 \paragraph{Separation logic program verifier in a proof assistant}
-These program verifiers embed the separation logic into the logic of the proof assistant. This can be done in several ways. Both works by \Citeauthor{appelTacticsSeparationLogic} \cite{appelTacticsSeparationLogic}, and \Citeauthor{rouvoetIntrinsicallyTypedCompilation2021} \cite{rouvoetIntrinsicallyTypedCompilation2021}, embed separation logic as propositions from a concrete heap to the proof assistant propositions. Thus, they can both use the inductive definition components of the respective proof assistant for defining inductive predicates in the separation logic.
+These program verifiers embed the separation logic into the logic of the proof assistant. This can be done in several ways. Both works by \Citeauthor{appelTacticsSeparationLogic2006} \cite{appelTacticsSeparationLogic2006}, and \Citeauthor{rouvoetIntrinsicallyTypedCompilation2021} \cite{rouvoetIntrinsicallyTypedCompilation2021}, embed separation logic as propositions from a concrete heap to the proof assistant propositions. Thus, they can both use the inductive definition components of the respective proof assistant for defining inductive predicates in the separation logic.
+\begin{example}{}{}
+  We choose a concrete type as the propositions for our embedding of separation logic in Coq. Given a type of heaps \coqi{heap}, the separation logic proposition is defined as
+  \begin{coqcode}
+    Definition sProp : heap -> Prop.
+  \end{coqcode}
+  Now, when we define an inductive predicate using \coqi{sProp}
+  \begin{coqcode}
+    Inductive is_MLL : val -> list val -> sProp := ~$\cdots$~
+  \end{coqcode}
+  This can be unfolded to the following defintion
+  \begin{coqcode}
+    Inductive is_MLL : val -> list val -> heap -> Prop := ~$\cdots$~
+  \end{coqcode}
+  And, this is of course definable in Coq.
+\end{example}
 
-The work by \Citeauthor{chlipalaMostlyautomatedVerificationLowlevel2011} \cite{chlipalaMostlyautomatedVerificationLowlevel2011} and \Citeauthor{bengtsonCharge2012} \cite{bengtsonCharge2012}, both embed a separation logic in Coq. They use embeddings of separation logics, which don't allow for using the Coq \coqi{Inductive} statement. They only support defining representation predicates using the Coq \coqi{Fixpoint}. Thus, using structural recursion.
+The work by \Citeauthor{chlipalaMostlyautomatedVerificationLowlevel2011} \cite{chlipalaMostlyautomatedVerificationLowlevel2011} and \Citeauthor{bengtsonCharge2012} \cite{bengtsonCharge2012}, both embed a separation logic in Coq. They use embeddings of separation logics, but only make use of the Coq \coqi{Fixpoint} when defining representation predicates. Thus, they only use structural recursion.
 
-Lastly, \Citeauthor{appelProgramLogicsCertified2014} \cite{appelProgramLogicsCertified2014} defines inductive predicates similarly to Iris. Thus, they define a monotone pre fixpoint function and take the fixpoint.
+\section{Other projects using Elpi}\label{sec:OtherElpiProj}
+There have been several projects that have used Elpi to create commands and tactics. Both Derive \cite{tassiDerivingProvedEquality2019} and Hierarchy Builder \cite{cohenHierarchyBuilderAlgebraic2020} center around creating definitions and do not involve creating tactics. The project Trocq \cite{cohenTrocqProofTransfer2024} creates commands and a tactic to facilitate proof transfer in Coq. However, all these projects fully create a proof term without elaborating in between. While we employ backwards reasoning in our proof generators and built up the proof by elaborating the proof term in between steps.
 
-\section{Other implementations of the IPM}
-In this thesis, we reimplemented several tactics of the IPM. This replication of \cite{krebbersInteractiveProofsHigherorder2017} has been done various times before in the meta programming languages LTac2 and MTac2. And in the proof assistant Lean. The implementation in LTac2 was done in the master thesis of \Citeauthor{liesnikovExtendingAutomatingIris2020} \cite{liesnikovExtendingAutomatingIris2020}. They keep the same structure in their tactics as the IPM while also adding some tactics of their own.
+\section{Other implementations of the IPM}\label{sec:IPMimpl}
+In this thesis, we reimplemented several tactics of the IPM. This replication of \cite{krebbersInteractiveProofsHigherorder2017} has been done various times before in the meta programming languages Ltac2 and Mtac2, and in the proof assistant Lean \cite{demouraLeanTheoremProver2015}. The implementation in Ltac2 was done in the master thesis of \Citeauthor{liesnikovExtendingAutomatingIris2020} \cite{liesnikovExtendingAutomatingIris2020}. They keep the same structure in their tactics as the IPM, while also adding some tactics of their own.
 
-The MTac2 meta programming language creates fully typed tactics. In the paper introducing MTac2 by \Citeauthor{kaiserMtac2TypedTactics2018} \cite{kaiserMtac2TypedTactics2018} some tactics of the IPM were reimplemented in MTac2. This implementation focused on showing the capabilities of MTac2 by solving a few known faults in the original IPM.
+The Mtac2 meta programming language creates fully typed tactics. In the paper introducing Mtac2 by \Citeauthor{kaiserMtac2TypedTactics2018} \cite{kaiserMtac2TypedTactics2018} some tactics of the IPM were reimplemented in Mtac2. This implementation focused on showing the capabilities of Mtac2 by making the tactic implementation more robust.
 
-Lastly, the IPM was also implemented in Lean by \Citeauthor{koenigImprovedInterfaceInteractive2022} \cite{koenigImprovedInterfaceInteractive2022}. Unlike the previous two reimplementations of the IPM, this instance also had to replicate all definitions and lemmas since it uses a different proof assistant as its base logic.
+Lastly, the IPM was also reimplemented in Lean by \Citeauthor{koenigImprovedInterfaceInteractive2022} \cite{koenigImprovedInterfaceInteractive2022}. Unlike the previous two reimplementations of the IPM, this instance had to replicate all definitions and lemmas, since it uses a different proof assistant with a different base logic.
 
 All three reimplementations of the IPM did not consider inductive predicates. The first two reimplementations can make use of the same strategy of defining inductive separation logic predicates as used in Iris. The last reimplementations of the IPM can utilize the Lean structural recursion or a similar fixpoint construction as in Iris to define inductive predicates.
 
-\section{Algorithms based on proper elements and signatures}
-The concept of proper elements and signatures was taken from the work by \Citeauthor{sozeauNewLookGeneralized2009} \cite{sozeauNewLookGeneralized2009}. They use proper elements and signatures (called Propers in their work) to create a tactic for generalized rewriting in Coq. This tactic extends the existing \coqi{rewrite} tactic from Coq by allowing one to rewrite lemmas under terms for which an appropriate \coqi{Proper} instance is given.
+\section{Algorithms based on proper elements and signatures}\label{sec:propersigproj}
+The concept of proper elements and signatures was taken from the work by \Citeauthor{sozeauNewLookGeneralized2009} \cite{sozeauNewLookGeneralized2009}. They use proper elements and signatures (called Propers in their work) to create a tactic for generalized rewriting in Coq, i.e., rewriting with arbitrary preorders, instead of just equality. This tactic extends the existing \coqi{rewrite} tactic from Coq by allowing one to rewrite lemmas under terms for which an appropriate \coqi{Proper} instance is given.
 
-This is a fairly different use of the same base definitions of signatures and respectful, and pointwise relations. But, it informed our approach to automatically proving monotonicity pre fixpoint functions.
+This is a fairly different use of the same base definitions of signatures and respectful, and pointwise relations. But, it informed our approach to automatically proving monotonicity of pre fixpoint functions.
 
 \end{document}

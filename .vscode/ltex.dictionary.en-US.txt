@@ -2,7 +2,6 @@ intropatternlist
 subgoals
 iIntros
 evars
-LTac
 Zullip
 simpl
 iProp
@@ -44,7 +43,6 @@ curryed
 Coq
 non-presistent
 reparsing
-LTaC
 ssreflect
 Elpi
 coinductive
@@ -58,3 +56,7 @@ VeriFast
 Dafny
 Smallfoot
 MoSeL
+Robbert
+Freek
+uncurryed
+Ltac

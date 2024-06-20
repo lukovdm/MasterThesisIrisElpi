@@ -127,6 +127,7 @@ colback=black!5,
 boxrule=0pt,
 frame hidden,
 left=7mm,
+after={\par\smallskip\noindent},
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.2em,yshift=-1em]frame.north east) {Coq};
@@ -147,6 +148,7 @@ colback=black!5,
 boxrule=0pt,
 frame hidden,
 left=7mm,
+after={\par\smallskip\noindent},
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
             \node[text=gray] at ([xshift=-1.4em,yshift=-1em]frame.north east) {Elpi};
@@ -157,6 +159,9 @@ overlay={\begin{tcbclipinterior}
 %%%%%%%%%%%%%%%%%%%%%% NAME ABREVIATIONS %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\IPM}{IPM\xspace}
 \newcommand{\ce}{Coq-Elpi\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%% Hyphenation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hyphenation{Heap-Lang}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage[shadow,loadshadowlibrary,textsize=tiny,obeyFinal]{todonotes}
@@ -183,12 +188,12 @@ overlay={\begin{tcbclipinterior}
 \newcommand{\MLLDeleteProg}{
     \begin{align*}
         \MLLdelete\,\langv{hd}\,\langv{i} =\  & \MatchML{\langv{hd}\,}with{\None}=>{()}|{\Some \loc}=>{
-        \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \loc in                                                                                                              \\
-                                              &                                                         & \phantom{\Ra}\ \If \langv{mark} = \False\ \&\&\ \langv{i} = 0 then \\
-                                              &                                                         & \phantom{\Ra}\ \quad \loc \gets (\lvar, \True, \langv{tl})         \\
-                                              &                                                         & \phantom{\Ra}\ \Else \If \langv{mark} = \False then                \\
-                                              &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ (\langv{i} - 1)       \\
-                                              &                                                         & \phantom{\Ra}\ \Else                                               \\
+        \Let (\lvar, \langv{mark}, \langv{tl}) = \deref \loc in                                                                                                          \\
+                                              &                                                         & \phantom{\Ra}\ \If \lnot\langv{mark}\ \&\&\ \langv{i} = 0 then \\
+                                              &                                                         & \phantom{\Ra}\ \quad \loc \gets (\lvar, \True, \langv{tl})     \\
+                                              &                                                         & \phantom{\Ra}\ \Else \If \lnot\langv{mark} then                \\
+                                              &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ (\langv{i} - 1)   \\
+                                              &                                                         & \phantom{\Ra}\ \Else                                           \\
                                               &                                                         & \phantom{\Ra}\ \quad \MLLdelete\,\langv{tl}\ \langv{i}
         }end{}
     \end{align*}
@@ -199,13 +204,13 @@ overlay={\begin{tcbclipinterior}
 
 \newcommand{\isMLLDef}[1]{\ensuremath{
         \begin{array}[t]{l}
-            \hd = \None * \vect{\val} = [] \lor{}                                                                      \\
+            (\hd = \None * \vect{\val} = []) \lor{}                                                                    \\
             (\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * #1\, \tl\, \vect{\val}) \lor{} \\
-            \left( \Exists \loc, \val', \vect{\val}'', \tl.
-            \begin{array}{@{}l}
-                \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac * \\
-                \vect{\val} = \val' :: \vect{\val}'' * #1\, \tl\, \vect{\val}''
-            \end{array}
+            \left(
+            \begin{array}{l@{}l}
+                    \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac *          \\
+                                                               & \vect{\val} = \val' :: \vect{\val}'' * #1\, \tl\, \vect{\val}''
+                \end{array}
             \right)
         \end{array}
     }}
@@ -274,7 +279,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{thm}
 \NewTcbTheorem[use counter from=theorem]{lemma}{Lemma}{
     label type=lemma,
@@ -288,7 +293,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black!60,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{lem}
 \NewTcbTheorem[use counter from=theorem]{corollary}{Corollary}{
     enhanced,
@@ -301,7 +306,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{cor}
 \NewTcbTheorem[no counter]{remark}{remark}{
     enhanced,
@@ -314,7 +319,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{rem}
 % \declaretheorem[within=chapter]{theorem}
 % \declaretheorem[sibling=theorem]{lemma}
@@ -333,7 +338,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black!60,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{ex}
 \NewTcbTheorem[use counter from=theorem]{definition}{Definition}{
     label type=definition,
@@ -347,7 +352,7 @@ overlay={\begin{tcbclipinterior}
     title={\bfseries Title},
     colbacktitle=black,
     coltitle=white,
-    after={\noindent}
+    after={\par\smallskip\noindent},
 }{def}
 % \declaretheorem[sibling=theorem, thmbox={bodystyle=\normalfont\noindent}]{example}
 % \declaretheorem[sibling=theorem]{definition}

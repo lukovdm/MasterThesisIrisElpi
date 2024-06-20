@@ -61,3 +61,17 @@
 {"rule":"THREE_NN","sentence":"^\\QWhenever a disjunction elimination intro pattern is used,\\E$"}
 {"rule":"SUBJECT_VERB_AGREEMENT_PLURAL","sentence":"^\\QThis introduction pattern checks if the current top level connective is an inductive predicate.\\E$"}
 {"rule":"ACTUAL","sentence":"^\\QThus, to store the pre fixpoint function of is_MLL in the database we add the rule: Where instead of « \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q » we insert the variable containing the actual reference.\\E$"}
+{"rule":"AI_EN_LECTOR_REPLACEMENT_VERB_TENSE","sentence":"^\\QDuring the creation of our system, we reimplement a significant part of the tactics from the IPM and evaluate if Elpi would be a good fit for reimplementing the full IPM.\\E$"}
+{"rule":"EN_REPEATEDWORDS_SEVERAL","sentence":"^\\QThis thesis aims to solve this problem by adding several commands and tactics to Coq that simplify and streamline working with inductive predicates.\\E$"}
+{"rule":"DT_JJ_NO_NOUN","sentence":"^\\QThe second box is a boolean.\\E$"}
+{"rule":"EN_REPEATEDWORDS_SEVERAL","sentence":"^\\QSeveral trivial proofs must be performed, and several intermediary objects must be defined.\\E$"}
+{"rule":"AI_HYDRA_LEO_MISSING_COMMA","sentence":"^\\Q\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q Any sub propositions that occur both on the left and right-hand side are canceled out using \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"TOO_LONG_SENTENCE","sentence":"^\\QGiven a monotone function \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, called the pre fixpoint function, there exists the least fixpoint \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, such that The fixpoint equality holds \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q The iteration property holds \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q Given a monotone function \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q we define \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q as \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q We now prove the two properties of the least fixpoint The right to left direction follows from monotonicity of \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"PUNCTUATION_PARAGRAPH_END","sentence":"^\\QThe pointwise relation \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is a special case of a respectful relation defined as \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q The new signature for the existential quantification becomes \\E(?:Dummy|Ina|Jimmy-)[0-9]+$"}
+{"rule":"EN_A_VS_AN","sentence":"^\\Q\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q Filling in an \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q as the proper element, we get the following statement.\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QThe sealing of goals to pass them around is necessary when you can make no assumptions on what happens to the context of a goal, and is thus the model used for the entry point of .\\E$"}
+{"rule":"AI_EN_LECTOR_MISSING_PUNCTUATION_COMMA","sentence":"^\\QHowever, Elpi includes the excellent Elpi tracer and an Elpi trace browser extension \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q for the editor Visual Studio Code.\\E$"}
+{"rule":"AI_HYDRA_LEO_MISSING_OF","sentence":"^\\QProving a function monotone.\\E$"}
+{"rule":"AI_HYDRA_LEO_MISSING_COMMA","sentence":"^\\QProving a function monotone.\\E$"}
+{"rule":"TYPE_OF_PLURAL","sentence":"^\\QLastly, the type ends in \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, which is the type of Iris propositions over heaps.\\E$"}
+{"rule":"EN_REPEATEDWORDS_SEVERAL","sentence":"^\\QThis results in several proofs and manual intermediary definitions.\\E$"}

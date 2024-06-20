@@ -43,7 +43,7 @@ The \coqi{iIntros} tactic also applies to universal quantifications, existential
 \end{coqcode}
 We again use one application of \coqi{iIntros} to introduce and eliminate the premise.
 \begin{center}
-  \coqi{iIntros "%x [[%y [Hx ?]] | H0]"}
+    \coqi{iIntros "%x [[%y [Hx ?]] | H0]"}
 \end{center}
 When applied we get two proof states, one for each side of the disjunction elimination.
 \begin{coqcode}
@@ -66,13 +66,13 @@ When applied we get two proof states, one for each side of the disjunction elimi
 \end{coqcode}
 The intro pattern consists of multiple sub intro patterns. Each sub intro pattern starts with a universal quantifier introduction or wand introduction. We then interpret the intro pattern for the introduced hypothesis. A few of the possible intro patterns are:
 \begin{itemize}
-  \item \coqi{"?"} uses an anonymous identifier for the hypothesis.
-  \item \coqi{"H"} names the hypothesis `H' in the spatial context.
-  \item \coqi{"#H"} names the hypothesis `H' in the persistent context.
-  \item \coqi{"%H"} introduces the the hyptothesis into the Coq context with name `H'
-  \item \coqi{"[IPL | IPR]"} performs a disjunction elimination on the hypothesis. The two contained introduction patterns are recursively applied.
-  \item \coqi{"[IPL IPR]"} performs a separating conjunction elimination on the hypothesis. The two contained introduction patterns are recursively applied.
-  \item \coqi{"[%x IP]"} performs existential quantifier introduction on the hypothesis. The variable is name `x' and \coqi{IP} is applied recursively. Note that this introduction pattern overlaps with previous pattern. This pattern is tried first.
+    \item \coqi{"?"} uses an anonymous identifier for the hypothesis.
+    \item \coqi{"H"} names the hypothesis `H' in the spatial context.
+    \item \coqi{"#H"} names the hypothesis `H' in the persistent context.
+    \item \coqi{"%H"} introduces the the hyptothesis into the Coq context with name `H'
+    \item \coqi{"[IPL | IPR]"} performs a disjunction elimination on the hypothesis. The two contained introduction patterns are recursively applied.
+    \item \coqi{"[IPL IPR]"} performs a separating conjunction elimination on the hypothesis. The two contained introduction patterns are recursively applied.
+    \item \coqi{"[%x IP]"} performs existential quantifier introduction on the hypothesis. The variable is name `x' and \coqi{IP} is applied recursively. Note that this introduction pattern overlaps with previous pattern. This pattern is tried first.
 \end{itemize}
 % Add simpl and done here and refrence ssreflect with citation
 We break down \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We first forall introduce or first sub intro pattern \coqi{"%x"} and then perform the second case, introduce a pure Coq variable for the \coqi{∀ x : nat}. Next we wand introduce for the second sub intro pattern, \coqi{"[[%y [Hx Hy]] | H0]"} and interpret the outer pattern. it is the third case and eliminates the disjunction, resulting in two goals. The left patterns of the seperating conjunction pattern eliminates the exists and adds the \coqi{y} to the Coq context. Lastly, \coqi{"[Hx Hy]"} is the fourth case and eliminates the seperating conjunction in the Iris context by splitting it into two assumptions \coqi{"Hx"} and \coqi{"Hy"}.
@@ -80,7 +80,7 @@ We break down \coqi{iIntros "%x [[%y [Hx Hy]] | H0]"} into its components. We fi
 There are more patterns available to introduce more complicated goals, these can be found in a paper written by \Citeauthor{krebbersInteractiveProofsHigherorder2017} \cite{krebbersInteractiveProofsHigherorder2017}.
 
 
-\section{Contexts}\label{sec:iriscontext}\label{sec:iriscontext}
+\section{Contexts}\label{sec:iriscontext}
 Before describing our implementation of the Elpi \coqi{eiIntros} tactic, we need a quick interlude about how the Iris contexts and entailment are defined in Coq.
 
 The IPM creates the context using the following definitions
@@ -131,28 +131,28 @@ Many more lemmas such as these are in the IPM. They are the core of many of the 
 \section{Elpi}\label{sec:elpi}
 Our Elpi implementation \coqi{eiIntros} consists of three parts, as seen in \cref{fig:eiintrosstruct}. The first two parts interpret the DSL used to describe the proofs steps to be taken. Then, the last part applies these proofs steps. In \cref{ssec:tokenizer}, we describe how a string is tokenized by the tokenizer. In \cref{ssec:parser}, we describe how a list of tokens is parsed into a list of intro patterns. In \cref{ssec:applier}, we describe how we use an intro pattern to introduce and eliminate the needed connectives. In every section we describe more parts of the Elpi programming language and the \ce connector, starting with the base concepts of the language and working up to the mayor concepts of Elpi and \ce.
 \begin{figure}
-  \centering
-  \begin{tikzpicture}[
-      node distance=1cm and 2cm,
-      >=stealth,
-      auto
-    ]
-    \node[] (s) {};
-    \node[obj, below=of s] (t) {Tokenizer};
-    \node[obj, below=of t] (p) {Parser};
-    \node[obj, below=of p] (id) {Introducer \& Destructor};
-    \node[left=of id] (g) {};
-    \node[below=of id] (e) {};
+    \centering
+    \begin{tikzpicture}[
+            node distance=1cm and 2cm,
+            >=stealth,
+            auto
+        ]
+        \node[] (s) {};
+        \node[obj, below=of s] (t) {Tokenizer};
+        \node[obj, below=of t] (p) {Parser};
+        \node[obj, below=of p] (id) {Introducer \& Destructor};
+        \node[left=of id] (g) {};
+        \node[below=of id] (e) {};
 
-    \path[->,thick]
-    (s) edge node[right]{\elpiii{string}} (t)
-    (t) edge node[right]{\elpiii{list token}} (p)
-    (p) edge node[right]{\elpiii{list intro_pat}} (id)
-    (g) edge node[above]{\elpiii{goal}} (id)
-    (id) edge node[right]{\elpiii{term}} (e);
-  \end{tikzpicture}
-  \caption{Structure of \coqii{eiIntros} with the input and output types on the edges.}
-  \label{fig:eiintrosstruct}
+        \path[->,thick]
+        (s) edge node[right]{\elpiii{string}} (t)
+        (t) edge node[right]{\elpiii{list token}} (p)
+        (p) edge node[right]{\elpiii{list intro_pat}} (id)
+        (g) edge node[above]{\elpiii{goal}} (id)
+        (id) edge node[right]{\elpiii{term}} (e);
+    \end{tikzpicture}
+    \caption{Structure of \coqii{eiIntros} with the input and output types on the edges.}
+    \label{fig:eiintrosstruct}
 \end{figure}
 
 \section{Tokenizer}\label{ssec:tokenizer}
@@ -178,7 +178,7 @@ Creating types of kind \elpii{type -> type} is done using the \elpii{kind} direc
 
 Using the above types, we represent a given string as a list of tokens. Thus, given the string \elpii{"[H %H']"} we represent it as the following Elpi list of tokens
 \begin{center}
-  \elpii{[tBracketL, tName "H", tPure (some "H'"), tBracketR]}
+    \elpii{[tBracketL, tName "H", tPure (some "H'"), tBracketR]}
 \end{center}
 
 \subsection{Predicates} \label{sssec:predicates}
@@ -193,9 +193,9 @@ Line 1 describes the type of the predicate. The keyword \elpii{pred} starts the 
 \begin{elpicode}
   pred rex.split i:string, i:string, o:list string.
 \end{elpicode}
-We split the input string using the delimiter \elpii{""}, resulting in splitting the string into a list of its characters. Strings in Elpi are native data types and cannot be matched on, and thus we need to split it. The next line, line 4, calls the recursive tokenizer, \elpii{tokenizer.rec}\footnote{Names in Elpi can have special characters in them like \elpii{.}, \elpii{-} and \elpii{>}, thus, \elpii{tokenize} and \elpii{tokenize.rec} are fully separate predicates. It is just a convention that when creating a helper predicate we name it by adding a dot and a short name for the helper.}, on the list of split strings and assigns the output to the output variable \elpii{O}.
+We split the input string using the delimiter \elpii{""}, resulting in splitting the string into a list of its characters. Strings in Elpi are native data types and cannot be matched on, and thus we need to split it. The next line, line 4, calls the recursive tokenizer, \elpii{tokenizer.rec}\footnote{Names in Elpi can have special characters in them like \elpii{.}, \elpii{-} and \elpii{>}, thus, \elpii{tokenize} and \elpii{tokenize.rec} are fully separate predicates. It is just a convention that when creating a helper predicate, we name it by adding a dot and a short name for the helper.}, on the list of split strings and assigns the output to the output variable \elpii{O}.
 
-The reason predicates in Elpi are called predicates and not functions, is that they don't always have to take an input and give an output. They are sometimes better considered as predicates, defining for which values of their arguments they hold. Each rule defines a list of predicates that need to hold for their premise to hold. Thus, a predicate can have multiple values for its output, as long as they hold for all contained rules. These multiple possible values can be reached by backtracking, which we will discuss in \cref{sssec:backtracking}. To execute a predicate, we thus find the first rule whose premise is sufficient for the arguments we supply. We then check if each of the predicates in the conclusion hold starting at the top. If they hold, we are done executing our predicate. How we determine when arguments are sufficient and what happens when a rule does not hold, we will discuss in the next two sections.
+The reason predicates in Elpi are called predicates and not functions, is that they do not always have to take an input and give an output. They are sometimes better considered as predicates, defining for which values of their arguments they hold. Each rule defines a list of predicates that need to hold for their premise to hold. Thus, a predicate can have multiple values for its output, as long as they hold for all contained rules. These multiple possible values can be reached by backtracking, which we will discuss in \cref{sssec:backtracking}. To execute a predicate, we thus find the first rule whose premise is sufficient for the arguments we supply. We then check if each of the predicates in the conclusion hold starting at the top. If they hold, we are done executing our predicate. How we determine when arguments are sufficient and what happens when a rule does not hold, we will discuss in the next two sections.
 
 \subsection{Matching and unification}\label{sssec:mandu}
 The arguments of a predicate can be more than just a variable. We can supply a value containing variables and depending on the argument mode, input or output, we match or unify the input with the premise respectively\footnote{A fun side effect of outputs being just variables we pass to a predicate is that we can also easily create a reversible function. If we change the mode of our first argument to output and move rule 3 to the bottom, we can pass in a list of tokens and get back a list of strings representing this list of tokens.}.
@@ -226,7 +226,7 @@ While Elpi is based on predicates, we still often defer to a functional style of
   tokenize S O :- tokenize.rec {rex.split "" S} O.
 \end{elpicode}
 
-We spill the output of a predicate into the input of another predicate by using the \elpii{{ }} syntax. We don't specify the last argument of the predicate, and only the last argument of a predicate can be spilled.
+We spill the output of a predicate into the input of another predicate by using the \elpii{{ }} syntax. We do not specify the last argument of the predicate, and only the last argument of a predicate can be spilled.
 
 The second useful feature is how lambda expressions are first class citizens of the language. The \elpii{pred} statement is a wrapper around a constructor definition using \elpii{type}, with the addition of denoting arguments as inputs or outputs. When defining a predicate using \elpii{type}, all arguments are outputs. The following predicates have the same type.
 \begin{elpicode}
@@ -268,9 +268,9 @@ We use \elpii{take-while-split} to define the rule for the token \elpii{tName}.
   tokenize.rec XS _ :- !, 
     coq.say "unrecognized tokens" XS, fail.  
 \end{elpicode}
-To tokenize a name, we first call \elpii{take-while-split} with as predicate \elpii{is-identifier}, which checks if a string is a valid identifier character, whether it is either a letter or one of a few symbols allowed in identifiers. It thus splits up the input string list into a list of string that is a valid identifier and the rest of the input. On line 5 we check if the length of the identifier is larger than 0. Next, on line 6, we concatenate the list of strings into one string, which will be our name. And on line 7, we call the tokenizer on the rest of the input, to create the rest of our tokens.
+To tokenize a name, we first call \elpii{take-while-split} with as the predicate to split on \elpii{is-identifier}. This predicate checks if a string is a valid identifier character. It thus splits up the input list into two, one that is a valid identifier and the rest of the input. On line 5 we check if the length of the identifier is larger than 0. If it is not we backtrack to the next rule that applies. Next, on line 6, we concatenate the list of strings into one string, which will be our name. And on line 7, we call the tokenizer on the rest of the input, to create the rest of our tokens.
 
-We also add a rule to give an error message when a token is not recognized on line 6. To ensure this rule is only called on the exact token that is not recognized, we need to not backtrack when a character is recognized, but the rest of the string is not. Thus, we add a cut to every rule when we know a token is correct.
+We also add a rule to give an error message when a token is not recognized on line 6. To ensure this rule is only called on the exact token that is not recognized, we need to not backtrack when a character is recognized, but the rest of the string is not. Thus, we add a cut to every rule when we know a token is correct, like on line 3 of the tokenizer for names.
 
 \section{Parser}\label{ssec:parser}
 The Parser uses the same language features as were used in the tokenizer. Thus, we won't go into detail of its workings. We create a type, \elpii{intro_pat}, to store the parse tree.
@@ -286,20 +286,20 @@ The Parser uses the same language features as were used in the tokenizer. Thus, 
 \end{elpicode}
 Next, we use reductive descent parsing to parse the following grammar into the above data structure.
 \begin{grammar}
-  <intropattern\_list> ::= $\epsilon$
-  \alt <intropattern> <intropattern\_list>
+    <intropattern\_list> ::= $\epsilon$
+    \alt <intropattern> <intropattern\_list>
 
-  <intropattern> ::= <ident>
-  \alt `?' | `/=' | `//'
-  \alt `[' <intropattern\_list> `]'
-  \alt `(' <intropattern\_conj\_list> `)'
+    <intropattern> ::= <ident>
+    \alt `?' | `/=' | `//'
+    \alt `[' <intropattern\_list> `]'
+    \alt `(' <intropattern\_conj\_list> `)'
 
-  <intropattern\_list> ::= $\epsilon$
-  \alt <intropattern> `|' <intropattern\_list>
-  \alt <intropattern> <intropattern\_list>
+    <intropattern\_list> ::= $\epsilon$
+    \alt <intropattern> `|' <intropattern\_list>
+    \alt <intropattern> <intropattern\_list>
 
-  <intropattern\_conj\_list> ::= $\epsilon$
-  \alt <intropattern> `&' <intropattern\_conj\_list>
+    <intropattern\_conj\_list> ::= $\epsilon$
+    \alt <intropattern> `&' <intropattern\_conj\_list>
 \end{grammar}
 In order to make the parser be properly performant, it is important to minimize backtracking. Backtracking is necessary when implementing the second and third case of the $\langle intropattern\_list\rangle$ parser. Backtracking might incur significant slowdowns due to reparsing frequently.
 
@@ -320,11 +320,11 @@ Take the following Coq term: \coqi{0+1}, which when expanding any notation becom
       global (indc «O»), 
       app [global (indc «S»), global (indc «O»)]]
 \end{elpicode}
-References to Coq object cannot be directly written as \elpii{«Nat.add»}. We will discuss how to create these objects in \cref{ssec:ceqoute}.
+Note that references to Coq object cannot be directly written as \elpii{«~\ldots~»}. Thus, the above listing is purely for demonstration purposes. We will discuss how to create Coq objects in \cref{ssec:ceqoute}.
 
 The above Elpi term consists of several constructors. The first constructor is \elpii{app}, it is application of Coq terms. It gets a list, the tail of the list are the arguments and the head is what we are applying them to. Next, we have the \elpii{global} constructor. It takes a global reference of a Coq object and turns it into a term. Lastly, we have \elpii{const} and \elpii{indc}, these create a global reference of a constant or inductive constructor respectively.
 
-Coq function terms work again similarly. Take the Coq term \coqi{fun (n: nat), n + 1}. This is represented in Elpi as follows.
+Coq function terms work again similarly. Take, for example, the Coq term consisting of a function taking a number and adding one to it, \coqi{fun (n: nat), n + 1}. This is represented in Elpi as follows.
 \begin{elpicode}
   fun `n` (global (indt «nat»)) 
             (n \ app [global (indt «sum»), 
@@ -356,7 +356,7 @@ To create terms, \ce implements quotation and anti-quotation. This allows for wr
 \begin{elpicode}
   FUN = {{ fun (n: nat), n + 1 }}
 \end{elpicode}
-Now \elpii{FUN} has the value.
+Now \elpii{FUN} has the following value.
 \begin{elpicode}
   fun `n` (global (indt «nat»)) 
             (n \ app [global (indt «sum»), 
@@ -367,17 +367,9 @@ Now \elpii{FUN} has the value.
 \begin{elpicode}
   FUN = {{ fun (n: nat), n + lp:C }}
 \end{elpicode}
-We extract the right-hand side of the plus operator in \elpii{FUN} into the variable \elpii{C}\footnote{We cannot do the same for the left-hand side of the addition. It contains a binder and thus can only be examined using the method seen in the previous section, \cref{ssec:cehoas}}. It thus has the same effect as what we did in the previous section to extract values out of a term. We can of course also use anti-quotation to insert previously calculated values into a term we are constructing.
+We extract the right-hand side of the plus operator in \elpii{FUN} into the variable \elpii{C}\footnote{We cannot do the same for the left-hand side of the addition. It contains a binder and thus can only be examined using the method seen in the previous section, \cref{ssec:cehoas}.}. It thus has the same effect as what we did in the previous section to extract values out of a term. We can of course also use anti-quotation to insert previously calculated values into a term we are constructing.
 
-These two ways of using anti-quotation will see much use when we create proofs in the next section, \cref{ssec:proofselpi}. Where we create a proof term:
-\begin{elpicode}
-  Proof = {{ tac_wand_intro _ lp:T _ _ _ _ _ }} 
-\end{elpicode}
-After unifying \elpii{Proof} with the goal, we want to extract any newly created proof variables.
-\begin{elpicode}[firstnumber=3]
-  Proof = {{ tac_wand_intro _ _ _ _ _ _ lp:NewProof }}, 
-\end{elpicode}
-The new proof variable is extracted in the variable \elpii{NewProof}.
+These two ways of using anti-quotation will see much use when we create proofs in the next section, \cref{ssec:proofselpi}.
 
 \subsection{Proof steps in Elpi}\label{ssec:proofselpi}
 Now that we have a solid foundation on how to work with Coq terms in Elpi we can start creating proof terms. Proof steps in Elpi are built by creating one big term which has the type of the goal. Any leftover holes in this term are new goals in Coq. To facilitate this process, we create a new type called \elpii{hole}.
@@ -439,7 +431,7 @@ The above proof generator introduces a wand into an anonymous hypothesis. On lin
     end →
     envs_entails Δ R.
 \end{coqcode}
-The proof variable thus gets the type on lines 3-6. We normalize this using \elpii{pm-reduce}\footnote{\elpii{pm-reduce} is also fully written in Elpi and is made extendable after definition of the tactics. To accomplish this \ce databases are used with commands to add extra reduction rules to the database.} to just \coqi{envs_entails Δ' Q} as long as the name was not already used.
+The proof variable thus gets the type on lines 3-6. We normalize this using the predicate \elpii{pm-reduce}\footnote{\elpii{pm-reduce} is also fully written in Elpi and is made extendable after definition of the tactics. To accomplish this \ce databases are used with commands to add extra reduction rules to the database.} to just \coqi{envs_entails Δ' Q} as long as the name was not already used.
 
 
 \subsubsection{Continuation Passing Style}\label{ssec:cecps}
@@ -486,9 +478,9 @@ Now that we have defined multiple proof generators, we execute them depending on
 \end{elpicode}
 This is a selection of the rules of the \elpii{do-iIntros} proof generator. The generator iterates over the intro patterns in the list. In the base case on line 3 it simply calls the continuation function. The second case, on line 4-6, simply calls a proof generator, in this case introducing an anonymous Iris assumption. Then, it continuous executing the rest of the intro patterns.
 
-The third case, on lines 7-17, has three steps. First, it calls a proof generator that puts an Iris universal quantifier at the front of the goal as a Coq universal quantifier. This does not interact with the fresh counter, and thus we only give it a normal hole. Next we call \elpii{do-intro} as defined in \cref{ssec:cecps}. This takes a continuation function which we define in lines 10-17. The hole this function gets, \elpii{h}, is not fully normalized. We thus need to access the type in the hole and reduce it. However, if we would just do \elpii{h = hole IntroType IntroProof} \quest{The binders in variables is quite complicated, and I was hoping to skip this. But it is quite a downside of the CPS. I put it in for now. But maybe remove it.} to extract the type from the hole, Elpi would give an error. By default, variables are created at the level of the predicate they are defined in. However, a predicate can only contain constants, by \elpii{pi x\}, created before they are defined. Thus, we make use of the quantifier \elpii{sigma X\} to instead define the variable in the continuation function. This ensures that the binder we are moving under is in scope when defining the variable. Once we have resolved that issue, we call \elpii{do-iIntros} on the rest of the intro patterns.
+The third case, on lines 7-17, has three steps. First, it calls a proof generator that puts an Iris universal quantifier at the front of the goal as a Coq universal quantifier. This does not interact with the fresh counter, and thus we only give it a normal hole. Next we call \elpii{do-intro} as defined in \cref{ssec:cecps}. This takes a continuation function which we define in lines 10-17. The hole this function gets, \elpii{h}, is not fully normalized. We thus need to access the type in the hole and reduce it. However, if we would just do \elpii{h = hole IntroType IntroProof} to extract the type from the hole, Elpi would give an error. By default, variables are created at the level of the predicate they are defined in. However, a predicate can only contain constants, by \elpii{pi x\}, created before they are defined. Thus, we make use of the quantifier \elpii{sigma X\} to instead define the variable in the continuation function. This ensures that the binder we are moving under is in scope when defining the variable. Once we have resolved that issue, we call \elpii{do-iIntros} on the rest of the intro patterns.
 
-For the fourth case, we will not go into too much detail, but just give an outline of what happens. This case covers the destruction intro patterns. These were parsed into an \elpii{iList} containing the destruction pattern. We first introduce the assumption we want to destroy with an anonymous name. Next, we call \elpii{do-iDestruct} to do the destruction. This can create multiple holes in the process, and the continuation function we pass it will be executed at the end of all of them. The predicate \elpii{do-iDestruct} has the same structure as \elpii{do-iIntros}, and we will see it in \cref{?} when we discuss the destruction of inductive predicates.
+For the fourth case, we will not go into too much detail, but just give an outline of what happens. This case covers the destruction intro patterns. These were parsed into an \elpii{iList} containing the destruction pattern. We first introduce the assumption we want to destroy with an anonymous name. Next, we call \elpii{do-iDestruct} to do the destruction. This can create multiple holes in the process, and the continuation function we pass it will be executed at the end of all of them. The predicate \elpii{do-iDestruct} has the same structure as \elpii{do-iIntros}.
 
 \subsection{Starting the tactic}\label{ssec:cestart}
 The entry point of a tactic in Elpi is the \elpii{solve} predicate.
