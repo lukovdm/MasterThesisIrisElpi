@@ -76,6 +76,8 @@ To use the inductive predicate, we create two tactics. The \coqi{eiInduction} ta
 
 To accomplish these goals, we reimplement a subset of the IPM tactics in Elpi as \emph{proof generators}. Proof generators take a hole in a proof and inhabit that hole with a proof term, any holes left in the created proof term they return as holes. These proof generators are used to generate the proof for the induction properties and are exported as IPM tactics, namely \coqi{eiIntros}, \coqi{eiSplit}, \coqi{eiEvalIn}, \coqi{eiModIntro}, \coqi{eiExFalso}, \coqi{eiClear}, \coqi{eiPure}, \coqi{eiApply} (without full specialization), \coqi{eiIntuitionistic}, and \coqi{eiExact}. The tactics themselves also allow us to evaluate how and if Elpi could be used to reimplement the full IPM.
 
+The source code for this thesis can be found at \url{https://github.com/lukovdm/MasterThesisIrisElpi}.
+
 \section{Contributions}
 This thesis contains the following contributions.
 \begin{description}

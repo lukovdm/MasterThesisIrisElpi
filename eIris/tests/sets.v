@@ -23,7 +23,11 @@ Section SkipQueue.
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
   Check empty_is_MLL.
-
+  Print is_MLL.
+  Print is_MLL_pre.
+  Check is_MLL_ind.
+  Eval unfold is_MLL_pre in is_MLL_ind.
+(* 
   EI.ind
   Inductive is_R_MLL {A} (R : val -> A -> iProp) : val → list A → iProp :=
       | empty_is_R_MLL : is_R_MLL R NONEV []
@@ -121,7 +125,7 @@ Section SkipQueue.
         iApply cons_is_MLL.
         iFrame.
         iSplit; done.
-  Qed.
+  Qed. *)
 
   Definition MLL_delete : val :=
     rec: "MLL_delete" "l" "i" :=

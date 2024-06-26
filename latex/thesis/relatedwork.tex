@@ -19,13 +19,13 @@ There have been various approaches to program verification used in the past 30 y
 These program verifiers do not have to embed the separation logic into another logic. Thus, they add inductive predicates and induction as axioms to the separation logic. Projects in this category are VeriFast \cite{jacobsVeriFastPowerfulSound2011}, Viper \cite{mullerViperVerificationInfrastructure2016,summersAutomatingDeductiveVerification2018}, and Smallfoot \cite{berdineSmallfootModularAutomatic2005}.
 
 \paragraph{Separation logic program verifier in a proof assistant}
-These program verifiers embed the separation logic into the logic of the proof assistant. This can be done in several ways. Both works by \Citeauthor{appelTacticsSeparationLogic2006} \cite{appelTacticsSeparationLogic2006}, and \Citeauthor{rouvoetIntrinsicallyTypedCompilation2021} \cite{rouvoetIntrinsicallyTypedCompilation2021}, embed separation logic as propositions from a concrete heap to the proof assistant propositions. Thus, they can both use the inductive definition components of the respective proof assistant for defining inductive predicates in the separation logic.
+These program verifiers embed the separation logic into the logic of the proof assistant. This can be done in several ways. Both works by \Citeauthor{appelTacticsSeparationLogic2006} \cite{appelTacticsSeparationLogic2006}, and \Citeauthor{rouvoetIntrinsicallyTypedCompilation2021} \cite{rouvoetIntrinsicallyTypedCompilation2021}, embed separation logic as propositions from a concrete heap to the proof assistant propositions. Thus, they can both use the inductive definition components of the respective proof assistant for defining inductive predicates in the separation logic. We give an example of this process below.
 \begin{example}{}{}
-  We choose a concrete type as the propositions for our embedding of separation logic in Coq. Given a type of heaps \coqi{heap}, the separation logic proposition is defined as
+  They choose a concrete type as the propositions for the embedding of the separation logic in Coq. Given a type of heaps \coqi{heap}, the separation logic proposition is defined as
   \begin{coqcode}
-    Definition sProp : heap -> Prop.
+    Definition sProp := heap -> Prop.
   \end{coqcode}
-  Now, when we define an inductive predicate using \coqi{sProp}
+  Next, they can define an inductive predicate using \coqi{sProp}
   \begin{coqcode}
     Inductive is_MLL : val -> list val -> sProp := ~$\cdots$~
   \end{coqcode}
@@ -33,7 +33,9 @@ These program verifiers embed the separation logic into the logic of the proof a
   \begin{coqcode}
     Inductive is_MLL : val -> list val -> heap -> Prop := ~$\cdots$~
   \end{coqcode}
-  And, this is of course definable in Coq.
+  This is of course definable in Coq.
+
+  \hspace{.5cm} Thus, the inductive predicates in the Coq logic can directly be used to define inductive predicates in the separation logic.
 \end{example}
 
 The work by \Citeauthor{chlipalaMostlyautomatedVerificationLowlevel2011} \cite{chlipalaMostlyautomatedVerificationLowlevel2011} and \Citeauthor{bengtsonCharge2012} \cite{bengtsonCharge2012}, both embed a separation logic in Coq. They use embeddings of separation logics, but only make use of the Coq \coqi{Fixpoint} when defining representation predicates. Thus, they only use structural recursion.
@@ -42,13 +44,15 @@ The work by \Citeauthor{chlipalaMostlyautomatedVerificationLowlevel2011} \cite{c
 There have been several projects that have used Elpi to create commands and tactics. Both Derive \cite{tassiDerivingProvedEquality2019} and Hierarchy Builder \cite{cohenHierarchyBuilderAlgebraic2020} center around creating definitions and do not involve creating tactics. The project Trocq \cite{cohenTrocqProofTransfer2024} creates commands and a tactic to facilitate proof transfer in Coq. However, all these projects fully create a proof term without elaborating in between. While we employ backwards reasoning in our proof generators and built up the proof by elaborating the proof term in between steps.
 
 \section{Other implementations of the IPM}\label{sec:IPMimpl}
-In this thesis, we reimplemented several tactics of the IPM. This replication of \cite{krebbersInteractiveProofsHigherorder2017} has been done various times before in the meta programming languages Ltac2 and Mtac2, and in the proof assistant Lean \cite{demouraLeanTheoremProver2015}. The implementation in Ltac2 was done in the master thesis of \Citeauthor{liesnikovExtendingAutomatingIris2020} \cite{liesnikovExtendingAutomatingIris2020}. They keep the same structure in their tactics as the IPM, while also adding some tactics of their own.
+In this thesis, we reimplemented several tactics of the IPM. This replication of \cite{krebbersInteractiveProofsHigherorder2017} has been done various times before in the meta programming languages Ltac2 and Mtac2, and in the proof assistant Lean \cite{demouraLeanTheoremProver2015}.
+
+The implementation in Ltac2 was done in the master thesis of \Citeauthor{liesnikovExtendingAutomatingIris2020} \cite{liesnikovExtendingAutomatingIris2020}. They keep the same structure in their tactics as the IPM, while also adding some tactics of their own.
 
 The Mtac2 meta programming language creates fully typed tactics. In the paper introducing Mtac2 by \Citeauthor{kaiserMtac2TypedTactics2018} \cite{kaiserMtac2TypedTactics2018} some tactics of the IPM were reimplemented in Mtac2. This implementation focused on showing the capabilities of Mtac2 by making the tactic implementation more robust.
 
 Lastly, the IPM was also reimplemented in Lean by \Citeauthor{koenigImprovedInterfaceInteractive2022} \cite{koenigImprovedInterfaceInteractive2022}. Unlike the previous two reimplementations of the IPM, this instance had to replicate all definitions and lemmas, since it uses a different proof assistant with a different base logic.
 
-All three reimplementations of the IPM did not consider inductive predicates. The first two reimplementations can make use of the same strategy of defining inductive separation logic predicates as used in Iris. The last reimplementations of the IPM can utilize the Lean structural recursion or a similar fixpoint construction as in Iris to define inductive predicates.
+All three reimplementations of the IPM did not consider inductive predicates. The first two reimplementations can make use of the same strategy of defining inductive separation logic predicates as used in Iris. The last reimplementations of the IPM can utilize the Lean structural recursion or a similar fixpoint construction as in Iris to define inductive predicates. To implement our system into the Lean implementation of the IPM, one would have to use the Lean metaprogramming system. This however, does not fully follow the same ideas as Elpi, and thus we expect it to present several new challenges in the implementation.
 
 \section{Algorithms based on proper elements and signatures}\label{sec:propersigproj}
 The concept of proper elements and signatures was taken from the work by \Citeauthor{sozeauNewLookGeneralized2009} \cite{sozeauNewLookGeneralized2009}. They use proper elements and signatures (called Propers in their work) to create a tactic for generalized rewriting in Coq, i.e., rewriting with arbitrary preorders, instead of just equality. This tactic extends the existing \coqi{rewrite} tactic from Coq by allowing one to rewrite lemmas under terms for which an appropriate \coqi{Proper} instance is given.

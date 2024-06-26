@@ -483,9 +483,9 @@ Since $\isMLL$ is an inductive predicate, we can define an induction principle. 
     \inferhref{\isMLL-ind}{ismll-ind}
     {\TRUE\proves \pred\, \None\, []
         \\
-        \loc fmapsto (\val', \True, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, \vect{\val}
+        \loc \fmapsto (\val', \True, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, \vect{\val}
         \\
-        \loc fmapsto (\val', \False, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, (\val' :: \vect{\val})
+        \loc \fmapsto (\val', \False, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, (\val' :: \vect{\val})
     }
     {\isMLL\, \hd\, \vect{\val} \proves \pred\, \hd\, \vect{\val}}
 \end{mathpar}

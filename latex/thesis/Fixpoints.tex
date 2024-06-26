@@ -14,7 +14,7 @@ To define a recursive predicate, we have to prove it actually exists. One way of
 
 The candidate argument for structural recursion in $\isMLL$ would be the list of values used to represent the MLL. However, this does not work given the second case of the recursion.
 \begin{align*}
-    \isMLL\,\hd\,\vect{\val} = \cdots \lor (\Exists \loc, \val', \tl. \hd = \Some \loc * \loc fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val}) \lor \cdots
+    \isMLL\,\hd\,\vect{\val} = \cdots \lor (\Exists \loc, \val', \tl. \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val}) \lor \cdots
 \end{align*}
 Here, the list of values is passed straight onto the recursive call to $\isMLL$. Thus, it is not structurally recursive.
 
@@ -276,16 +276,16 @@ Using these descriptions we show a proof using our monotone proof search. Then, 
         \end{align*}
         We introduce $\loc$ and repeat these steps until the existential quantification is no longer the top-level function.
         \begin{align*}
-             & (\hd = \Some \loc * \loc fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{\val}) \wand \\
-             & (\hd = \Some \loc * \loc fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{\val})      \\
+             & (\hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \pred\, \tl\, \vect{\val}) \wand \\
+             & (\hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \predB\, \tl\, \vect{\val})      \\
              &
             \left(\begin{array}{@{}l}
-                          \hd = \Some \loc * \loc fmapsto (\val', \False, \tl)\spac * \\
+                          \hd = \Some \loc * \loc \fmapsto (\val', \False, \tl)\spac * \\
                           \vect{\val} = \val' :: \vect{\val}'' * \pred\, \tl\, \vect{\val}''
                       \end{array}\right)
-            \wand                                                                                      \\
+            \wand                                                                                       \\
              & \left(\begin{array}{@{}l}
-                             \hd = \Some \loc * \loc fmapsto (\val', \False, \tl)\spac * \\
+                             \hd = \Some \loc * \loc \fmapsto (\val', \False, \tl)\spac * \\
                              \vect{\val} = \val' :: \vect{\val}'' * \predB\, \tl\, \vect{\val}''
                          \end{array}\right)
         \end{align*}
