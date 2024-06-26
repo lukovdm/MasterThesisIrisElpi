@@ -77,22 +77,4 @@ Proof.
   done.
 Qed.
 
-(* Lemma tac_apply_in Δ i p P j q P1 P2 Q :
-  envs_lookup i Δ = Some (p, P) →
-  envs_lookup j Δ = Some (q, P1) →
-  IntoWand p false P P1 P2 →
-  match envs_simple_replace j q (Esnoc Enil j P2) Δ with
-    | None => False
-    | Some Δ' => envs_entails (envs_delete true i p Δ') Q
-    end →
-  envs_entails Δ Q.
-Proof.
-  rewrite envs_entails_unseal /IntoWand => ?? HP12 Hentails.
-  destruct (envs_simple_replace _ _ _ _) as [Δ'|] eqn:?; last done.
-  rewrite -Hentails.
-  rewrite -(idemp bi_and (of_envs Δ)) {2}(envs_lookup_sound _ i) //.
-  rewrite (envs_simple_replace_singleton_sound _ _ j) //=.
-  rewrite HP12 /=. *)
 End tactics.
-
-(* Ltac intros_anon := intros ?. *)

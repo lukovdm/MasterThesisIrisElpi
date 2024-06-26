@@ -12,7 +12,7 @@ authors: "Luko van der Maas eiInd@luko.dev"
 license: "BSD-3-Clause"
 homepage: "https://github.com/lukovdm/MasterThesisIrisElpi"
 bug-reports: "https://github.com/lukovdm/MasterThesisIrisElpi/issues"
-dev-repo: "https://github.com/lukovdm/MasterThesisIrisElpi.git"
+dev-repo: "git://github.com/lukovdm/MasterThesisIrisElpi.git"
 depends: [ 
     "coq-iris" {>= "4.2"} 
     "coq-elpi" {>= "2.1.1"}
@@ -21,4 +21,3 @@ build: [
   ["./configure" "--prefix=%{prefix}%"]
   [make]
 ]
-install: [make "install"]
