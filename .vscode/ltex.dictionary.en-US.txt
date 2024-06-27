@@ -61,3 +61,4 @@ Freek
 uncurryed
 Ltac
 OFEs
+opam

@@ -75,3 +75,4 @@
 {"rule":"AI_HYDRA_LEO_MISSING_COMMA","sentence":"^\\QProving a function monotone.\\E$"}
 {"rule":"TYPE_OF_PLURAL","sentence":"^\\QLastly, the type ends in \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, which is the type of Iris propositions over heaps.\\E$"}
 {"rule":"EN_REPEATEDWORDS_SEVERAL","sentence":"^\\QThis results in several proofs and manual intermediary definitions.\\E$"}
+{"rule":"PCT_SINGULAR_NOUN_PLURAL_VERB_AGREEMENT","sentence":"^\\Qsets.v: Contains the definition of \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, the representation predicate for marked linked lists.\\E$"}
