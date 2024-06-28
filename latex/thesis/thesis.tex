@@ -44,11 +44,14 @@
 % \setlength{\headheight}{0cm}
 % \setlength{\topmargin}{0cm} 
 
-\geometry{a4paper,hscale=0.7,bottom=4cm, top=3cm}
+\geometry{a4paper,hscale=0.7,bottom=4cm, top=3cm} 
 
 \graphicspath{{imgs/}}
 
-\addbibresource{bibliography.bib}
+\bibliography{bibliography.bib}
+
+\AtEveryBibitem{\clearfield{editor}}
+\AtEveryBibitem{\clearlist{editors}}
 
 \begin{document}
 \VerbatimFootnotes

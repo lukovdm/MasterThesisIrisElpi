@@ -201,7 +201,7 @@ Given a signature we can define when a connective has a signature.
 \end{definition}
 We define how a connective is monotone by the signature it is a proper element of. The proofs that the connectives are the proper elements of their signature are fairly trivial, but we will highlight the existential qualifier.
 
-Recall the existential quantifieres signature, $(\eqrel \respect \wandrel) \respect \wandrel$. We can unfold the definitions in the signature and fill in the existential quantification to get the following statement,
+Recall the existential quantifiers signature, $(\eqrel \respect \wandrel) \respect \wandrel$. We can unfold the definitions in the signature and fill in the existential quantification to get the following statement,
 \[\All \pred, \predB. (\All \var, \varB. \var = \varB \wand \pred\, \var \wand \predB\, \varB) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var) \]
 This statement can be easily simplified by substituting $\varB$ for $\var$ in the first relation.
 \[\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var) \]
@@ -241,7 +241,7 @@ The monotone proof search is based on identifying the top-level relation and the
         \draw[->] (func) -- (1.72, .18);
     \end{tikzpicture}
 \end{center}
-Using these descriptions we show a proof using our monotone proof search. Then, we outline the steps we took in this proof.
+Using these descriptions, we show a proof using our monotone proof search. Then, we outline the steps we took in this proof.
 \begin{example}{$\isMLL_\hopred$\ is monotone}{ismllproper}
     The predicate $\isMLL_\hopred\colon (\Val \to \List\ \Val \to \iProp) \to \Val \to \List\ \Val \to \iProp$ is monotone in its first argument. Thus, $\isMLL_\hopred$ is a proper element of
     \[
