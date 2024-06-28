@@ -38,7 +38,7 @@ This project contains three main folders
 
 - **eIris**: This folder contains the proofmode, including Elpi source files.
   - **common**: Contains the Elpi source for the commonly used predicates.
-  - **proofmode**: Contains sources for the eiIris proofmode.
+  - **proofmode**: Contains the sources for the eIris proofmode.
 - **experiments**: Any experiments or examples using our tactics.
   - **Timing**: Contains a Python script and Coq source file which tests the speed of the intro pattern parser written in Elpi.
   - **indtest.v**: Contains basic examples for using the `ei.Ind` and `eiIntros` tactics.
@@ -50,7 +50,7 @@ This project contains three main folders
 
 A few introduction patterns have been added or overloaded to improve the ergonomics of several tactics.
 
-- `[|]`: When an inductive predicate is encountered it is automatically unfolded.
+- `[|]`: When an inductive predicate is encountered, it is automatically unfolded. Then, the normal elimination rules are used.
 - `[|]`: The conjunction and disjunction introduction pattern can take more than two options and are destructed assuming the terms are written right-associative.
 - `*`: Destructs Iris existentials until none can be found at the head of the assumption.
 - `**`: Destructs an inductive predicate and splits it into any possible branches. Does not further introduce the resulting assumptions.

@@ -39,7 +39,30 @@
 \begin{document}
 \frame{\titlepage}
 
-\begin{frame}[fragile]{The goal}
+\section{Introduction}
+\begin{frame}{Program verification}
+    \begin{itemize}
+        \item Verify programs by specifying pre and post conditions
+        \item Specification happens in separation logic
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Separation logic with Hoare triples}
+    \begin{center}
+        \begin{tikzpicture}[remember picture]
+            \node (hoare) at (0,0) {$\hoare{\isD\, d\; y}{\subnode{op}{\textlog{op}}\, d\; x }{\isD\, d\; (\subnode{f}{\textlog{f}}\, x\; y)}$};
+            \node[align=left] (oplabel) at (-1, -1) {Imperative\\program};
+            \node[align=left] (flabel) at (1,-1) {Functional\\program};
+            \node (isdlabel) at (0, 1) {Representation predicate};
+
+            \draw[->] (oplabel) -- (op);
+            \draw[->] (flabel) -- (f);
+        \end{tikzpicture}
+    \end{center}
+    \[\hoare{\isList\, \hd\, \vect{\val}}{\MLLdelete\, \hd\; \iindex }{\isList\, \hd\; (\textlog{remove}\, \iindex\, \vect{\val})}\]
+\end{frame}
+
+\begin{frame}{Representation predicates}
     \begin{center}
         \begin{tikzpicture}
             \node [MLL] (x0) at (0,0) {$\val_0$};
@@ -56,6 +79,13 @@
         \end{tikzpicture}
     \end{center}
 
+    \begin{align*}
+        \isMLL\, \hd\, \vect{\val} & =
+        \isMLLRecDef
+    \end{align*}
+\end{frame}
+
+\begin{frame}[fragile]{Outline of our solution}
     \begin{coqcode}
         eiInd
         Inductive is_MLL : val → list val → iProp :=
@@ -67,129 +97,12 @@
               l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
               is_MLL (SOMEV #l) (v :: vs).
       \end{coqcode}
+\end{frame}
+
+\begin{frame}{Approach}
 
 \end{frame}
 
-\section{Recap on program verification}
-
-\begin{frame}{Program verification}
-    \begin{itemize}
-        \item Verify programs by specifying pre and post conditions
-        \item Specification happens in separation logic
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Separation logic}
-    \begin{center}
-        \begin{tikzpicture}
-            \node[memnode] (x) at (0,0) {$\val$};
-            \node (l) [above=of x.west] {$\loc$};
-
-            \path[->, thick] (l) edge ([yshift=.1cm]x.north west);
-            \path (0.5,-.8) edge[dashed] node[fill=white] {\large$\ast$} (0.5,1.8);
-            \begin{scope}[xshift=1.2cm]
-                \node[memnode] (y) at (0,0) {$\valB$};
-                \node (k) [above=of y.west] {$\locB$};
-
-                \path[->, thick] (k) edge ([yshift=.1cm]y.north west);
-            \end{scope}
-            \node (logic) at (4,0.8) {$\loc\fmapsto\val\ \ast\ \locB\fmapsto\valB$};
-        \end{tikzpicture}
-    \end{center}
-    \[\hoare{\isMLL\, \hd\, \vect{\val}}{\MLLdelete\, \hd\; \iindex }{\isMLL\, \hd\; (\textlog{remove}\, \iindex\, \vect{\val})}\]
-\end{frame}
-
-\begin{frame}{Representation predicates}
-    \begin{align*}
-        \isMLL\, \hd\, \vect{\val} & =
-        \isMLLRecDef
-    \end{align*}
-    \begin{mathpar}
-        \inferhref{\isMLL-ind}{ismll-ind}
-        {\TRUE\proves \pred\, \None\, []
-            \\
-            \loc \fmapsto (\val', \True, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, \vect{\val}
-            \\
-            \loc \fmapsto (\val', \False, \tl) * (\isMLL\, \tl\, \vect{\val} \land \pred\, \tl\, \vect{\val}) \proves \pred\, (\Some \loc)\, (\val' :: \vect{\val})
-        }
-        {\isMLL\, \hd\, \vect{\val} \proves \pred\, \hd\, \vect{\val}}
-    \end{mathpar}
-\end{frame}
-
-\section{Problem statement}
-\begin{frame}{Problem}
-    \begin{itemize}
-        \item $\isMLL$ can't just be defined because Coq
-        \item \ldots
-    \end{itemize}
-\end{frame}
-
-\section{Outline of system}
-\begin{frame}[fragile]{Inductive command}
-    \begin{coqcode}
-        eiInd
-        Inductive is_MLL : val → list val → iProp :=
-            | empty_is_MLL : is_MLL NONEV []
-            | mark_is_MLL v vs l tl : 
-              l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
-              is_MLL (SOMEV #l) vs
-            | cons_is_MLL v vs tl l : 
-              l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
-              is_MLL (SOMEV #l) (v :: vs).
-    \end{coqcode}
-\end{frame}
-
-\begin{frame}[fragile]{Tactics}
-    \begin{itemize}
-        \item \coqi{eiInduction}
-        \item \coqi{eiIntros} \& \coqi{eiDestruct}
-        \item Lemmas: \coqi{empty_is_MLL}, \coqi{mark_is_MLL}, \coqi{cons_is_MLL}
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Demo}
-    Demo of delete on $is_MLL$
-\end{frame}
-
-\section{Fixpoints}
-\begin{frame}{Outline of construction}
-    \begin{itemize}
-        \item Transform inductive definition into a pre fixpoint function
-        \item Prove that pre fixpoint function is monontone
-        \item Take least fixpoint of pre fixpoint function
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Pre fixpoint function}
-
-\end{frame}
-
-\begin{frame}{Least fixpoint}
-
-\end{frame}
-
-\section[Implementation of eiInd]{Implementation of \coqi{eiInd}}
-\begin{frame}{Elpi}
-    \begin{itemize}
-        \item $\lambda$Prolog dialect
-        \item example
-        \item \ldots
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Coq-Elpi}
-
-\end{frame}
-
-\begin{frame}{Implementing tactics}
-
-\end{frame}
-
-\begin{frame}{Structure of \texttt{eiInd}}
-
-\end{frame}
-
-\section{Conclusion}
 \begin{frame}{Contributions}
     \begin{itemize}
         \item Created system for defining and using inductive predicates in the IPM
@@ -197,6 +110,26 @@
         \item Generating monotonicity proof of pre fixpoint function
         \item Evaluation of Elpi as meta-programming language for the IPM
     \end{itemize}
+\end{frame}
+
+\section{Theory}
+
+\section{Implementation}
+
+\section{Demo}
+\begin{frame}{Demo}
+
+\end{frame}
+
+\section{Evaluation}
+
+\section{Conclusion}
+\begin{frame}{Conclusion}
+
+\end{frame}
+
+\begin{frame}{Future work}
+
 \end{frame}
 
 \end{document}

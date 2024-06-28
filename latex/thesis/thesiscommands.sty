@@ -48,6 +48,7 @@
     chains,
     arrows.meta,
     fit,
+    tikzmark
 }
 
 \usemintedstyle{default}
@@ -181,6 +182,8 @@ overlay={\begin{tcbclipinterior}
 
 %%%%%%%%%%% Reusable pieces %%%%%%%%%%%%%%%%%%%%%%
 
+\newcommand{\isF}[1]{\textlog{is#1}}
+
 \newcommand{\MLLdelete}{\operatorname{delete}}
 \newcommand{\MLLDeleteProg}{
     \begin{align*}
@@ -195,7 +198,7 @@ overlay={\begin{tcbclipinterior}
         }end{}
     \end{align*}
 }
-\newcommand{\isMLL}{\textlog{isMLL}}
+\newcommand{\isMLL}{\isF{MLL}}
 \newcommand{\isMLLRecDef}{\isMLLDef{\isMLL}}
 \newcommand{\isMLLFDef}{\isMLLDef{\pred}}
 
@@ -211,6 +214,9 @@ overlay={\begin{tcbclipinterior}
             \right)
         \end{array}
     }}
+
+\newcommand{\isList}{\isF{List}}
+\newcommand{\isD}{\isF{D}}
 
 %%%%%%%%%%% math things %%%%%%%%%%%%%%%%%%
 
