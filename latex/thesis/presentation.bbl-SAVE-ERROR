@@ -1,0 +1,188 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{harrisPragmaticImplementationNonblocking2001a}{inproceedings}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=420ef26d8ce15c2ca4ceebd94e9ae2d7}{%
+           family={Harris},
+           familyi={H\bibinitperiod},
+           given={Timothy\bibnamedelima L.},
+           giveni={T\bibinitperiod\bibinitdelim L\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \strng{fullhash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \strng{bibnamehash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \strng{authorbibnamehash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \strng{authornamehash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \strng{authorfullhash}{420ef26d8ce15c2ca4ceebd94e9ae2d7}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Distributed Computing, 15th International Conference, {DISC} 2001, Lisbon, Portugal, October 3-5, 2001, Proceedings}
+      \field{series}{Lecture Notes in Computer Science}
+      \field{title}{A Pragmatic Implementation of Non-blocking Linked-Lists}
+      \field{volume}{2180}
+      \field{year}{2001}
+      \field{pages}{300\bibrangedash 314}
+      \range{pages}{15}
+      \verb{doi}
+      \verb 10.1007/3-540-45414-4\_21
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1007/3-540-45414-4\_21
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1007/3-540-45414-4%5C_21
+      \endverb
+    \endentry
+    \entry{huetCoqProofAssistant1997}{report}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=4cee826f08f69f1dee460ecc4f0d6d23}{%
+           family={Huet},
+           familyi={H\bibinitperiod},
+           given={Gérard},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f5fe6f6f001fe756e1256ef796f7832c}{%
+           family={Kahn},
+           familyi={K\bibinitperiod},
+           given={Gilles},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4af7507643d249553134ea08cf3879ea}{%
+           family={Paulin-Mohring},
+           familyi={P\bibinithyphendelim M\bibinitperiod},
+           given={Christine},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{institution}{1}{%
+        {INRIA}%
+      }
+      \strng{namehash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \strng{fullhash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \strng{bibnamehash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \strng{authorbibnamehash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \strng{authornamehash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \strng{authorfullhash}{e8fbf342c3a616e0cac9955e177dc4e9}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{2}
+      \field{note}{Projet COQ}
+      \field{number}{RT-0256}
+      \field{title}{{The Coq Proof Assistant : A Tutorial : Version 7.2}}
+      \field{type}{Research Report}
+      \field{year}{2002}
+      \field{pages}{46}
+      \range{pages}{1}
+      \verb{file}
+      \verb https://inria.hal.science/inria-00069918/file/RT-0256.pdf
+      \endverb
+      \verb{urlraw}
+      \verb https://inria.hal.science/inria-00069918
+      \endverb
+      \verb{url}
+      \verb https://inria.hal.science/inria-00069918
+      \endverb
+      \keyw{COQ ; PROOF ASSISTANT ; FORMAL PROOFS ; CALCULUS OF INDUCTIVES CONSTRUCTIONS}
+    \endentry
+    \entry{jungIrisGroundModular2018}{article}{}
+      \name{author}{6}{}{%
+        {{un=0,uniquepart=base,hash=b941e8725b8fd9992bdee2980fefad07}{%
+           family={Jung},
+           familyi={J\bibinitperiod},
+           given={Ralf},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ae78958ef1554bb4ac2a39c659756993}{%
+           family={Krebbers},
+           familyi={K\bibinitperiod},
+           given={Robbert},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8e83401fbc728aa21426362b4c7c2e50}{%
+           family={Jourdan},
+           familyi={J\bibinitperiod},
+           given={Jacques{-}Henri},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=c246861cdfff84700e5f8605b429159f}{%
+           family={Bizjak},
+           familyi={B\bibinitperiod},
+           given={Ales},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f4714354745ea31cf6c543434102f444}{%
+           family={Birkedal},
+           familyi={B\bibinitperiod},
+           given={Lars},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3c61a075f82133ed00b1cf07a5b5c194}{%
+           family={Dreyer},
+           familyi={D\bibinitperiod},
+           given={Derek},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{b9517442050429a39f511630fbc3911f}
+      \strng{fullhash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
+      \strng{bibnamehash}{b9517442050429a39f511630fbc3911f}
+      \strng{authorbibnamehash}{b9517442050429a39f511630fbc3911f}
+      \strng{authornamehash}{b9517442050429a39f511630fbc3911f}
+      \strng{authorfullhash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{J. Funct. Program.}
+      \field{title}{Iris from the ground up: {A} modular foundation for higher-order concurrent separation logic}
+      \field{volume}{28}
+      \field{year}{2018}
+      \field{pages}{e20}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.1017/S0956796818000151
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1017/S0956796818000151
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1017/S0956796818000151
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

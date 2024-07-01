@@ -249,7 +249,7 @@ overlay={\begin{tcbclipinterior}
 \newcommand{\respect}{\mathrel{\bm{\Longrightarrow}}}
 \newcommand{\point}{\bm{\gtrdot}}
 \newcommand{\persrel}{\pmb{\always}}
-\newcommand{\flip}{\bm{\textlog{flip}}}
+\newcommand{\flip}{\textlog{flip}}
 
 \newcommand{\carprod}{\times}
 
@@ -265,11 +265,10 @@ overlay={\begin{tcbclipinterior}
 
 %%%%%%%%%%%%%%%%%% Theorems %%%%%%%%%%%%%%%%%%
 
-\usepackage[hidelinks]{hyperref}
-\usepackage[noabbrev]{cleveref}
-
 \makeatletter
 \@ifundefined{theorem}{%
+    \usepackage[hidelinks]{hyperref}
+    \usepackage[noabbrev]{cleveref}
     \newcounter{theorem}
     \NewTcbTheorem[number within=chapter]{theorem}{Theorem}{
         label type=theorem,
@@ -390,7 +389,18 @@ overlay={\begin{tcbclipinterior}
             append after command={
                     [every edge/.append style={
                                     thick,
-                                    black,
+                                    shorten >=\pgflinewidth,
+                                    shorten <=\pgflinewidth,
+                                }]
+                    (\tikzlastnode.one split north) edge (\tikzlastnode.two split south)
+                    (\tikzlastnode.one split south) edge (\tikzlastnode.two split north)
+                }
+        },
+    markedhl/.style={
+            append after command={
+                    [every edge/.append style={
+                                    thick,
+                                    red,
                                     shorten >=\pgflinewidth,
                                     shorten <=\pgflinewidth,
                                 }]
@@ -403,6 +413,18 @@ overlay={\begin{tcbclipinterior}
                     [every edge/.append style={
                                     thick,
                                     black,
+                                    shorten >=.2cm,
+                                    shorten <=.2cm,
+                                }]
+                    (\tikzlastnode.two split north) edge (\tikzlastnode.south east)
+                    (\tikzlastnode.two split south) edge (\tikzlastnode.north east)
+                }
+        },
+    nullhl/.style={
+            append after command={
+                    [every edge/.append style={
+                                    thick,
+                                    color=red,
                                     shorten >=.2cm,
                                     shorten <=.2cm,
                                 }]
@@ -456,7 +478,18 @@ overlay={\begin{tcbclipinterior}
             to path={-- ({$(\tikztostart)!.4!(\tikztotarget)$} -| \tikztostart) -| (\tikztotarget)}
         },
     >/.tip = Latex,
-    p/.tip = Circle
+    p/.tip = Circle,
+    invisible/.style={opacity=0},
+    visible on/.style={alt={#1{}{invisible}}},
+    onslide/.code args={<#1>#2}{%
+            \only<#1>{\pgfkeysalso{#2}} % \pgfkeysalso doesn't change the path
+        },
+    temporal/.code args={<#1>#2#3#4}{%
+            \temporal<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}{\pgfkeysalso{#4}} % \pgfkeysalso doesn't change the path
+        },
+    alt/.code args={<#1>#2#3}{%
+            \alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}} % \pgfkeysalso doesn't change the path
+        },
 }
 
 %%%%%%%%%%%% Draft / Final %%%%%%%%%%%%%%%%%%%%

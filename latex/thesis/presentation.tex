@@ -18,7 +18,7 @@
 \usepackage{url}
 
 \usepackage{graphicx}
-\usepackage[style=alphabetic, maxbibnames=99]{biblatex}
+\usepackage[style=authoryear]{biblatex}
 \usepackage{refcount}
 \usepackage{array}
 \usepackage{mathpartir}
@@ -27,8 +27,12 @@
 \usepackage{heaplang}
 \usepackage{thesiscommands}
 
+\bibliography{bibliography.bib}
+
 \usetheme{Frankfurt}
 \usecolortheme{beaver}
+
+\setbeamertemplate{navigation symbols}{}
 
 \title{Extending the Iris Proof Mode with Inductive Predicates using Elpi}
 \author{Luko van der Maas}
@@ -44,77 +48,185 @@
     \begin{itemize}
         \item Verify programs by specifying pre and post conditions
         \item Specification happens in separation logic
+        \item We make use of embeddings of separation logic in a proof assistant
+        \item Iris \parencite{jungIrisGroundModular2018} \& Coq \parencite{huetCoqProofAssistant1997}
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Separation logic with Hoare triples}
     \begin{center}
-        \begin{tikzpicture}[remember picture]
-            \node (hoare) at (0,0) {$\hoare{\isD\, d\; y}{\subnode{op}{\textlog{op}}\, d\; x }{\isD\, d\; (\subnode{f}{\textlog{f}}\, x\; y)}$};
-            \node[align=left] (oplabel) at (-1, -1) {Imperative\\program};
-            \node[align=left] (flabel) at (1,-1) {Functional\\program};
-            \node (isdlabel) at (0, 1) {Representation predicate};
+        \begin{tikzpicture}
+            \node[visible on=<+->] (hoare) at (0,0) {$\hoare{\isD\, d\; y}{\textlog{op}\, d\; x }{\isD\, d\; (\textlog{f}\, x\; y)}$};
 
-            \draw[->] (oplabel) -- (op);
-            \draw[->] (flabel) -- (f);
+            \node[align=left,visible on=<+->] (oplabel) at (-1, -1.5) {Imperative\\program};
+            \draw[->,visible on=<.->] (oplabel) -- (-.7,-0.25);
+
+            \node[align=left,visible on=<+->] (flabel) at (2,-1.5) {Functional\\program};
+            \draw[->,visible on=<.->] (flabel) -- (1.45,-0.25);
+
+            \node[visible on=<+->] (isdlabel) at (-.7, 1.5) {Representation predicate};
+            \draw[->,visible on=<.->] (isdlabel) -- (-1.6, .3);
+            \draw[->,visible on=<.->] (isdlabel) -- (.5, .3);
         \end{tikzpicture}
     \end{center}
+    \pause
     \[\hoare{\isList\, \hd\, \vect{\val}}{\MLLdelete\, \hd\; \iindex }{\isList\, \hd\; (\textlog{remove}\, \iindex\, \vect{\val})}\]
 \end{frame}
 
 \begin{frame}{Representation predicates}
+    \pause
     \begin{center}
         \begin{tikzpicture}
-            \node [MLL] (x0) at (0,0) {$\val_0$};
-            \node [MLL, marked] (x1) at (3,0) {$\val_1$};
-            \node [MLL] (x2) at (6,0) {$\val_2$};
-            \node [MLL, null] (x3) at (9,0) {$\val_3$};
+            \node [MLL, onslide=<6>{red}] (x0) at (0,0) {$\val_0$};
+            \node [MLL, alt=<{5,8}>{red,markedhl}{marked}] (x1) at (3,0) {$\val_1$};
+            \node [MLL, onslide=<6>{red}] (x2) at (6,0) {$\val_2$};
+            \node [MLL, alt=<4>{nullhl}{null}, onslide=<6>{red}] (x3) at (9,0) {$\val_3$};
 
-            \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x0.three) edge [bend left] (x1.west);
-            \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
-            \path[{Circle}->,thick] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
+            \path[{Circle}->,thick,onslide=<{5,8}>{red}] ([yshift=1pt,xshift=1pt]x0.three) edge [bend left] (x1.west);
+            \path[{Circle}->,thick, onslide=<6>{red}] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
+            \path[{Circle}->,thick, onslide=<6>{red}] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
 
-            \node (l) [above=of x0.west] {$\loc$};
-            \path[->,thick] (l) edge ([yshift=.1cm]x0.north west);
-        \end{tikzpicture}
+            \node[onslide=<6>{red}] (l) [above=of x0.west] {$\loc$};
+            \path[->,thick,onslide=<6>{red}] (l) edge ([yshift=.1cm]x0.north west);
+        \end{tikzpicture}\\
+        \vspace{0.5cm}
+        \textcite{harrisPragmaticImplementationNonblocking2001a}
     \end{center}
-
+    \pause
     \begin{align*}
         \isMLL\, \hd\, \vect{\val} & =
-        \isMLLRecDef
+        \begin{array}[t]{l}
+            \alert<4>{(\hd = \None * \vect{\val} = [])} \lor{}                                                                          \\
+            \alert<5,8>{(\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val})} \lor{} \\
+            \alert<6>{\left(
+                \begin{array}{l@{}l}
+                    \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac *              \\
+                                                               & \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \tl\, \vect{\val}''
+                \end{array}
+                \right)}
+        \end{array}
     \end{align*}
 \end{frame}
 
 \begin{frame}[fragile]{Outline of our solution}
-    \begin{coqcode}
-        eiInd
-        Inductive is_MLL : val → list val → iProp :=
-            | empty_is_MLL : is_MLL NONEV []
-            | mark_is_MLL v vs l tl : 
-              l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
-              is_MLL (SOMEV #l) vs
-            | cons_is_MLL v vs tl l : 
-              l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
-              is_MLL (SOMEV #l) (v :: vs).
-      \end{coqcode}
+    \begin{columns}
+        \begin{column}{.75\textwidth}
+            \begin{coqcode}
+                eiInd
+                Inductive is_MLL : val → list val → iProp :=
+                    | empty_is_MLL : is_MLL NONEV []
+                    | mark_is_MLL v vs l tl : 
+                      l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ 
+                      is_MLL (SOMEV #l) vs
+                    | cons_is_MLL v vs tl l : 
+                      l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ 
+                      is_MLL (SOMEV #l) (v :: vs).
+              \end{coqcode}
+        \end{column}
+        \begin{column}<+->{.25\textwidth}
+            \begin{itemize}[<+->]
+                \item Definition of \coqi{is_MLL}
+                \item Proof of constructors, \coqi{empty_is_MLL}, \coqi{mark_is_MLL}, \coqi{cons_is_MLL}
+                \item Proof of induction principle
+                \item Integration with IPM tactics
+            \end{itemize}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Approach}
-
+    \begin{columns}<+->[t]
+        \begin{column}{.5\textwidth}
+            \structure{Theory}
+            \begin{itemize}[<+->]
+                \item Define the pre fixpoint function
+                \item Prove monotonicity
+                \item Apply least fixpoint theorem
+            \end{itemize}
+        \end{column}
+        \begin{column}{.5\textwidth}
+            \structure{Challenges in practice}
+            \begin{itemize}[<+->]
+                \item Deal with $n$-ary predicates
+                \item Proof search for monotonicity
+                \item Integrating resulting definitions and lemmas into the Iris tactics language
+            \end{itemize}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Contributions}
-    \begin{itemize}
-        \item Created system for defining and using inductive predicates in the IPM
-        \item Strategy for modular tactics in Elpi
-        \item Generating monotonicity proof of pre fixpoint function
-        \item Evaluation of Elpi as meta-programming language for the IPM
+    \pause
+    \begin{itemize}[<+->]
+        \item Created a system for defining and using inductive predicates in the IPM
+        \item Posed a strategy for defining modular tactics in Elpi
+        \item Posed a syntactic proof search algorithm for finding a monotonicity proof of a pre fixpoint function
+        \item Evaluated Elpi as a meta-programming language for the IPM
     \end{itemize}
 \end{frame}
 
 \section{Theory}
+\begin{frame}{Monotone pre fixpoint function}
+    \begin{align*}
+        \alt<2->
+        {\hopred\, \pred\, \hd\, \vect{\val}}{\isMLL\, \hd\, \vect{\val}} = \alt<2->{\isMLLFDef}{\isMLLRecDef}
+    \end{align*}
+
+    \begin{definition}<3->[Monotone predicate]
+        Function $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is \emph{monotone} when, for any $\pred, \predB\colon A \to \iProp$, it holds that
+        \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \proves \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var\]
+    \end{definition}
+\end{frame}
+
+\begin{frame}{Monotone signatures}
+    \begin{table}
+        \begin{tabular}{lll}
+            Connective & Type                           & Signature                                           \\
+            \hline
+            $*$        & $\Prop \to \Prop \to \Prop$    & $\wandrel \respect \wandrel \respect \wandrel$      \\
+            $\lor$     & $\Prop \to \Prop \to \Prop$    & $\wandrel \respect \wandrel \respect \wandrel$      \\
+            $\wand$    & $\Prop \to \Prop \to \Prop$    & $\flip\wandrel \respect \wandrel \respect \wandrel$ \\
+            $\exists$  & $(\sigax \to \Prop) \to \Prop$ & $\point\wandrel \respect \wandrel$
+        \end{tabular}
+    \end{table}
+    \pause
+    \begin{definition}[Respectful relation]
+        The \emph{respectful relation} $\rel \respect \rel'\colon \Rel\ (\sigax\to\sigaxB)$ of two relations $\rel\colon\Rel\ \sigax$, $\rel'\colon\Rel\ \sigaxB$ is defined as
+        \begin{align*}
+            \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
+        \end{align*}
+    \end{definition}
+\end{frame}
+
+\begin{frame}{Semantics of a signature}
+    \begin{definition}[Proper element of a relation]
+        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
+    \end{definition}
+    \vspace*{1cm}
+    \pause
+    \begin{tabular}{ll}
+        Signature                                       & Semantics                                                                                                                                     \\
+        \hline
+        $\wandrel \respect \wandrel \respect \wandrel$  & $\All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')$ \\\pause
+        $\left(\point\wandrel \respect \wandrel\right)$ & $\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var)$    \\
+    \end{tabular}
+\end{frame}
+
+\begin{frame}{Monotonicity as a signature}
+
+\end{frame}
+
+\begin{frame}{Proof search}
+
+\end{frame}
 
 \section{Implementation}
+
+\begin{frame}{Elpi}
+
+\end{frame}
+
+
 
 \section{Demo}
 \begin{frame}{Demo}
