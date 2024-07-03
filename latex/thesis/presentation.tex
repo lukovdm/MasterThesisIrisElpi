@@ -18,7 +18,7 @@
 \usepackage{url}
 
 \usepackage{graphicx}
-\usepackage[style=authoryear]{biblatex}
+\usepackage[style=authoryear,maxnames=10]{biblatex}
 \usepackage{refcount}
 \usepackage{array}
 \usepackage{mathpartir}
@@ -169,13 +169,66 @@
 \begin{frame}{Monotone pre fixpoint function}
     \begin{align*}
         \alt<2->
-        {\hopred\, \pred\, \hd\, \vect{\val}}{\isMLL\, \hd\, \vect{\val}} = \alt<2->{\isMLLFDef}{\isMLLRecDef}
+        {\isMLL_{\hopred}\, \pred\, \hd\, \vect{\val}}{\isMLL\, \hd\, \vect{\val}} = \alt<2->{\isMLLFDef}{\isMLLRecDef}
     \end{align*}
 
     \begin{definition}<3->[Monotone predicate]
         Function $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is \emph{monotone} when, for any $\pred, \predB\colon A \to \iProp$, it holds that
         \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \proves \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var\]
     \end{definition}
+\end{frame}
+
+\begin{frame}{Monotonicity as a signature}
+    \begin{definition}<+->[Proper element of a relation \parencite{sozeauNewLookGeneralized2009}]
+        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
+    \end{definition}
+    \begin{columns}
+        \begin{column}<+->{.5\textwidth}
+            \begin{definition}[Respectful relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
+                \end{align*}
+            \end{definition}
+
+            \begin{definition}[Pointwise relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \point \rel \eqdef \Lam \func, \funcB. \All \var. \rel\, (\func\, \var)\, (\funcB\, \var)
+                \end{align*}
+            \end{definition}
+
+            \begin{definition}[Persistent relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)
+                \end{align*}
+            \end{definition}
+        \end{column}
+        \begin{column}{.4\textwidth}
+            \uncover<+->{
+                \begin{align*}
+                    \isMLL_{\hopred}\colon & (\Val \to \List\ \Val \to \iProp) \to \\
+                                           & \Val \to \List\ \Val \to \iProp
+                \end{align*}
+                \begin{align*}
+                     & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \\
+                     & \left(
+                    \begin{array}{rl}
+                            \All \hd\, \vect{v}. & \isMLL_{\hopred}\, \pred\, \hd\, \vect{v} \wand \\
+                                                 & \isMLL_{\hopred}\, \predB\, \hd\, \vect{v}
+                        \end{array}
+                    \right)
+                \end{align*}
+            }
+            \uncover<+->{
+                \begin{align*}
+                    \persrel (\point \point \wandrel) \respect \point \point \wandrel
+                \end{align*}
+            }
+        \end{column}
+    \end{columns}
+
 \end{frame}
 
 \begin{frame}{Monotone signatures}
@@ -189,59 +242,359 @@
             $\exists$  & $(\sigax \to \Prop) \to \Prop$ & $\point\wandrel \respect \wandrel$
         \end{tabular}
     \end{table}
-    \pause
-    \begin{definition}[Respectful relation]
-        The \emph{respectful relation} $\rel \respect \rel'\colon \Rel\ (\sigax\to\sigaxB)$ of two relations $\rel\colon\Rel\ \sigax$, $\rel'\colon\Rel\ \sigaxB$ is defined as
-        \begin{align*}
-            \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
-        \end{align*}
-    \end{definition}
-\end{frame}
 
-\begin{frame}{Semantics of a signature}
-    \begin{definition}[Proper element of a relation]
-        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
-    \end{definition}
-    \vspace*{1cm}
-    \pause
-    \begin{tabular}{ll}
-        Signature                                       & Semantics                                                                                                                                     \\
-        \hline
-        $\wandrel \respect \wandrel \respect \wandrel$  & $\All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')$ \\\pause
-        $\left(\point\wandrel \respect \wandrel\right)$ & $\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var)$    \\
-    \end{tabular}
-\end{frame}
-
-\begin{frame}{Monotonicity as a signature}
-
+    \begin{table}
+        \begin{tabular}{ll}
+            Signature                                       & Semantics                                                                                                                                     \\
+            \hline
+            $\wandrel \respect \wandrel \respect \wandrel$  & $\All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')$ \\
+            $\left(\point\wandrel \respect \wandrel\right)$ & $\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var)$
+        \end{tabular}
+    \end{table}
 \end{frame}
 
 \begin{frame}{Proof search}
+    \begin{columns}
+        \begin{column}{.5\textwidth}
+            \only<1>{
+                \begin{align*}
+                     & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \\
+                     & \left(
+                    \begin{array}{rl}
+                            \All \hd\, \vect{v}. & \isMLL_{\hopred}\, \pred\, \hd\, \vect{v} \wand \\
+                                                 & \isMLL_{\hopred}\, \predB\, \hd\, \vect{v}
+                        \end{array}
+                    \right)
+                \end{align*}
+            }%
+            \only<2,3>{
+                \begin{align*}
+                     & \begin{array}[t]{l}
+                           (\hd = \None * \vect{\val} = []) \alert<3>{\lor{}} \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \tl. & \hd = \Some l \spac *                  \\
+                                                          & l \fmapsto (\val', \True, \tl) \spac * \\
+                                                          & \pred\, \tl\, \vect{\val}
+                            \end{array}
+                           \right) \lor{}                                     \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l \spac *                                              \\
+                                                                           & l \fmapsto (\val', \False, \tl)\spac *                             \\
+                                                                           & \vect{\val} = \val' :: \vect{\val}'' * \pred\, \tl\, \vect{\val}''
+                            \end{array}
+                           \right)
+                       \end{array} \\
+                     & \alert<3>{\wand}                                                    \\
+                     & \begin{array}[t]{l}
+                           (\hd = \None * \vect{\val} = []) \alert<3>{\lor{}} \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \tl. & \hd = \Some l \spac *                  \\
+                                                          & l \fmapsto (\val', \True, \tl) \spac * \\
+                                                          & \predB\, \tl\, \vect{\val}
+                            \end{array}
+                           \right) \lor{}                                     \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l \spac *                                               \\
+                                                                           & l \fmapsto (\val', \False, \tl)\spac *                              \\
+                                                                           & \vect{\val} = \val' :: \vect{\val}'' * \predB\, \tl\, \vect{\val}''
+                            \end{array}
+                           \right)
+                       \end{array}
+                \end{align*}
+            }
+            \only<4,5>{
+                \begin{align*}
+                     & (\hd = \None * \vect{\val} = []) \\
+                     & \wand                            \\
+                     & (\hd = \None * \vect{\val} = [])
+                \end{align*}
+            }
+            \only<6,7>{
+                \begin{align*}
+                     & \begin{array}[t]{l}
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \tl. & \hd = \Some l\spac *                   \\
+                                                          & l \fmapsto (\val', \True, \tl) \spac * \\
+                                                          & \pred\, \tl\, \vect{\val}
+                            \end{array}
+                           \right) \alert<7>{\lor{}} \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l \spac *                                              \\
+                                                                           & l \fmapsto (\val', \False, \tl)\spac *                             \\
+                                                                           & \vect{\val} = \val' :: \vect{\val}'' * \pred\, \tl\, \vect{\val}''
+                            \end{array}
+                           \right)
+                       \end{array} \\
+                     & \alert<7>{\wand}                           \\
+                     & \begin{array}[t]{l}
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \tl. & \hd = \Some l \spac *                  \\
+                                                          & l \fmapsto (\val', \True, \tl) \spac * \\
+                                                          & \predB\, \tl\, \vect{\val}
+                            \end{array}
+                           \right) \alert<7>{\lor{}} \\
+                           \left(
+                           \begin{array}{l@{}l}
+                                \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l \spac *                                               \\
+                                                                           & l \fmapsto (\val', \False, \tl)\spac *                              \\
+                                                                           & \vect{\val} = \val' :: \vect{\val}'' * \predB\, \tl\, \vect{\val}''
+                            \end{array}
+                           \right)
+                       \end{array}
+                \end{align*}
+            }
+            \only<8,9>{
+                \begin{align*}
+                     & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \\
+                     & \proves \pred\, \tl\, \vect{\val}  \wand \predB\, \tl\, \vect{\val}
+                \end{align*}
+            }
+        \end{column}
+        \begin{column}{.5\textwidth}
+            \structure{Normalization}
+            \begin{itemize}
+                \item Introduce quantifiers and modalities $\to$ Application step
+            \end{itemize}
+            \structure{Application}
+            \begin{itemize}
+                \item \alert<5>{Apply reflexivity}
+                \item \alert<9>{Apply assumption}
+                \item \alert<3,7>{Apply signature $\to$ Normalization step}
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
 
+\begin{frame}{Least fixpoint}
+    \begin{theorem}[Least fixpoint]
+        Given a monotone function $\hopred\colon (A \to \iProp) \to  A \to \iProp$, called the \emph{pre fixpoint function}, there exists the \emph{least fixpoint}
+        \[\lfp\hopred\colon  A \to \iProp \eqdef \Lam \hopred\, \var. \All \pred. \always(\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \wand \pred \, \var\]
+        such that
+        \begin{enumerate}
+            \item The fixpoint equality holds
+                  \[ \lfp\hopred\, \var \provesIff \hopred\, (\lfp\hopred)\, \var \]
+            \item The iteration property holds
+                  \[ \always (\All \varB. \hopred\, \pred\, \varB \wand \pred\, \varB) \proves \All \var. \lfp\hopred\, \var \wand \pred\, \var \]
+        \end{enumerate}
+    \end{theorem}
 \end{frame}
 
 \section{Implementation}
 
 \begin{frame}{Elpi}
-
+    \begin{itemize}
+        \item<+-> $\lambda$Prolog dialect \parencite{dunchevELPIFastEmbeddable2015}
+        \item<+-> Coq meta-programming language \parencite{tassiElpiExtensionLanguage2018}
+        \item<+-> Derive \parencite{tassiDerivingProvedEquality2019}
+        \item<.-> Hierarchy Builder \parencite{cohenHierarchyBuilderAlgebraic2020}
+        \item<.-> Trocq \parencite{cohenTrocqProofTransfer2024}
+    \end{itemize}
 \end{frame}
 
+\begin{frame}{Outline of implementation}
+    \begin{center}
+        \begin{tikzpicture}[node distance=1cm and 1cm,scale=0.6, every node/.style={transform shape}]
 
+            \pgfdeclarelayer{foreground}
+            \pgfsetlayers{background,main,foreground}
+
+            % Nodes
+            \node[obj,e,shortdown] (inddecl) {indt-decl};
+
+            \node[alg={Interpret inductive}, below=of inddecl] (int) {};
+            \node[obj, e, below right=of int] (typeterm) {Type term};
+            \node[obj, below=of typeterm] (params) {Params};
+            \node[obj, below=of params, label={[xshift=7.5mm,yshift=-2mm]above right:*}] (constructors) {Constructors};
+
+            \begin{scope}[local bounding box=bbox]
+                \node[alg={Construct pre \\ fixpoint function}, asterix, right=8cm of inddecl] (createpff) {};
+                \node[obj, ce, below=of createpff] (pff) {Pre fixpoint function};
+
+                \node[alg={\alert<2>{Construct} \& prove \\ \alert<2>{signature}}, below left=of pff] (sigalg) {};
+                \node[obj, ce, below=of sigalg] (signproff) {Signature with proof};
+
+                \node[alg={Construct fixpoint}, below right=of pff] (genfixpoint) {};
+                \node[obj, ce, below=of genfixpoint] (fixpoint) {Fixpoint};
+
+                \node[alg={Construct \& prove \\ fixpoint properties}, below=of signproff] (fpp) {};
+                \node[obj, ce, below=of fpp] (unfolding) {Unfolding \\ property};
+                \node[obj, ce, right=of unfolding] (iter) {Iteration \\ property};
+
+                \node[alg={Construct \& \alert<2>{prove} \\ \alert<2>{constructor lemmas}}, asterix, below=of fixpoint] (genconstrlem) {};
+                \node[obj, ce, below=of genconstrlem] (constrlem) {Constructor \\ lemmas};
+
+                \node[alg={Construct \& prove \\ induction lemma}, below right=1cm and .5cm of iter] (genind) {};
+                \node[obj, ce, below=of genind] (ind) {Induction lemma\hspace{2pt}};
+            \end{scope}
+
+            \node[draw,dashed,thick,rounded corners,fit=(bbox) ($(constructors)!.5!(createpff)$)] (box) {};
+
+            \begin{scope}[on background layer]
+                \path[draw, rounded corners]
+                (inddecl) -- (int)
+
+                (int) edge[->,dr] (typeterm.west)
+                (int) edge[->,dr] (constructors)
+                (int) edge[->,dr] (params)
+
+                (typeterm) edge[->] (box.west|-typeterm)
+                (params) edge[->] (box.west|-params)
+
+                % (constructors) -- (constructors |- {$(constructors)!.6!(createpff)$}) -| (createpff)
+                ({$(box.north)!.5!(createpff)$}-|createpff) -- (createpff)
+                (createpff) edge[->] (pff)
+
+                (pff) edge[rldown] (genfixpoint)
+                (genfixpoint) edge[->] (fixpoint)
+
+                (pff) edge[rldown] (sigalg)
+                (sigalg) edge[->] (signproff)
+
+                (signproff) edge (fpp)
+                (fpp) edge[->] (unfolding)
+                (fpp) edge[->,rldowntwo] (iter)
+
+                (fixpoint) edge (genconstrlem)
+                % (constructors) -- (constructors |- {$(fixpoint)!.5!(genconstrlem)$}) -| (genconstrlem)
+                (genconstrlem) edge[->] (constrlem)
+
+                (pff) -- ({$(pff)!.5!(genfixpoint)$} -| pff) -| (genind)
+                (signproff) -- ({$(signproff)!.5!(fpp)$} -| signproff) -| (genind)
+                (fixpoint) -- ({$(fixpoint)!.5!(genconstrlem)$} -| fixpoint) -| (genind)
+                (unfolding) edge[rldown] (genind)
+                (iter) edge[rldown] (genind)
+                (genind) edge[->] (ind);
+            \end{scope}
+        \end{tikzpicture}
+    \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Coq-Elpi HOAS}
+    \begin{coqcode}
+        val → list val → iProp
+    \end{coqcode}%
+    \begin{uncoverenv}<2->%
+        \vspace*{-.8cm}
+        \begin{coqcode}
+            ∀ _:val. ∀ _:list val. iProp
+        \end{coqcode}
+    \end{uncoverenv}
+    \begin{uncoverenv}<3->
+        \vspace*{-.2cm}
+        \begin{elpicode}
+            prod `_` (global (indt «val»)) 
+                 c0 \
+                    prod `_` (app [global (indt «list»), 
+                                   global (indt «val»)]) 
+                         c1 \
+                            app [global (indt «uPred»), 
+                                app [global (const «iResUR»), 
+                                global (const «Σ»)]]
+        \end{elpicode}
+    \end{uncoverenv}
+\end{frame}
+
+\begin{frame}[fragile]{Generating terms}
+    \begin{elpicode}
+        pred type->proper i:term, i:term, o:term.
+        type->proper PreFixF Type Proper :-
+            type->proper.aux Type P,
+            coq.elaborate-skeleton 
+                {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                {{ Prop }} Proper ok.
+
+        pred type->proper.aux i:term, o:term.
+        type->proper (prod N T F) {{ .> lp:P }} :-
+            pi x\ type->proper (F x) P.
+        type->proper {{ iProp }} {{ bi_wand }}.
+    \end{elpicode}
+\end{frame}
+
+\begin{frame}[fragile]{Generating proofs}
+    \begin{itemize}[<+->]
+        \item Proofs are also just terms % (Curry-Howard correspondence)
+        \item Other Elpi projects just generate proof terms using roughly the previous method
+        \item We want to reuse the IPM lemmas written for its tactics
+        \item They depend on typeclass search to find the next step to prove
+        \item We develop a strategy for modular proof term generators which employ the Coq API to gives types to any holes.
+        \item These modular proof term generators are also repackaged into a new set of IPM tactics, e.g. \coqi{eiIntros} (Elpi Iris Intros).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Holes in proofs}
+    \begin{elpicode}
+        kind hole type.
+        type hole term -> term -> hole.
+    \end{elpicode}
+
+    \begin{elpicode}
+        pred do-iLeft i:hole, o:hole.
+        do-iLeft (hole Type Proof) (hole LeftType LeftProof) :-
+            @no-tc! => coq.elaborate-skeleton 
+                        {{ tac_or_l _ _ _ _ _ _ }} 
+                        Type Proof ok,
+            Proof = {{ tac_or_l _ _ _ _ lp:FromOr lp:LeftProof }},
+            coq.ltac.collect-goals FromOr [G1] _,
+            open tc_solve G1 [],
+            coq.typecheck LeftProof LeftType ok.
+    \end{elpicode}
+\end{frame}
+
+\begin{frame}[fragile]{Composing proof generators}
+    \begin{coqcode}
+        hd : val
+        vs : list val
+        ----------------------------------------
+        is_MLL_pre is_MLL hd vs ⊣⊢ is_MLL hd vs
+    \end{coqcode}
+    \begin{elpicode}
+        pred mk-unfold.proof i:int, i:term, i:term, i:hole.
+        mk-unfold.proof Ps Unfold1 Unfold2 H :-
+          do-iStartProof H (ihole N H'), !,
+          do-iAndSplit H' H1 H2,
+          std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes1, !,
+          do-iApplyLem (app [Unfold1 | Holes1]) (ihole N H1) [] [], !,
+          std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes2, !,
+          do-iApplyLem (app [Unfold2 | Holes2]) (ihole N H2) [] [].
+    \end{elpicode}
+\end{frame}
 
 \section{Demo}
-\begin{frame}{Demo}
-
+\begin{frame}
+    \begin{center}
+        \LARGE \usebeamercolor[fg]{frametitle} Demo
+    \end{center}
 \end{frame}
 
-\section{Evaluation}
+\section{Evaluation \& Conclusion
 
-\section{Conclusion}
 \begin{frame}{Conclusion}
+    \begin{itemize}[<+->]
+        \item Proof search algorithm for monotonicity of pre fixpoint functions
+        \item Elpi implementation
+    \end{itemize}
+\end{frame}
+
+\appendix
+
+\begin{frame}{Evaluation of Elpi}
 
 \end{frame}
 
 \begin{frame}{Future work}
-
+    \begin{itemize}
+        \item Non-expansive predicates
+        \item Other fixpoint predicates
+        \item Nested inductive predicates
+        \item Mutual inductive predicates
+    \end{itemize}
 \end{frame}
 
 \end{document}

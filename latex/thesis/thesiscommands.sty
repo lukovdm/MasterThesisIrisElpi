@@ -150,7 +150,7 @@ left=7mm,
 after={\par\smallskip\noindent},
 overlay={\begin{tcbclipinterior}
             \fill[black!20] ([xshift=2pt]frame.south west) rectangle ([xshift=5.5mm]frame.north west);
-            \node[text=gray] at ([xshift=-1.4em,yshift=-1em]frame.north east) {Elpi};
+            \node[text=gray] at ([xshift=-1.2em,yshift=-1em]frame.north east) {Elpi};
             % \elpisymbol
         \end{tcbclipinterior}},
 }
@@ -463,10 +463,13 @@ overlay={\begin{tcbclipinterior}
         },
     alg/.style={
             coordinate,
-            label={[align=left,fill=white]right:#1}
+            label={[align=left]right:#1}
         },
     sec/.style= {
             label={[draw,xshift=-3mm,fill=white]left:#1}
+        },
+    asterix/.style= {
+            label={left:*}
         },
     shortdown/.style= {
             node distance=.5cm and 1cm
@@ -476,6 +479,9 @@ overlay={\begin{tcbclipinterior}
         },
     rldowntwo/.style= {
             to path={-- ({$(\tikztostart)!.4!(\tikztotarget)$} -| \tikztostart) -| (\tikztotarget)}
+        },
+    dr/.style= {
+            to path={|- (\tikztotarget)}
         },
     >/.tip = Latex,
     p/.tip = Circle,

@@ -19,6 +19,171 @@
 
 \refsection{0}
   \datalist[entry]{nyt/global//global/global}
+    \entry{cohenTrocqProofTransfer2024}{inproceedings}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=fc71d208d46ac1d8ca5cdf9a5ab53f17}{%
+           family={Cohen},
+           familyi={C\bibinitperiod},
+           given={Cyril},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=663d5e6bfe504235837ea03ad28ef0d1}{%
+           family={Crance},
+           familyi={C\bibinitperiod},
+           given={Enzo},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5b76a4300ed8b7c7844ff4a71c1fde5c}{%
+           family={Mahboubi},
+           familyi={M\bibinitperiod},
+           given={Assia},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \strng{fullhash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \strng{bibnamehash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \strng{authorbibnamehash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \strng{authornamehash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \strng{authorfullhash}{22b8b5f20f4342e2bf6520488f1d8190}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Programming Languages and Systems - 33rd European Symposium on Programming, {ESOP} 2024, Held as Part of the European Joint Conferences on Theory and Practice of Software, {ETAPS} 2024, Luxembourg City, Luxembourg, April 6-11, 2024, Proceedings, Part {I}}
+      \field{series}{Lecture Notes in Computer Science}
+      \field{title}{Trocq: Proof Transfer for Free, With or Without Univalence}
+      \field{volume}{14576}
+      \field{year}{2024}
+      \field{pages}{239\bibrangedash 268}
+      \range{pages}{30}
+      \verb{doi}
+      \verb 10.1007/978-3-031-57262-3\_10
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1007/978-3-031-57262-3\_10
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1007/978-3-031-57262-3%5C_10
+      \endverb
+    \endentry
+    \entry{cohenHierarchyBuilderAlgebraic2020}{inproceedings}{}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=fc71d208d46ac1d8ca5cdf9a5ab53f17}{%
+           family={Cohen},
+           familyi={C\bibinitperiod},
+           given={Cyril},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3d3ba02d2744a1783256f0ad8510f6ca}{%
+           family={Sakaguchi},
+           familyi={S\bibinitperiod},
+           given={Kazuhiko},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b3292a3f4fa4c32d7aefa6360e7ac540}{%
+           family={Tassi},
+           familyi={T\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Schloss Dagstuhl - Leibniz-Zentrum für Informatik}%
+      }
+      \strng{namehash}{523d2e4e33d65f4daace8ae31a478e53}
+      \strng{fullhash}{523d2e4e33d65f4daace8ae31a478e53}
+      \strng{bibnamehash}{523d2e4e33d65f4daace8ae31a478e53}
+      \strng{authorbibnamehash}{523d2e4e33d65f4daace8ae31a478e53}
+      \strng{authornamehash}{523d2e4e33d65f4daace8ae31a478e53}
+      \strng{authorfullhash}{523d2e4e33d65f4daace8ae31a478e53}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{5th International Conference on Formal Structures for Computation and Deduction, {FSCD} 2020, June 29-July 6, 2020, Paris, France (Virtual Conference)}
+      \field{series}{LIPIcs}
+      \field{title}{Hierarchy Builder: Algebraic hierarchies Made Easy in Coq with Elpi (System Description)}
+      \field{volume}{167}
+      \field{year}{2020}
+      \field{pages}{34:1\bibrangedash 34:21}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.4230/LIPICS.FSCD.2020.34
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.4230/LIPIcs.FSCD.2020.34
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.4230/LIPIcs.FSCD.2020.34
+      \endverb
+    \endentry
+    \entry{dunchevELPIFastEmbeddable2015}{inproceedings}{}
+      \name{author}{4}{}{%
+        {{un=0,uniquepart=base,hash=8bcc26297af3017f7271c58579236a56}{%
+           family={Dunchev},
+           familyi={D\bibinitperiod},
+           given={Cvetan},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=860eba713b7eb829dffa2fc060c2155c}{%
+           family={Guidi},
+           familyi={G\bibinitperiod},
+           given={Ferruccio},
+           giveni={F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=528b5c7f695f6ab110ae704286bfca97}{%
+           family={Coen},
+           familyi={C\bibinitperiod},
+           given={Claudio\bibnamedelima Sacerdoti},
+           giveni={C\bibinitperiod\bibinitdelim S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b3292a3f4fa4c32d7aefa6360e7ac540}{%
+           family={Tassi},
+           familyi={T\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{8fe8eea042a7b4a954546489a85019ef}
+      \strng{fullhash}{8fe8eea042a7b4a954546489a85019ef}
+      \strng{bibnamehash}{8fe8eea042a7b4a954546489a85019ef}
+      \strng{authorbibnamehash}{8fe8eea042a7b4a954546489a85019ef}
+      \strng{authornamehash}{8fe8eea042a7b4a954546489a85019ef}
+      \strng{authorfullhash}{8fe8eea042a7b4a954546489a85019ef}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Logic for Programming, Artificial Intelligence, and Reasoning - 20th International Conference, {LPAR-20} 2015, Suva, Fiji, November 24-28, 2015, Proceedings}
+      \field{series}{Lecture Notes in Computer Science}
+      \field{title}{{ELPI:} Fast, Embeddable, {\(\lambda\)}Prolog Interpreter}
+      \field{volume}{9450}
+      \field{year}{2015}
+      \field{pages}{460\bibrangedash 468}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.1007/978-3-662-48899-7\_32
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1007/978-3-662-48899-7\_32
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1007/978-3-662-48899-7%5C_32
+      \endverb
+    \endentry
     \entry{harrisPragmaticImplementationNonblocking2001a}{inproceedings}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=420ef26d8ce15c2ca4ceebd94e9ae2d7}{%
@@ -154,11 +319,11 @@
            giveni={D\bibinitperiod},
            givenun=0}}%
       }
-      \strng{namehash}{b9517442050429a39f511630fbc3911f}
+      \strng{namehash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
       \strng{fullhash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
-      \strng{bibnamehash}{b9517442050429a39f511630fbc3911f}
-      \strng{authorbibnamehash}{b9517442050429a39f511630fbc3911f}
-      \strng{authornamehash}{b9517442050429a39f511630fbc3911f}
+      \strng{bibnamehash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
+      \strng{authorbibnamehash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
+      \strng{authornamehash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
       \strng{authorfullhash}{ea2c2a5a48f0d36d31c3d7e08e3695e3}
       \field{sortinit}{J}
       \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
@@ -180,6 +345,126 @@
       \endverb
       \verb{url}
       \verb https://doi.org/10.1017/S0956796818000151
+      \endverb
+    \endentry
+    \entry{sozeauNewLookGeneralized2009}{article}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=589663bc0518f0e965fe86c4bfafc9f5}{%
+           family={Sozeau},
+           familyi={S\bibinitperiod},
+           given={Matthieu},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \strng{fullhash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \strng{bibnamehash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \strng{authorbibnamehash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \strng{authornamehash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \strng{authorfullhash}{589663bc0518f0e965fe86c4bfafc9f5}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{J. Formaliz. Reason.}
+      \field{number}{1}
+      \field{title}{A New Look at Generalized Rewriting in Type Theory}
+      \field{volume}{2}
+      \field{year}{2009}
+      \field{pages}{41\bibrangedash 62}
+      \range{pages}{22}
+      \verb{doi}
+      \verb 10.6092/ISSN.1972-5787/1574
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.6092/issn.1972-5787/1574
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.6092/issn.1972-5787/1574
+      \endverb
+    \endentry
+    \entry{tassiElpiExtensionLanguage2018}{inproceedings}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b3292a3f4fa4c32d7aefa6360e7ac540}{%
+           family={Tassi},
+           familyi={T\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{location}{1}{%
+        {Los Angeles (CA), United States}%
+      }
+      \strng{namehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{fullhash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{bibnamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authorbibnamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authornamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authorfullhash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \field{extraname}{1}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{{The Fourth International Workshop on Coq for Programming Languages}}
+      \field{month}{1}
+      \field{title}{{Elpi: an extension language for Coq (Metaprogramming Coq in the Elpi $\lambda$Prolog dialect)}}
+      \field{year}{2018}
+      \verb{file}
+      \verb https://inria.hal.science/hal-01637063/file/coqpl2018.pdf
+      \endverb
+      \verb{urlraw}
+      \verb https://inria.hal.science/hal-01637063
+      \endverb
+      \verb{url}
+      \verb https://inria.hal.science/hal-01637063
+      \endverb
+      \keyw{Coq ; $\lambda$Prolog ; metaprogramming ; extension language}
+    \endentry
+    \entry{tassiDerivingProvedEquality2019}{inproceedings}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=b3292a3f4fa4c32d7aefa6360e7ac540}{%
+           family={Tassi},
+           familyi={T\bibinitperiod},
+           given={Enrico},
+           giveni={E\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Schloss Dagstuhl - Leibniz-Zentrum für Informatik}%
+      }
+      \strng{namehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{fullhash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{bibnamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authorbibnamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authornamehash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \strng{authorfullhash}{b3292a3f4fa4c32d7aefa6360e7ac540}
+      \field{extraname}{2}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{10th International Conference on Interactive Theorem Proving, {ITP} 2019, September 9-12, 2019, Portland, OR, {USA}}
+      \field{series}{LIPIcs}
+      \field{title}{Deriving Proved Equality Tests in Coq-Elpi: Stronger Induction Principles for Containers in Coq}
+      \field{volume}{141}
+      \field{year}{2019}
+      \field{pages}{29:1\bibrangedash 29:18}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.4230/LIPICS.ITP.2019.29
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.4230/LIPIcs.ITP.2019.29
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.4230/LIPIcs.ITP.2019.29
       \endverb
     \endentry
   \enddatalist
