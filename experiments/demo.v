@@ -14,6 +14,10 @@ Section MLL.
     | empty_is_MLL : is_MLL NONEV []
     | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
     | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
+
+  Print is_MLL.
+  Print is_MLL_pre.
+  Check is_MLL_ind.
     
   Definition MLL_delete : val :=
     rec: "MLL_delete" "l" "i" :=

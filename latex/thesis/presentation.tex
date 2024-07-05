@@ -45,11 +45,11 @@
 
 \section{Introduction}
 \begin{frame}{Program verification}
-    \begin{itemize}
+    \begin{itemize}[<+->]
         \item Verify programs by specifying pre and post conditions
         \item Specification happens in separation logic
-        \item We make use of embeddings of separation logic in a proof assistant
-        \item Iris \parencite{jungIrisGroundModular2018} \& Coq \parencite{huetCoqProofAssistant1997}
+        \item We make use of embeddings of separation logic in Coq
+        \item Iris 2015 (Jung, Krebbers, et. al.)
     \end{itemize}
 \end{frame}
 
@@ -86,7 +86,7 @@
             \path[{Circle}->,thick, onslide=<6>{red}] ([yshift=1pt,xshift=1pt]x1.three) edge [bend left] (x2.west);
             \path[{Circle}->,thick, onslide=<6>{red}] ([yshift=1pt,xshift=1pt]x2.three) edge [bend left] (x3.west);
 
-            \node[onslide=<6>{red}] (l) [above=of x0.west] {$\loc$};
+            \node[onslide=<6>{red}] (l) [above=of x0.west] {$\hd$};
             \path[->,thick,onslide=<6>{red}] (l) edge ([yshift=.1cm]x0.north west);
         \end{tikzpicture}\\
         \vspace{0.5cm}
@@ -96,11 +96,11 @@
     \begin{align*}
         \isMLL\, \hd\, \vect{\val} & =
         \begin{array}[t]{l}
-            \alert<4>{(\hd = \None * \vect{\val} = [])} \lor{}                                                                          \\
-            \alert<5,8>{(\Exists \loc, \val', \tl. \hd = \Some l * l \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val})} \lor{} \\
+            \alert<4>{(\hd = \None * \vect{\val} = [])} \lor{}                                                                                \\
+            \alert<5,8>{(\Exists \loc, \val', \tl. \hd = \Some \loc * \loc \fmapsto (\val', \True, \tl) * \isMLL\, \tl\, \vect{\val})} \lor{} \\
             \alert<6>{\left(
                 \begin{array}{l@{}l}
-                    \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some l * l \fmapsto (\val', \False, \tl)\spac *              \\
+                    \Exists \loc, \val', \vect{\val}'', \tl.\  & \hd = \Some \loc * \loc \fmapsto (\val', \False, \tl)\spac *        \\
                                                                & \vect{\val} = \val' :: \vect{\val}'' * \isMLL\, \tl\, \vect{\val}''
                 \end{array}
                 \right)}
@@ -155,16 +155,6 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Contributions}
-    \pause
-    \begin{itemize}[<+->]
-        \item Created a system for defining and using inductive predicates in the IPM
-        \item Posed a strategy for defining modular tactics in Elpi
-        \item Posed a syntactic proof search algorithm for finding a monotonicity proof of a pre fixpoint function
-        \item Evaluated Elpi as a meta-programming language for the IPM
-    \end{itemize}
-\end{frame}
-
 \section{Theory}
 \begin{frame}{Monotone pre fixpoint function}
     \begin{align*}
@@ -172,91 +162,72 @@
         {\isMLL_{\hopred}\, \pred\, \hd\, \vect{\val}}{\isMLL\, \hd\, \vect{\val}} = \alt<2->{\isMLLFDef}{\isMLLRecDef}
     \end{align*}
 
-    \begin{definition}<3->[Monotone predicate]
-        Function $\hopred\colon (A \to \iProp) \to  A \to \iProp$ is \emph{monotone} when, for any $\pred, \predB\colon A \to \iProp$, it holds that
-        \[ \always(\All \varB. \pred\,\varB \wand \predB\,\varB) \proves \All \var. \hopred\,\pred\,\var \wand \hopred\,\predB\,\var\]
+    \begin{definition}<3->[Monotonicity]
+        Function $\hopred\colon (A \to B \to \iProp) \to A \to B \to \iProp$ is \emph{monotone} when, for any $\pred, \predB\colon A \to B \to \iProp$, it holds that
+        \[ \always(\All \var, \varB. \pred\,\var\,\varB \wand \predB\,\var\,\varB) \proves \All \var, \varB. \hopred\,\pred\,\var\,\varB \wand \hopred\,\predB\,\var\,\varB\]
     \end{definition}
 \end{frame}
 
-\begin{frame}{Monotonicity as a signature}
-    \begin{definition}<+->[Proper element of a relation \parencite{sozeauNewLookGeneralized2009}]
-        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
-    \end{definition}
+
+\begin{frame}{Monotone signatures}
     \begin{columns}
-        \begin{column}<+->{.5\textwidth}
+        \begin{column}{.5\textwidth}
             \begin{definition}[Respectful relation]
                 \vspace*{-.5cm}
                 \begin{align*}
                     \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
                 \end{align*}
             \end{definition}
-
+        \end{column}
+        \begin{column}{.5\textwidth}
             \begin{definition}[Pointwise relation]
                 \vspace*{-.5cm}
                 \begin{align*}
                     \point \rel \eqdef \Lam \func, \funcB. \All \var. \rel\, (\func\, \var)\, (\funcB\, \var)
                 \end{align*}
             \end{definition}
-
-            \begin{definition}[Persistent relation]
-                \vspace*{-.5cm}
-                \begin{align*}
-                    \persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)
-                \end{align*}
-            \end{definition}
-        \end{column}
-        \begin{column}{.4\textwidth}
-            \uncover<+->{
-                \begin{align*}
-                    \isMLL_{\hopred}\colon & (\Val \to \List\ \Val \to \iProp) \to \\
-                                           & \Val \to \List\ \Val \to \iProp
-                \end{align*}
-                \begin{align*}
-                     & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \\
-                     & \left(
-                    \begin{array}{rl}
-                            \All \hd\, \vect{v}. & \isMLL_{\hopred}\, \pred\, \hd\, \vect{v} \wand \\
-                                                 & \isMLL_{\hopred}\, \predB\, \hd\, \vect{v}
-                        \end{array}
-                    \right)
-                \end{align*}
-            }
-            \uncover<+->{
-                \begin{align*}
-                    \persrel (\point \point \wandrel) \respect \point \point \wandrel
-                \end{align*}
-            }
         \end{column}
     \end{columns}
-
-\end{frame}
-
-\begin{frame}{Monotone signatures}
+    \begin{center}
+        \parencite{sozeauNewLookGeneralized2009}
+    \end{center}
     \begin{table}
         \begin{tabular}{lll}
-            Connective & Type                           & Signature                                           \\
+            Connective & Type                                                        & Signature                                      \\
             \hline
-            $*$        & $\Prop \to \Prop \to \Prop$    & $\wandrel \respect \wandrel \respect \wandrel$      \\
-            $\lor$     & $\Prop \to \Prop \to \Prop$    & $\wandrel \respect \wandrel \respect \wandrel$      \\
-            $\wand$    & $\Prop \to \Prop \to \Prop$    & $\flip\wandrel \respect \wandrel \respect \wandrel$ \\
-            $\exists$  & $(\sigax \to \Prop) \to \Prop$ & $\point\wandrel \respect \wandrel$
+            $*$        & $\Prop \to \Prop \to \Prop$                                 & $\wandrel \respect \wandrel \respect \wandrel$ \\\pause
+            $\lor$     & $\Prop \to \Prop \to \Prop$                                 & $\wandrel \respect \wandrel \respect \wandrel$ \\\pause
+            $\exists$  & $\alt<+->{(\sigax \to \Prop)}{(\eqrel \to Prop)} \to \Prop$ & $\point\wandrel \respect \wandrel$
         \end{tabular}
     \end{table}
 
-    \begin{table}
-        \begin{tabular}{ll}
-            Signature                                       & Semantics                                                                                                                                     \\
-            \hline
-            $\wandrel \respect \wandrel \respect \wandrel$  & $\All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')$ \\
-            $\left(\point\wandrel \respect \wandrel\right)$ & $\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var)$
-        \end{tabular}
-    \end{table}
+    \begin{definition}<+->[Proper element of a relation]
+        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
+    \end{definition}
+    \begin{uncoverenv}<.->
+        \vspace*{-.5cm}
+        \begin{align*}
+             & (\wandrel \respect \wandrel \respect \wandrel) (*) (*) =                                                                                    \\
+             & \All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')
+        \end{align*}
+    \end{uncoverenv}
+
+    % \begin{table}
+    %     \begin{tabular}{ll}
+    %         Signature                                       & Semantics                                                                                                                                     \\
+    %         \hline
+    %         $\wandrel \respect \wandrel \respect \wandrel$  & $\All \prop, \prop'. (\prop \wand \prop') \wand \All \propB, \propB'. (\propB \wand \propB') \wand (\prop * \propB) \wand (\prop' * \propB')$ \\
+    %         $\left(\point\wandrel \respect \wandrel\right)$ & $\All \pred, \predB. (\All \var. \pred\, \var \wand \predB\, \var) \wand (\Exists \var. \pred\, \var) \wand (\Exists \var. \predB\, \var)$
+    %     \end{tabular}
+    % \end{table}
 \end{frame}
+
 
 \begin{frame}{Proof search}
     \begin{columns}
         \begin{column}{.5\textwidth}
             \only<1>{
+                \vspace*{-.5cm}
                 \begin{align*}
                      & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \\
                      & \left(
@@ -268,6 +239,7 @@
                 \end{align*}
             }%
             \only<2,3>{
+                \vspace*{-.5cm}
                 \begin{align*}
                      & \begin{array}[t]{l}
                            (\hd = \None * \vect{\val} = []) \alert<3>{\lor{}} \\
@@ -307,6 +279,7 @@
                 \end{align*}
             }
             \only<4,5>{
+                \vspace*{-.5cm}
                 \begin{align*}
                      & (\hd = \None * \vect{\val} = []) \\
                      & \wand                            \\
@@ -314,6 +287,7 @@
                 \end{align*}
             }
             \only<6,7>{
+                \vspace*{-.5cm}
                 \begin{align*}
                      & \begin{array}[t]{l}
                            \left(
@@ -351,6 +325,7 @@
                 \end{align*}
             }
             \only<8,9>{
+                \vspace*{-.5cm}
                 \begin{align*}
                      & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \\
                      & \proves \pred\, \tl\, \vect{\val}  \wand \predB\, \tl\, \vect{\val}
@@ -368,6 +343,9 @@
                 \item \alert<9>{Apply assumption}
                 \item \alert<3,7>{Apply signature $\to$ Normalization step}
             \end{itemize}
+            \uncover<3,7>{
+                \[\wandrel \respect \wandrel \respect \wandrel\]
+            }
         \end{column}
     \end{columns}
 \end{frame}
@@ -423,11 +401,11 @@
                 \node[alg={Construct fixpoint}, below right=of pff] (genfixpoint) {};
                 \node[obj, ce, below=of genfixpoint] (fixpoint) {Fixpoint};
 
-                \node[alg={Construct \& prove \\ fixpoint properties}, below=of signproff] (fpp) {};
+                \node[alg={Construct \& \alert<2>{prove} \\ \alert<2>{fixpoint properties}}, below=of signproff] (fpp) {};
                 \node[obj, ce, below=of fpp] (unfolding) {Unfolding \\ property};
                 \node[obj, ce, right=of unfolding] (iter) {Iteration \\ property};
 
-                \node[alg={Construct \& \alert<2>{prove} \\ \alert<2>{constructor lemmas}}, asterix, below=of fixpoint] (genconstrlem) {};
+                \node[alg={Construct \& prove \\ constructor lemmas}, asterix, below=of fixpoint] (genconstrlem) {};
                 \node[obj, ce, below=of genconstrlem] (constrlem) {Constructor \\ lemmas};
 
                 \node[alg={Construct \& prove \\ induction lemma}, below right=1cm and .5cm of iter] (genind) {};
@@ -502,49 +480,118 @@
 \end{frame}
 
 \begin{frame}[fragile]{Generating terms}
-    \begin{elpicode}
-        pred type->proper i:term, i:term, o:term.
-        type->proper PreFixF Type Proper :-
-            type->proper.aux Type P,
-            coq.elaborate-skeleton 
-                {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
-                {{ Prop }} Proper ok.
+    \begin{columns}
+        \begin{column}{.6\textwidth}
+            \begin{coqcode}
+                ∀ _:val. ∀ _:list val. iProp
+            \end{coqcode}
+        \end{column}
+        \begin{column}{.3\textwidth}
+            \begin{align*}
+                \alert<7>{\persrel} (\alert<3>{\alert<4>{\point} \alert<5>{\point} \alert<6>{\wandrel}}) \alert<7>{\respect} \alert<3>{\alert<4>{\point} \alert<5>{\point} \alert<6>{\wandrel}}
+            \end{align*}
+        \end{column}
+    \end{columns}
+    \begin{onlyenv}<1>
+        \begin{elpicode}
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
 
-        pred type->proper.aux i:term, o:term.
-        type->proper (prod N T F) {{ .> lp:P }} :-
-            pi x\ type->proper (F x) P.
-        type->proper {{ iProp }} {{ bi_wand }}.
-    \end{elpicode}
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
+    \begin{onlyenv}<2>
+        \begin{elpicode}[highlightlines={2},highlightcolor=DarkSalmon]
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
+    
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
+    \begin{onlyenv}<3>
+        \begin{elpicode}[highlightlines={3},highlightcolor=DarkSalmon]
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
+    
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
+    \begin{onlyenv}<4,5>
+        \begin{elpicode}[highlightlines={9,10},highlightcolor=DarkSalmon]
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
+    
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
+    \begin{onlyenv}<6>
+        \begin{elpicode}[highlightlines={11},highlightcolor=DarkSalmon]
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
+    
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
+    \begin{onlyenv}<7>
+        \begin{elpicode}[highlightlines={4,5,6},highlightcolor=DarkSalmon]
+            pred type->signature i:term, i:term, o:term.
+            type->signature PreFixF Type Proper :-
+                type->signature.aux Type P,
+                coq.elaborate-skeleton 
+                    {{ IProper (□> lp:P ==> lp:P) lp:PreFixF }} 
+                    {{ Prop }} Proper ok.
+    
+            pred type->signature.aux i:term, o:term.
+            type->signature (prod N T F) {{ .> lp:P }} :-
+                pi x\ type->signature.aux (F x) P.
+            type->signature {{ iProp }} {{ bi_wand }}.
+        \end{elpicode}
+    \end{onlyenv}
 \end{frame}
 
 \begin{frame}[fragile]{Generating proofs}
     \begin{itemize}[<+->]
         \item Proofs are also just terms % (Curry-Howard correspondence)
         \item Other Elpi projects just generate proof terms using roughly the previous method
-        \item We want to reuse the IPM lemmas written for its tactics
-        \item They depend on typeclass search to find the next step to prove
-        \item We develop a strategy for modular proof term generators which employ the Coq API to gives types to any holes.
+        \item We reuse the IPM lemmas written for its tactics
+        \item We develop a strategy for modular proof term generators which employ the Coq API
         \item These modular proof term generators are also repackaged into a new set of IPM tactics, e.g. \coqi{eiIntros} (Elpi Iris Intros).
     \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]{Holes in proofs}
-    \begin{elpicode}
-        kind hole type.
-        type hole term -> term -> hole.
-    \end{elpicode}
-
-    \begin{elpicode}
-        pred do-iLeft i:hole, o:hole.
-        do-iLeft (hole Type Proof) (hole LeftType LeftProof) :-
-            @no-tc! => coq.elaborate-skeleton 
-                        {{ tac_or_l _ _ _ _ _ _ }} 
-                        Type Proof ok,
-            Proof = {{ tac_or_l _ _ _ _ lp:FromOr lp:LeftProof }},
-            coq.ltac.collect-goals FromOr [G1] _,
-            open tc_solve G1 [],
-            coq.typecheck LeftProof LeftType ok.
-    \end{elpicode}
 \end{frame}
 
 \begin{frame}[fragile]{Composing proof generators}
@@ -573,19 +620,23 @@
     \end{center}
 \end{frame}
 
-\section{Evaluation \& Conclusion
+\section{Conclusion}
 
 \begin{frame}{Conclusion}
     \begin{itemize}[<+->]
-        \item Proof search algorithm for monotonicity of pre fixpoint functions
-        \item Elpi implementation
+        \item Created a system for defining and using inductive predicates in the IPM
+        \item Posed a strategy for defining modular tactics in Elpi
+        \item Posed a syntactic proof search algorithm for finding a monotonicity proof of a pre fixpoint function
+        \item Evaluated Elpi as a meta-programming language for the IPM
     \end{itemize}
 \end{frame}
 
 \appendix
 
-\begin{frame}{Evaluation of Elpi}
-
+\begin{frame}
+    \begin{center}
+        \LARGE \usebeamercolor[fg]{frametitle} Questions
+    \end{center}
 \end{frame}
 
 \begin{frame}{Future work}
@@ -595,6 +646,80 @@
         \item Nested inductive predicates
         \item Mutual inductive predicates
     \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Holes in proofs}
+    \begin{elpicode}
+        kind hole type.
+        type hole term -> term -> hole.
+        
+        pred do-iAndSplit i:hole, o:hole, o:hole.
+        do-iAndSplit (hole Type Proof) (hole LType LProof) 
+                     (hole RType RProof) :-
+          @no-tc! => coq.elaborate-skeleton 
+                        {{ tac_and_split _ _ _ _ _ _ _ }} 
+                        Type Proof ok,
+          Proof = {{ tac_and_split _ _ _ _ 
+                                   lp:FromAnd lp:LProof lp:RProof }},
+          coq.ltac.collect-goals FromAnd [G1] _,
+          open tc_solve G1 [],
+          coq.typecheck LProof LType ok,
+          coq.typecheck RProof RType ok.
+    \end{elpicode}
+\end{frame}
+
+
+\begin{frame}{Monotonicity as a signature}
+    \begin{definition}<+->[Proper element of a relation \parencite{sozeauNewLookGeneralized2009}]
+        Given a relation $\rel\colon\Rel\ \sigax$ and an element $\var\in\sigax$, $\var$ is a proper element of $\rel$ if $\rel\, \var\, \var$.
+    \end{definition}
+    \begin{columns}
+        \begin{column}<+->{.5\textwidth}
+            \begin{definition}[Respectful relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \rel \respect \rel' \eqdef \Lam \func, \funcB. \All \var,\varB. \rel\, \var\, \varB \wand \rel'\, (\func\, \var)\, (\funcB\, \varB)
+                \end{align*}
+            \end{definition}
+
+            \begin{definition}[Pointwise relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \point \rel \eqdef \Lam \func, \funcB. \All \var. \rel\, (\func\, \var)\, (\funcB\, \var)
+                \end{align*}
+            \end{definition}
+
+            \begin{definition}[Persistent relation]
+                \vspace*{-.5cm}
+                \begin{align*}
+                    \persrel\rel \eqdef \Lam\var,\varB. \always (\rel\,\var\,\varB)
+                \end{align*}
+            \end{definition}
+        \end{column}
+        \begin{column}{.4\textwidth}
+            \uncover<+->{
+                \begin{align*}
+                    \isMLL_{\hopred}\colon & (\Val \to \List\ \Val \to \iProp) \to \\
+                                           & \Val \to \List\ \Val \to \iProp
+                \end{align*}
+                \begin{align*}
+                     & \always{(\All \hd\, \vect{v}. \pred\, \hd\, \vect{v} \wand \predB\, \hd\, \vect{v})} \wand \\
+                     & \left(
+                    \begin{array}{rl}
+                            \All \hd\, \vect{v}. & \isMLL_{\hopred}\, \pred\, \hd\, \vect{v} \wand \\
+                                                 & \isMLL_{\hopred}\, \predB\, \hd\, \vect{v}
+                        \end{array}
+                    \right)
+                \end{align*}
+            }
+            \uncover<+->{
+                \begin{align*}
+                    \persrel (\point \point \wandrel) \respect \point \point \wandrel
+                \end{align*}
+            }
+        \end{column}
+    \end{columns}
+
 \end{frame}
 
 \end{document}
