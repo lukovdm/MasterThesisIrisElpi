@@ -29,7 +29,6 @@ Elpi Accumulate lp:{{
     coq.say "EI.reduction only accepts constants, not" Args.
 
 }}.
-Elpi Typecheck.
 Elpi Export EI.reduction.
 
 (* base *)

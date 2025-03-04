@@ -11,10 +11,12 @@ find-PROP (prod _ _ F) O :- !,
 find-PROP O O :- !.
 
 
-pred type-to-fun i:term, o:term.
-type-to-fun (prod N T F) (fun N T FB) :- !,
-  (pi x\ type-to-fun (F x) (FB x)).
-type-to-fun X X :- !.
+pred ne-to-prod i:term, o:term.
+ne-to-prod (prod N T F) (prod N T F') :- !,
+  (pi x\ ne-to-prod (F x) (F' x)).
+ne-to-prod {{ lp:A -n> lp:B }} (prod _ A (x\ B')) :- !,
+  ne-to-prod B B'.
+ne-to-prod T T.
 
 
 pred init-prod-to-bi-exist i:term, o:term.
@@ -22,22 +24,6 @@ init-prod-to-bi-exist (prod N T F) {{ bi_exist lp:Fun}} :- !,
   (pi x\ init-prod-to-bi-exist (F x) (F' x)),
   Fun = (fun N T F').
 init-prod-to-bi-exist X X.
-
-
-pred last-rec-to-and i:term, i:list term, i:term, o:term.
-last-rec-to-and A B {{ bi_exist lp:{{ fun N T F}} }} {{ bi_exist lp:{{ fun N T F' }} }} :- !,
-  (pi x\ last-rec-to-and A B (F x) (F' x)).
-last-rec-to-and A B {{ bi_sep lp:L lp:R }} {{ bi_sep lp:L lp:R' }} :- !,
-  last-rec-to-and A B R R'.
-last-rec-to-and A B {{ bi_or lp:L lp:R }} {{ bi_or lp:L' lp:R' }} :- !,
-  last-rec-to-and A B L L',
-  last-rec-to-and A B R R'.
-last-rec-to-and F [] (app [F]) {{ True }}.
-last-rec-to-and F [L | LS] (app [F, T | TS]) TS' :-
-  {std.length LS} = {std.length TS}, !,
-  std.fold2 LS TS {{ (⌜lp:L = lp:T⌝)%I }} (l\ t\ a\ r\ sigma TMP\ TMP = {{ (⌜lp:l = lp:t⌝)%I }}, r = {{ (lp:a ∗ lp:TMP)%I }}) TS'.
-last-rec-to-and _ [_ | _] (app [T | TS]) _ :-
-  coq.error "EI.Ind: " {coq.term->string (app [T | TS])} "has to many or to few arguments".
 
 
 pred top-wand-to-sepand i:term, o:term.
@@ -66,12 +52,16 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
       init-prod-to-bi-exist TMP1 TMP2, 
       top-wand-to-sepand TMP2 r)
     (ConstrBiTerms f)),
+  coq.string->name "rec" N,
+  if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms pre elaboration" {std.map (ConstrBiTerms f) coq.term->string})),
   % Create constructors for later use in induction.
-  coq.string->name "F" N,
   (@pi-decl N FType f\ std.map2 (Constructors f) (ConstrBiTerms f)
-                 (x\ y\ r\ sigma ID Y\ x = constructor ID _, std.assert-ok! (coq.elaborate-skeleton y _ Y) "eiris Failed", r = constructor ID (arity Y))
+                 (x\ y\ r\ sigma ID M Y\ x = constructor ID _,
+                                       M is "eIris Failed elaborating constructor " ^ ID,
+                                       (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
+                                       r = constructor ID (arity Y))
                  (BIConstructors f)),
-  if-debug ((pi f\ coq.say "------ Constructor Bi Terms" {std.map (ConstrBiTerms f) coq.term->string})),
+  if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms", print-contructors (BIConstructors f))),
   % connect constructors with bi_or's
   (pi f\ std.fold-right
     { std.drop-last 1 (ConstrBiTerms f) }
@@ -81,18 +71,77 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
   if-debug (coq.say "------ Constructor body disjunction" {coq.term->string (ConstrBo {{ True }})}).
 
 
+pred type-to-fun i:term, o:term.
+type-to-fun (prod N T F) (fun N T FB) :- !,
+  (pi x\ type-to-fun (F x) (FB x)).
+type-to-fun X X :- !.
+
+
+pred last-rec-to-and i:list term, i:term, o:list (pair term term), o:term.
+last-rec-to-and Binders (fun N T F) Replacements (fun N T F') :- !,
+  (pi x\ last-rec-to-and [x | Binders] (F x) Replacements (F' x)).
+last-rec-to-and Binders {{ bi_or lp:L lp:R }} [] {{ bi_or lp:L' lp:R' }} :- !,
+  last-rec-to-and Binders L _ L',
+  last-rec-to-and Binders R _ R'.
+last-rec-to-and Binders {{ bi_exist lp:{{ fun N T F }} }} Replacements' ResTerm :- !,
+  (pi x\ sigma Replacements ReplaceTerm\
+    last-rec-to-and Binders (F x) Replacements (F' x),
+    (
+      (
+        if-debug (coq.say "searching " x " in " Replacements " for binder " N "(ctx: " {coq.term->string (F' x)} ")"),
+        std.lookup Replacements x ReplaceTerm, !,
+        if-debug (coq.say "found " x " replacing with " ReplaceTerm),
+        std.filter Replacements (t\ sigma TMP\ fst t TMP, not (x = TMP)) Replacements',
+        copy x ReplaceTerm => copy (F' x) ResTerm
+      );
+      (Replacements' = Replacements, ResTerm = {{ bi_exist lp:{{ fun N T F' }} }})
+    )
+  ).
+last-rec-to-and Binders {{ bi_sep lp:L lp:R }} Replacements {{ bi_sep lp:L lp:R' }} :- !,
+  last-rec-to-and Binders R Replacements R'.
+last-rec-to-and BindersRev (app [FixBinder | TS]) Replacements EQTerm :-
+  std.rev BindersRev [FixBinder | BS],
+  {std.length BS} = {std.length TS}, !,
+  last-rec-to-and.eqs BS TS EQs Replacements,
+  last-rec-to-and.duplicates Replacements DupEQs,
+  (
+    (
+      {std.append EQs DupEQs} = [EQ | EQs'],
+      std.fold EQs' EQ (x\ y\ r\ r = {{ bi_sep lp:x lp:y }}) EQTerm
+    ) ;
+    (EQTerm = {{ (⌜True⌝)%I }})
+  ).
+last-rec-to-and LS (app [T | TS]) _ _ :-
+  coq.error "EI.Ind: " {coq.term->string (app [T | TS])} "has to many or to few arguments (or something else went wrong), expected " {coq.term->string (app {std.rev LS})}.
+
+pred last-rec-to-and.eqs i:list term, i:list term, o:list term, o:list (pair term term).
+last-rec-to-and.eqs [] [] [] [] :- !. 
+last-rec-to-and.eqs [B | BS] [T | TS] EQs [pr T B | Replacements] :-
+  name T, !,
+  if-debug (coq.say "replacing term" T "with" B),
+  last-rec-to-and.eqs BS TS EQs Replacements.
+last-rec-to-and.eqs [B | BS] [T | TS] [{{ (⌜lp:B = lp:T⌝)%I }} | EQs] Replacements :- !,
+  if-debug (coq.say "equating term" T "with" B),
+  last-rec-to-and.eqs BS TS EQs Replacements.
+
+pred last-rec-to-and.duplicates i:list (pair term term), o:list term.
+last-rec-to-and.duplicates [] [].
+last-rec-to-and.duplicates [pr EB FB | Repls] CombinedEQs :- 
+  std.findall (std.lookup Repls EB _) Lookups,
+  std.map Lookups (x\r\ x = std.lookup _ _ r) FBs,
+  std.map FBs (x\r\ r = {{ (⌜lp:FB = lp:x⌝)%I }}) EQs,
+  last-rec-to-and.duplicates Repls EQs',
+  std.append EQs EQs' CombinedEQs.
+
+
 pred mk-constr-body i:list param, i:term, i:(term -> list indc-decl), o:int, o:(term -> list indc-decl), o:term, o:term.
 mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty :-
   find-PROP TypeTerm PROP,
   mk-constr-body-disj TypeTerm Constructors NConstr BIConstructors ConstrBo,
   (pi b\ (type-to-fun PROP b :- !) => type-to-fun TypeTerm (FunTerm b)),
-  (pi b\
-    % Save the variables of functions in a list
-    (pi N T T1 F F1 A \ fold-map (fun N T F) A (fun N T1 F1) A :- !,
-                                fold-map T A T1 _, pi x\ fold-map (F x) [x | A] (F1 x) _) => 
-    % When we hit our placeholder for the function body we replace it with the function body with the last application replaced by equalities for the arguments
-    (pi L L' F B \ fold-map b L B L :- !, std.rev L [F | L'], last-rec-to-and F L' (ConstrBo F) B) => 
-        fold-map {{fun F : lp:TypeTerm => lp:{{ FunTerm b }} }} [] Bo _),
+  BodyWithoutReplacements = {{ fun rec : lp:TypeTerm => lp:{{ FunTerm (ConstrBo {{ rec }}) }} }},
+  last-rec-to-and [] BodyWithoutReplacements _ Bo,
+  if-debug (coq.say "------ Body without params" {coq.term->string Bo}),
   replace-params-bo Params Bo PBo,
   if-debug (coq.say "------- Body" { coq.term->string PBo }),
   replace-params-ty Params {{ lp:TypeTerm -> lp:TypeTerm }} Ty, !,
@@ -103,10 +152,10 @@ mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty :-
 pred mk-proper i:list param, i:term, i:term, o:term.
 mk-proper Params F Type EBo :-
   find-PROP Type PROP,
-  (pi N T F A T1 F1 A1 \ fold-map (prod N T F) A (prod N T1 F1) (some {{ (.> lp:A1)%i_signature }}) :-
+  ((pi N T F A T1 F1 A1 \ fold-map (prod N T F) A (prod N T1 F1) (some {{ (.> lp:A1)%i_signature }}) :-
         fold-map T A T1 _, !, (pi x\ fold-map (F x) A (F1 x) (some A1))) =>
     (pi A \ fold-map PROP A PROP (some {{ bi_wand }}) :- !) =>
-      fold-map Type none Type (some R),
+      fold-map Type none Type (some R)),
   std.map Params (x\r\ x = (par _ _ _ r)) Ps,
   Fapp = app [F | Ps],
   replace-params-ty Params {{ IProper (□> lp:R ==> lp:R) lp:Fapp }} Proper,
@@ -119,18 +168,6 @@ proper-proof Proper Proof :-
   do-solve-proper (hole Proper Proof).
 
 
-pred mk-fixpoint.fun i:term, i:list param, i:term, i:term, i:list term, o:term.
-mk-fixpoint.fun Pre Params Type (prod N T F) L (fun N T F') :-
-  pi x\ mk-fixpoint.fun Pre Params Type (F x) [x | L] (F' x).
-mk-fixpoint.fun Pre Params Type _ RevL {{ bi_forall lp:F }} :-
-  std.rev RevL L,
-  F = fun _ Type Forall,
-  pi phi\ ( sigma AppPhi\ sigma Prem\
-    AppPhi = app [phi | L],
-    mk-fixpoint.forall Pre Params phi [] Type Prem,
-    Forall phi = {{ bi_wand (□ lp:Prem) lp:AppPhi }}
-  ).
-
 pred mk-fixpoint.forall i:term, i:list param, i:term, i:list term, i:term, o:term.
 mk-fixpoint.forall Pre Params Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
   Fun = fun N T F',
@@ -141,9 +178,23 @@ mk-fixpoint.forall Pre Params Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   L = app { std.append [Pre | Ps] [Phi | Xs] },
   R = app [Phi | Xs].
 
-pred mk-fixpoint i:list param, i:term, i:term, o:term.
-mk-fixpoint Params Type Pre Fixpoint :-
-  mk-fixpoint.fun Pre Params Type Type [] Fixpoint',
+
+pred mk-fixpoint.fun i:term, i:list param, i:term, i:term, i:term, i:list term, o:term.
+mk-fixpoint.fun Pre Params NEType Type (prod N T F) L (fun N T F') :-
+  pi x\ mk-fixpoint.fun Pre Params NEType Type (F x) [x | L] (F' x).
+mk-fixpoint.fun Pre Params NEType Type _ RevL {{ bi_forall lp:F }} :-
+  std.rev RevL L,
+  F = fun _ NEType Forall,
+  pi phi\ ( sigma AppPhi\ sigma Prem\
+    AppPhi = app [phi | L],
+    mk-fixpoint.forall Pre Params phi [] Type Prem,
+    Forall phi = {{ bi_wand (□ lp:Prem) lp:AppPhi }}
+  ).
+
+
+pred mk-fixpoint i:list param, i:term, i:term, i:term, o:term.
+mk-fixpoint Params Type NEType Pre Fixpoint :-
+  mk-fixpoint.fun Pre Params NEType Type Type [] Fixpoint',
   replace-params-bo Params Fixpoint' Fixpoint,
   if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint}),
   coq.typecheck Fixpoint _ D, 

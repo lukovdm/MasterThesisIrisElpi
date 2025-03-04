@@ -16,26 +16,18 @@ Section SkipQueue.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
+  (* Elpi Trace Browser. *)
   EI.ind
   Inductive is_MLL : val → list val → iProp :=
+      (* | test_is_MLL v vs : is_MLL v vs *)
       | empty_is_MLL : is_MLL NONEV []
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-  Check empty_is_MLL.
-  Print is_MLL.
   Print is_MLL_pre.
-  Check is_MLL_ind.
-  Eval unfold is_MLL_pre in is_MLL_ind.
-(* 
-  EI.ind
-  Inductive is_R_MLL {A} (R : val -> A -> iProp) : val → list A → iProp :=
-      | empty_is_R_MLL : is_R_MLL R NONEV []
-      | mark_is_R_MLL v xs l tl : l ↦ (v, #true, tl) -∗ is_R_MLL R tl xs -∗ is_R_MLL R (SOMEV #l) xs
-      | cons_is_R_MLL v x xs tl l : l ↦ (v, #false, tl) -∗ R v x -∗ is_R_MLL R tl xs -∗ is_R_MLL R (SOMEV #l) (x :: xs).
-    
-  Print is_R_MLL_pre.
-  Check is_MLL_ind.
+  Check mark_is_MLL.
+  Print is_MLL.
+
   Definition MLL_insert : val :=
     rec: "MLL_insert" "l" "i" "v" :=
       match: "l" with
@@ -62,7 +54,7 @@ Section SkipQueue.
     eiIntros "%Phi His".
     iRevert (Phi i).
     (* eiInduction "His". *)
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".
       wp_pures.
@@ -125,7 +117,7 @@ Section SkipQueue.
         iApply cons_is_MLL.
         iFrame.
         iSplit; done.
-  Qed. *)
+  Qed.
 
   Definition MLL_delete : val :=
     rec: "MLL_delete" "l" "i" :=
@@ -148,7 +140,7 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_pures.
       iModIntro.
@@ -161,9 +153,8 @@ Section SkipQueue.
       wp_apply "IH" as "?".
       iApply "Hphi".
       iApply mark_is_MLL.
-      iExists _, _, _, _.
-      iFrame.
-      iSplit; done.
+      iExists _, _, _.
+      by iFrame.
     - wp_rec.
       wp_load.
       wp_pures.
@@ -174,7 +165,7 @@ Section SkipQueue.
         iModIntro.
         iApply "Hphi".
         iApply mark_is_MLL.
-        iExists _, _, _, _.
+        iExists _, _, _.
         iFrame.
         iDestruct "IH" as "[_ IH]".
         by iFrame.
@@ -185,10 +176,72 @@ Section SkipQueue.
         wp_apply "IH" as "?".
         iApply "Hphi".
         iApply cons_is_MLL.
-        iExists _, _, _, _.
+        iExists _, _, _.
         by iFrame.
   Qed.
-  Print MLL_delete_spec.
+
+  Definition MLL_lookup : val :=
+    rec: "MLL_lookup" "l" "i" :=
+      match: "l" with
+        NONE => NONEV
+        | SOME "hd" =>
+          let: "x" := !"hd" in
+          if: (Snd (Fst "x") = #false) && ("i" = #0) then
+            SOME (Fst (Fst "x"))
+          else if: Snd (Fst "x") = #false then
+            "MLL_lookup" (Snd "x") ("i" - #1)
+          else
+            "MLL_lookup" (Snd "x") "i"
+      end.
+
+  Lemma MLL_lookup_spec (vs : list val) (i : nat) (hd : val) (x: val) :
+    vs !! i = Some x ->
+    [[{ is_MLL hd vs }]]
+      MLL_lookup hd #i
+    [[{ v, RET v; is_MLL hd vs ∗ (⌜v = SOMEV x⌝) }]].
+  Proof.
+    eiIntros "%Hlookup %Phi His".
+    iRevert (Phi i Hlookup).
+    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i %Hlookup Hphi"; simplify_eq.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      iDestruct "IH" as "[IH _]".
+      iApply "IH"; first done.
+      iIntros (v') "[IHis IH]".
+      iApply "Hphi".
+      iSplitL "Hl IHis"; try done.
+      iApply mark_is_MLL.
+      iExists _, _, _.
+      by iFrame.
+    - wp_rec.
+      wp_load.
+      wp_pures.
+      case_bool_decide; simplify_eq. 
+      + assert (i = 0) as -> by lia.
+        wp_pures.
+        iModIntro.
+        iApply "Hphi".
+        iDestruct "IH" as "[_ IH]".
+        iSplitL.
+        * iApply cons_is_MLL.
+          iExists _, _, _, _.
+          by iFrame.
+        * iPureIntro.
+          f_equal.
+          by inversion Hlookup.
+      + wp_pures.
+        iDestruct "IH" as "[IH _]".
+        destruct i as [|i]; first done.
+        replace (S i - 1)%Z with (Z.of_nat i) by lia.
+        iApply "IH"; first by simpl in Hlookup.
+        iIntros (v') "[IHis IH]".
+        iApply "Hphi".
+        iSplitL "Hl IHis"; try done.
+        iApply cons_is_MLL.
+        iExists _,_,_,_.
+        by iFrame.
+  Qed.
 End SkipQueue.
 
 Section GSets.
@@ -227,7 +280,7 @@ Section GSets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hphi".
+    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
@@ -235,28 +288,29 @@ Section GSets.
       iModIntro.
       iApply "Hphi".
       iApply cons_is_gset.
-      iExists l, NONEV, {[ e ]}, e, ∅.
+      iExists l, NONEV, e, ∅.
       iFrame.
       repeat iSplit; try iPureIntro; try done.
-      + by apply elem_of_singleton_2.
+      + rewrite union_empty_l.
+        by apply elem_of_singleton_2.
       + apply set_eq.
         intros x.
         split; intros H.
         * apply elem_of_difference in H as [He Hne].
+          rewrite union_empty_l in He.
           congruence.
         * by eapply not_elem_of_empty in H.
       + by iApply empty_is_gset.
-      + apply left_id, _.
     - wp_rec.
       simplify_eq.
       wp_load.
       wp_pures.
       unfold bool_decide, decide_rel.
-      destruct (val_eq_dec #e #a2); wp_pures.
+      destruct (val_eq_dec #e #a1); wp_pures.
       + eiDestruct "IH" as "[_ His]".
         iModIntro. iApply "Hphi".
         iApply cons_is_gset.
-        iExists l, tl, (a1 ∪ {[ a2 ]}), a2, (a1 ∖ {[a2]}). 
+        iExists l, tl, a1, (a0 ∖ {[a1]}). 
         simplify_eq.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
@@ -270,14 +324,14 @@ Section GSets.
         iApply "Hphi".
         iModIntro.
         iApply cons_is_gset.
-        iExists l, _, (a1 ∪ {[ e ]}), _, _.
+        iExists l, _, _, _.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
         * by apply elem_of_union_l.
         * rewrite difference_union_distr_l_L.
           rewrite (difference_disjoint_L {[ e ]}); [done|].
           apply disjoint_singleton_r, not_elem_of_singleton.
-          destruct (Nat.eq_dec e a2); try done.
+          destruct (Nat.eq_dec e a1); try done.
           simplify_eq.
   Qed.
 End GSets.
@@ -338,7 +392,7 @@ Section Sets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl %Hs]"; eiIntros "%Phi Hphi".
+    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
@@ -346,33 +400,27 @@ Section Sets.
       iModIntro.
       iApply "Hphi".
       iApply cons_is_set.
-      iExists l, NONEV, (Ensembles.Singleton nat e), e, (Empty_set nat).
+      iExists l, NONEV, e, (Empty_set nat).
       iFrame.
       repeat iSplit; try iPureIntro; try done.
       + apply Extensionality_Ensembles.
         split; intros x Hincl.
         * apply Subtract_inv in Hincl as [Hincl Heq].
-          by apply Singleton_inv in Hincl.
+          inversion Hincl; try done.
+          by inversion H.
         * exfalso.
           by eapply Noone_in_empty.
       + by iApply empty_is_set.
-      + apply Extensionality_Ensembles.
-        split; intros x Hi.
-        * apply Singleton_intro.
-          apply Constructive_sets.Add_inv in Hi as [H|H]; try done.
-        * apply Singleton_inv in Hi.
-          simplify_eq.
-          apply Add_intro2.
     - wp_rec.
       simplify_eq.
       wp_load.
       wp_pures.
       unfold bool_decide, decide_rel.
-      destruct (val_eq_dec #e #a2); wp_pures.
+      destruct (val_eq_dec #e #a1); wp_pures.
       + eiDestruct "IH" as "[_ His]".
         iModIntro. iApply "Hphi".
         iApply cons_is_set.
-        iExists _, _, (Ensembles.Add nat a1 e), _, (Ensembles.Subtract nat a1 e). 
+        iExists _, _, _, (Ensembles.Subtract nat a0 e). 
         simplify_eq.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
@@ -390,12 +438,12 @@ Section Sets.
         iApply "Hphi".
         iModIntro.
         iApply cons_is_set.
-        iExists _, _, (Ensembles.Add nat a1 e), _, _.
+        iExists _, _, _, _.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
         apply Add_Subtract_comm.
-        destruct (Nat.eq_dec e a2); try done.
+        destruct (Nat.eq_dec e a1); try done.
         simplify_eq.
   Qed.
 End Sets.
-           
+

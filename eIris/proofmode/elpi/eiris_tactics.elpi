@@ -60,7 +60,7 @@ do-iStartProof (hole Type Proof) (ihole N (hole NType NProof)) :-
 
 pred do-iLeft i:hole, o:hole.
 do-iLeft (hole Type Proof) (hole LeftType LeftProof) :-
-  @no-tc! => coq.elaborate-skeleton {{ tac_or_l _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_or_l _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_l _ _ _ _ lp:FromOr lp:LeftProof }},
   coq.ltac.collect-goals FromOr [G1] _,
   open tc_solve G1 [],
@@ -69,7 +69,7 @@ do-iLeft (hole Type Proof) (hole LeftType LeftProof) :-
 
 pred do-iRight i:hole, o:hole.
 do-iRight (hole Type Proof) (hole RightType RightProof) :-
-  @no-tc! => coq.elaborate-skeleton {{ tac_or_r _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_or_r _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_r _ _ _ _ lp:FromOr lp:RightProof }},
   coq.ltac.collect-goals FromOr [G1] _,
   open tc_solve G1 [],
@@ -82,7 +82,7 @@ do-iSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) 
   std.map Hyps (x\r\ ident->term x _ r) HypsT,
   list->listterm HypsT ListT,
   coq.typecheck ListT {{ list _ }} ok,
-  @no-tc! => coq.elaborate-skeleton {{ tac_sep_split _ lp:D lp:ListT _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_sep_split _ lp:D lp:ListT _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_sep_split _ _ _ _ _ _ lp:FromSep lp:ConjProof }},
   coq.ltac.collect-goals FromSep [G1] _,
   open tc_solve G1 [],
@@ -98,7 +98,7 @@ do-iSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) 
 
 pred do-iAndSplit i:hole, o:hole, o:hole.
 do-iAndSplit (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
-  @no-tc! => coq.elaborate-skeleton {{ tac_and_split _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_and_split _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_and_split _ _ _ _ lp:FromAnd lp:LProof lp:RProof }},
   coq.ltac.collect-goals FromAnd [G1] _,
   open tc_solve G1 [],
@@ -110,7 +110,7 @@ pred do-iEvalIn i:ident, i:hole, o:ihole, o:hole.
 do-iEvalIn ID (hole Type Proof) IH (hole EvalType EvalProof) :-
   ident->term ID _ T,
   pm-reduce Type Type',
-  @no-tc! => coq.elaborate-skeleton {{ tac_eval_in _ lp:T _ _ _ _ _ _ _ }} Type' Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_eval_in _ lp:T _ _ _ _ _ _ _ }} Type' Proof ok),
   Proof = {{ tac_eval_in _ _ _ _ _ _ lp:Refl lp:StartProof lp:EvalProof }},
   coq.ltac.collect-goals Refl [G1] _,
   open pm_reflexivity G1 [],
@@ -123,7 +123,7 @@ do-iEvalIn ID (hole Type Proof) IH (hole EvalType EvalProof) :-
 % Introduce a mod
 pred do-iModIntro i:hole, o:hole.
 do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
-  @no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ lp:TC1 lp:TC2 lp:TC3 lp:PM4 lp:SC5 lp:ModProof }},
   coq.ltac.collect-goals TC1 [G1] _,
   open tc_solve G1 [],
@@ -215,7 +215,7 @@ pred do-iClear i:ident, i:hole, o:hole.
 do-iClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   ident->term ID IDS IDT,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_clear _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_clear _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_clear _ _ _ _ _ lp:Lookup lp:TC lp:ClearProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
@@ -238,7 +238,7 @@ pred do-iPure i:ident, i:option string, i:hole, i:(hole -> prop).
 do-iPure ID PID (hole Type Proof) C :-
   ident->term ID IDS IDT,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_pure _ lp:IDT _ _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_pure _ lp:IDT _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_pure _ _ _ _ _ _ lp:Lookup lp:IntoPure lp:Affine lp:IntroProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
@@ -271,9 +271,9 @@ do-iPoseLem Lem (ihole N (hole Type Proof)) (iAnon N) Cs (ihole NS (hole PosedTy
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT, !,
 
-  @no-tc! => coq.elaborate-skeleton 
+  (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}} 
-                Type Proof D,
+                Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "pose lem error" D), fail),
   Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof _) lp:PosedProof }},
 
@@ -292,9 +292,9 @@ pred do-iPoseHyp i:term, i:ihole, o:ident, o:ihole.
 do-iPoseHyp Hyp (ihole N (hole Type Proof)) (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
-  @no-tc! => coq.elaborate-skeleton 
+  (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof_hyp _ lp:Hyp lp:NT _ _}} 
-                Type Proof ok,
+                Type Proof ok),
   Proof = {{ tac_pose_proof_hyp _ _ _ _ lp:PosedProof }},
 
   coq.typecheck PosedProof NormType ok,
@@ -306,8 +306,8 @@ pred do-iSpecializeWand i:ihole, i:ident, o:ihole, o:ihole.
 do-iSpecializeWand (ihole N (hole Type Proof)) ID 
   (ihole N (hole LType LProof)) (ihole N (hole RType RProof)) :-
     ident->term ID _IDS IDT,
-    @no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
-                Type Proof ok,
+    (@no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
+                Type Proof ok),
     Proof = {{ tac_specialize_assert_no_am _ _ _ _ _ _ _ _ _ _ lp:RefP lp:TC1P lp:TC2P lp:ConjP}},
     coq.ltac.collect-goals RefP [G1] _,
     open pm_reflexivity G1 [],
@@ -328,7 +328,7 @@ do-iSpecializeWand (ihole N (hole Type Proof)) ID
 pred do-iApplySimpleHyp i:ihole, i:ident, o:ihole.
 do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)) :-
   ident->term ID _IDS IDT,
-  @no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof D,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply hyp failed" D), fail),
   Proof = {{ tac_apply _ _ _ _ _ _ lp:RefProof lp:TCProof lp:ApProof }},
   coq.ltac.collect-goals RefProof [G1] _,
@@ -342,7 +342,7 @@ do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)
 pred do-iApplySimpleExact i:ihole, i:ident.
 do-iApplySimpleExact (ihole _ (hole Type Proof)) ID :-
   ident->term ID _IDS IDT,
-  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof D,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply exact failed" D), fail),
   Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
   coq.ltac.collect-goals RefProof [G1] _,
@@ -395,7 +395,7 @@ pred do-iIntuitionistic i:ident, i:hole, o:hole.
 do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_impl_intro_intuitionistic _ _ _ _ _ _ lp:FromImpl lp:IP lp:IntProof }},
 
   coq.ltac.collect-goals FromImpl [GI1] _,
@@ -411,7 +411,7 @@ do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
 do-iIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   ident->term ID X T,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
 
   coq.ltac.collect-goals FromWand [GW1] _,
@@ -437,7 +437,7 @@ do-iAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_and_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_and_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_and_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
@@ -463,7 +463,7 @@ do-iAndChoiceDestruct ID OID ChooseLeft (hole Type Proof) (hole AndType AndProof
 
   if (ChooseLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
 
-  @no-tc! => std.assert-ok! (coq.elaborate-skeleton {{ tac_and_destruct_choice _ lp:IDT _ lp:D lp:OIDT _ _ _ _ _ _ _ }} Type Proof) "iAndChoiceDestruct failed",
+  (@no-tc! => std.assert-ok! (coq.elaborate-skeleton {{ tac_and_destruct_choice _ lp:IDT _ lp:D lp:OIDT _ _ _ _ _ _ _ }} Type Proof) "iAndChoiceDestruct failed"),
   Proof = {{ tac_and_destruct_choice _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
@@ -488,7 +488,7 @@ do-iOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrR
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
   
-  @no-tc! => coq.elaborate-skeleton {{ tac_or_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_or_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ConjProof }},
   
   coq.ltac.collect-goals Lookup [G1] _,
@@ -515,7 +515,7 @@ do-iExistDestruct ID X HID (hole Type Proof) C :- !,
   ident->term ID _ IDT,
   ident->term HID _ HIDT,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_exist_destruct_without_name _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_exist_destruct_without_name _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
@@ -544,7 +544,7 @@ pred do-iExact i:ident, i:hole.
 do-iExact ID (hole Type Proof) :-
   ident->term ID IDS IDT,
 
-  @no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok,
+  (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_assumption _ _ _ _ _ lp:Lookup lp:FromAs lp:TC }},
 
   coq.ltac.collect-goals Lookup [G1] _,

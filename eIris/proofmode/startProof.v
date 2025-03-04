@@ -15,7 +15,6 @@ Elpi Accumulate lp:{{
   solve (goal _ _ Type Proof _) _ :-
     do-iStartProof (hole Type Proof) _.
 }}.
-Elpi Typecheck.
 
 Tactic Notation "eiStartProof" :=
   elpi eiStartProof.

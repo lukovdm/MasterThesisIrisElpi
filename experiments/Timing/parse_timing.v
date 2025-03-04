@@ -26,7 +26,6 @@ Elpi Accumulate lp:{{
     input_line FileStream Output,
     close_in FileStream.
 }}.
-Elpi Typecheck.
 
 Ltac time_constr1 tac :=
   let eval_early := match goal with _ => restart_timer "(depth 1)" end in

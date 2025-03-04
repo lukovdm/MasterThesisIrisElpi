@@ -1,14 +1,21 @@
 {
   "coqtop.coqidetopExe": "/home/luko/.opam/iris-dev/bin/coqidetop.opt",
   "coqtop.coqtopExe": "/home/luko/.opam/iris-dev/bin/coqtop",
-  "todo-tree.filtering.includeGlobs": ["**/*.v", "**/*.elpi"],
+  "todo-tree.filtering.includeGlobs": [
+    "**/*.v",
+    "**/*.elpi"
+  ],
   "todo-tree.regex.regex": "(%|//|#|<!--|;|/\\*|^|^[ \\t]*(-|\\d+.)|\\(\\*)\\s*($TAGS)",
   "generic-input-methods.input-methods": [
     {
       "name": "Iris Math",
       "commandName": "text.math",
-      "languages": ["coq"],
-      "triggers": ["\\"],
+      "languages": [
+        "coq"
+      ],
+      "triggers": [
+        "\\"
+      ],
       "dictionary": [
         //New custom input
         {
@@ -839,7 +846,9 @@
     {
       "name": "latexmk_rconly",
       "command": "latexmk",
-      "args": ["%DOC%"],
+      "args": [
+        "%DOC%"
+      ],
       "env": {}
     },
     {
@@ -856,7 +865,9 @@
     {
       "name": "bibtex",
       "command": "bibtex",
-      "args": ["%DOCFILE%"],
+      "args": [
+        "%DOCFILE%"
+      ],
       "env": {}
     }
   ],
@@ -866,7 +877,9 @@
   "latex-workshop.latex.recipes": [
     {
       "name": "latexmk (xelatex)",
-      "tools": ["xelatexmk"]
+      "tools": [
+        "xelatexmk"
+      ]
     }
   ],
   "coq.proofViewDiff.addedTextIsItalic": true,
@@ -906,5 +919,10 @@
     "coqcode",
     "elpicode"
   ],
-  "explorer.excludeGitIgnore": true
+  "explorer.excludeGitIgnore": true,
+  "makefile.configureOnOpen": false,
+  "vscoq.path": "/home/luko/.opam/elpi-better/bin/vscoqtop",
+  "github.copilot.enable": {
+    "elpi": false
+  }
 }

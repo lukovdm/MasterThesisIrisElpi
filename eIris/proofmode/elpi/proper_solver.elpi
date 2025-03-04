@@ -9,9 +9,9 @@ pred do-iPoseProper i:ihole, i:term, i:term, o:ident, o:ihole.
 do-iPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
-  @no-tc! => coq.elaborate-skeleton 
+  (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}} 
-                Type Proof ok,
+                Type Proof ok),
   Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof (iproper_top_to_iproper _ _ _ _ _ (lp:IPTProof : IProperTop _ _ _))) lp:PosedProof }},
   coq.ltac.collect-goals IEVProof [G1] _,
   open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,

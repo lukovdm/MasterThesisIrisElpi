@@ -50,7 +50,6 @@ Elpi Accumulate lp:{{
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
 }}.
-Elpi Typecheck.
 
 Elpi Tactic eiDestruct.
 Elpi Accumulate Db reduction.db.
@@ -85,7 +84,6 @@ Elpi Accumulate lp:{{
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
 }}.
-Elpi Typecheck.
 
 Elpi Tactic eiInduction.
 Elpi Accumulate Db reduction.db.
@@ -153,7 +151,6 @@ Elpi Accumulate lp:{{
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
 }}.
-Elpi Typecheck.
 
 Tactic Notation "eiIntros" string(x) :=
   elpi eiIntros ltac_string:(x).

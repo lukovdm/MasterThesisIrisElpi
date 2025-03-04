@@ -17,14 +17,19 @@ Elpi Command EI.ind.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.
+Elpi Query lp:{{
+  true.
+  % coq.say {coq.term->string {ne-to-prod {{ bool -> nat -n> nat }} } }
+}}.
 Elpi Accumulate lp:{{
   pred create-iInductive i:list param, i:indt-decl, o:gref , o:indt-decl.
   create-iInductive Params' (inductive Name In-Or-Co Arity Constructors) (const Fix) (inductive Name In-Or-Co Arity BIConstructors) :-
     std.rev Params' Params,
     if-debug (coq.say Params),
     if-debug (coq.say "------ Creating inductive" Name),
-    coq.arity->term Arity TypeTerm,
-    if-debug (coq.say "------ With type" { coq.term->string TypeTerm }),
+    coq.arity->term Arity NETypeTerm,
+    ne-to-prod NETypeTerm TypeTerm,
+    if-debug (coq.say "------ With NE type" { coq.term->string NeTypeTerm } " and type" { coq.term->string TypeTerm }),
 
     mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty,
     if-debug (coq.say "------ typed body" { coq.term->string EBo }),
@@ -46,7 +51,7 @@ Elpi Accumulate lp:{{
 
     if (get-option "nofixpoint" tt) (true)
       (
-      mk-fixpoint Params TypeTerm (global (const C)) Fixpoint,
+      mk-fixpoint Params TypeTerm NETypeTerm (global (const C)) Fixpoint,
       coq.env.add-const Name Fixpoint _ ff Fix,
       if-debug (coq.say "Fixpoint" Fix),
 
@@ -116,11 +121,9 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
-      coq.say I,
       create-iInductive [] I Fix I',
       % if-debug (coq.say "saving type" Fix I'),
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
     ).
 }}.
-Elpi Typecheck.
 Elpi Export EI.ind.

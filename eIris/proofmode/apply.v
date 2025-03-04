@@ -39,7 +39,6 @@ Elpi Accumulate lp:{{
   solve (goal _ _ Type Proof Args) GS :-
     go-iApply Args (hole Type Proof) GS.
 }}.
-Elpi Typecheck.
 
 
 Tactic Notation "eiApply" string(x) :=
