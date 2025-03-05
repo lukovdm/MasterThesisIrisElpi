@@ -58,8 +58,8 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
   (@pi-decl N FType f\ std.map2 (Constructors f) (ConstrBiTerms f)
                  (x\ y\ r\ sigma ID M Y\ x = constructor ID _,
                                        M is "eIris Failed elaborating constructor " ^ ID,
-                                       (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
-                                       r = constructor ID (arity Y))
+                                      %  (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
+                                       r = constructor ID (arity y))
                  (BIConstructors f)),
   if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms", print-contructors (BIConstructors f))),
   % connect constructors with bi_or's
@@ -146,7 +146,7 @@ mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty :-
   if-debug (coq.say "------- Body" { coq.term->string PBo }),
   replace-params-ty Params {{ lp:TypeTerm -> lp:TypeTerm }} Ty, !,
   if-debug (coq.say "------- Type" { coq.term->string Ty }),
-  @keepunivs! => std.assert-ok! (coq.elaborate-skeleton PBo Ty EBo) "Type check body failed".
+  (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton PBo Ty EBo) "Type check body failed").
 
 
 pred mk-proper i:list param, i:term, i:term, o:term.
@@ -166,6 +166,44 @@ pred proper-proof i:term, o:term.
 proper-proof Proper Proof :-
   coq.typecheck Proof Proper ok,
   do-solve-proper (hole Proper Proof).
+
+
+pred mk-pre-ne.sig i:term, i:term, o:term.
+mk-pre-ne.sig N {{ _ (_ -n> lp:NEType) }} {{ (dist lp:N ==> lp:Sig)%signature }} :- !,
+  mk-pre-ne.sig N NEType Sig.
+mk-pre-ne.sig N _ {{ dist lp:N }}.
+
+
+pred mk-pre-ne.forall i:list param, i:term, i:term, i:term, i:term, i:list term, o:term.
+mk-pre-ne.forall Params (prod Name T F) Pre N Rec Args (prod Name T F') :-
+  (pi x\ mk-pre-ne.forall Params (F x) Pre N Rec [x | Args] (F' x)).
+mk-pre-ne.forall Params NEType Pre N Rec RevArgs {{ (Proper lp:Sig lp:RecTerm) -> Proper lp:Sig lp:PreTerm }} :-
+  std.rev RevArgs Args,
+  std.map Params (x\r\ x = (par _ _ _ r)) Ps,
+  RecTerm = app [Rec | Args],
+  PreTerm = app [Pre | {std.append Ps [Rec | Args]}],
+  mk-pre-ne.sig N NEType Sig.
+
+
+pred mk-pre-ne.toproof  i:list param, i:term, i:term, o:term.
+mk-pre-ne.toproof Params NEType Pre {{ ∀ n (rec : lp:NEType), lp:{{ F {{ n }} {{ rec }} }} }} :-
+  (pi n rec\ mk-pre-ne.forall Params NEType Pre n rec [] (F n rec)).
+
+
+pred mk-pre-ne i:list param, i:term, i:term, o:hole.
+mk-pre-ne Params NEType Pre (hole Type Proof) :-
+  mk-pre-ne.toproof Params NEType Pre Type'', !,
+  replace-params-ty Params Type'' Type',
+  (@reversible! => @primitive! => coq.elaborate-skeleton Type' {{ Type }} Type D),
+  if (D = error Msg) 
+    (if-debug (coq.say "Failure in making Pre NonExpansive type ("{coq.term->string Type}":Type):" Msg), fail) 
+    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string Type})), !,
+  coq.typecheck Proof Type D',
+  if (D' = error Msg) 
+    (if-debug (coq.say "Failure in making Pre NonExpansive type (Proof:"{coq.term->string Type}"):" Msg), fail) 
+    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string Type})), !,
+  coq.ltac.collect-goals Proof [G] _, !,
+  coq.ltac.open solve_proper_ltac G [].
 
 
 pred mk-fixpoint.forall i:term, i:list param, i:term, i:list term, i:term, o:term.
@@ -194,11 +232,11 @@ mk-fixpoint.fun Pre Params NEType Type _ RevL {{ bi_forall lp:F }} :-
 
 pred mk-fixpoint i:list param, i:term, i:term, i:term, o:term.
 mk-fixpoint Params Type NEType Pre Fixpoint :-
-  mk-fixpoint.fun Pre Params NEType Type Type [] Fixpoint',
-  replace-params-bo Params Fixpoint' Fixpoint,
-  if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint}),
-  coq.typecheck Fixpoint _ D, 
-  if (D = ok) (true) (coq.error D).
+  mk-fixpoint.fun Pre Params NEType Type Type [] Fixpoint'',
+  replace-params-bo Params Fixpoint'' Fixpoint',
+  if-debug (coq.say "----- Fixpoint Body" {coq.term->string Fixpoint'}), !,
+  (@reversible! => @primitive! => 
+    std.assert-ok! (coq.elaborate-skeleton Fixpoint' _ Fixpoint) "Failed to elaborate the fixpoint").
 
 
 pred mk-fix-toproof i:(list term -> list term -> term -> prop), i:list param, i:term, i:list term, i:list term, i:term, o:term.
@@ -251,18 +289,41 @@ mk-unfold-2 Params Pre Proper Mono Fix Type (hole ToProof Proof) :-
   mk-unfold-2.proof {std.length Params} {type-depth Type} Proper Mono (hole ToProof Proof).
 
 
-pred mk-unfold-1.proof i:int, i:int, i:term, i:term, i:term, i:hole.
-mk-unfold-1.proof Ps N Unfold2 Proper Mono (hole Type Proof) :-
-  do-intros-forall (hole Type Proof) (mk-unfold-1.proof-1 Ps N Unfold2 Proper Mono).
+pred mk-unfold-1.proof i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:hole.
+mk-unfold-1.proof Ps N NEType Pre Fix Unfold2 Proper Mono (hole Type Proof) :-
+  do-intros-forall (hole Type Proof) (mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono), !,
+  coq.ltac.collect-goals Proof [G] _, 
+  coq.ltac.open solve_proper_ltac G [].
 
-pred mk-unfold-1.proof-1 i:int, i:int, i:term, i:term, i:term, i:hole.
-mk-unfold-1.proof-1 Ps N Unfold2 Proper Mono H :-
-  do-iStartProof H IH', !,
-  if-debug (coq.say "started proof unfold_1" {ihole->string IH'}),
+pred mk-unfold-1.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:hole.
+mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono H :-
+  do-iStartProof H IH, !,
+  if-debug (coq.say "started proof unfold_1" {ihole->string IH}),
   std.map {std.iota N} (x\r\ r = iPure none) Pures, !,
-  do-iIntros { std.append [iIdent (iNamed "HF"), iHyp "HF", iModalIntro | Pures]
+  do-iIntro-ident (iNamed "HF") IH IH',
+  % Generate argument to specialize with
+  mk-unfold-1.proof-1.aux Pre Fix Ps NEType [] SpecTerm,
+  if-debug (coq.say "Specialization term" {coq.term->string SpecTerm}), !,
+  % Specialize
+  do-iSpecializeForall IH' (iNamed "HF") SpecTerm IH'',
+  if-debug (coq.say "Specialized HF" {ihole->string IH''}),!,
+  % coq.ltac.collect-goals NEP [G1] _,
+  % coq.ltac.open solve_proper_ltac G1 [],
+  do-iIntros { std.append [iHyp "HF", iModalIntro | Pures]
                           [iIdent (iNamed "Hy")] } 
-              IH' (mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono).
+              IH'' (mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono).
+
+mk-unfold-1.proof-1.aux Pre Fix Ps (prod N T F) L (fun N T F') :- !,
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps (F x) [x | L] (F' x)).
+mk-unfold-1.proof-1.aux Pre Fix Ps {{ _ ( _ -n> _) }} RevL OfeTerm :- !,
+  std.rev RevL L,
+  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes,
+  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes2,
+  PreTerm = app { std.append { std.append [Pre | Holes] [app [Fix | Holes2]] } L },
+  OfeTerm = {{ @OfeMor _ _ lp:PreTerm _ }}.
+mk-unfold-1.proof-1.aux _ _ _ T _ _ :-
+  coq.error "Type does not contain NonExpansive markers (-n>)" T "shold be" {{ _ ( _ -n> _) }}.
+
               
 pred mk-unfold-1.proof-2 i:int, i:int, i:term, i:term, i:term, i:ihole.
 mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono IH :-
@@ -286,12 +347,12 @@ mk-unfold-1.proof-3 Ps Unfold2 IH :-
   do-iApplyLem (app [Unfold2 | Holes]) IH [] [AppliedIH], !,
   do-iApplyHyp "HF" AppliedIH [].
 
-pred mk-unfold-1 i:list param, i:term, i:term, i:term, i:term, i:term, i:term, o:hole.
-mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type (hole ToProof Proof) :-
+pred mk-unfold-1 i:list param, i:term, i:term, i:term, i:term, i:term , i:term, i:term, o:hole.
+mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type NEType (hole ToProof Proof) :-
   mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:F ⊢ lp:U }}) Params Pre [Fix] [] Type ToProof', !,
   replace-params-ty Params ToProof' ToProof,!,
   if-debug (coq.say "unfold 1:" {coq.term->string ToProof}),
-  mk-unfold-1.proof {std.length Params} {type-depth Type} Unfold2 Proper Mono (hole ToProof Proof),
+  mk-unfold-1.proof {std.length Params} {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (hole ToProof Proof),
   if-debug (coq.say "unfold 1 done").
 
 

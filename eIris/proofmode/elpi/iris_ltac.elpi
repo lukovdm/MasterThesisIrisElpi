@@ -24,6 +24,9 @@ split G GL :- coq.ltac.call "split" [] G GL.
 type done open-tactic.
 done G GL :- coq.ltac.call "done" [] G GL.
 
+type solve_proper_ltac open-tactic.
+solve_proper_ltac G GL :- coq.ltac.call "solve_proper" [] G GL.
+
 % Set and read Iris context count in elpi goals
 pred increase-ctx-count i:term, o:term.
 increase-ctx-count N NS :-

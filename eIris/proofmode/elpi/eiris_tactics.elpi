@@ -325,6 +325,29 @@ do-iSpecializeWand (ihole N (hole Type Proof)) ID
     pm-reduce RType' RType.
 
 
+pred do-iSpecializeForall i:ihole, i:ident, i:term, o:ihole.
+do-iSpecializeForall (ihole N (hole Type Proof)) ID Arg (ihole N (hole SType SProof)) :- 
+    ident->term ID _IDS IDT,
+    (@no-tc! => coq.elaborate-skeleton {{ tac_forall_specialize _ lp:IDT _ _ _ _ _ _ _ }} 
+                Type Proof D),
+    if (D = error Message) 
+      (coq.say "specialize forall failed:" Message, fail) 
+      (true),
+    Proof = {{ tac_forall_specialize _ _ _ _ _ _  lp:RefP lp:TC lp:ExP }},
+    coq.ltac.collect-goals RefP [G1] _,
+    open pm_reflexivity G1 [],
+    coq.ltac.collect-goals TC [G2] _,
+    open tc_solve G2 [],
+    
+    coq.typecheck ExP ExType ok, !,
+    ExType = app [_, AType | _ ], !,
+    ExP = {{ @ex_intro lp:AType _ lp:Arg lp:SProof }},
+    coq.typecheck ExP ExType D',
+    if (D' = error Message) (coq.say "specialize forall failed (ex_intro):" Message "term" {coq.term->string ExType}, fail) (true),
+    coq.typecheck SProof SType' ok,
+    pm-reduce SType' SType.
+
+
 pred do-iApplySimpleHyp i:ihole, i:ident, o:ihole.
 do-iApplySimpleHyp (ihole N (hole Type Proof)) ID (ihole N (hole ApType ApProof)) :-
   ident->term ID _IDS IDT,

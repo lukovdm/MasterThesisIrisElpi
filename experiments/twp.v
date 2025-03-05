@@ -15,9 +15,12 @@ Section TWP.
 
   Context `{!irisGS_gen hlc Λ Σ}.
 
+  Set Printing Coercions.
+
+  #[debug, noconstr, noiter, noind]
   EI.ind
-  Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
-    | twp_some E v e1 (Φ : val Λ -> iProp Σ) : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
+  Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
+    | twp_some E v e1 (Φ : val Λ -d> iProp Σ) : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
     | twp_none E e1 Φ : (∀ σ1 ns κs nt,
                           state_interp σ1 ns κs nt ={E,∅}=∗
                             ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
@@ -28,6 +31,52 @@ Section TWP.
                               [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) 
                           -∗ ⌜to_val e1 = None⌝ 
                           -∗ twp s E e1 Φ.
+
+  Check twp_pre_ne.
+
+  Global Instance twp_ne s E e n :
+    Proper ((dist n) ==> dist n) (twp s E e).
+  Proof.
+    solve_proper.
+  Qed.
+
+  (* Lemma twp_pre_ne :
+    ∀ n (rec : coPset → expr Λ → ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ)) -n> iProp Σ) 
+      (s : stuckness) (H : coPset) (H0 : expr Λ),
+    (Proper (dist n ==> dist n) (rec H H0)) -> Proper (dist n ==> dist n) (twp_pre s rec H H0).
+  Proof.
+    solve_proper.
+  Qed. *)
+
+  (* Local Existing Instance twp_pre_ne. *)
+
+  Lemma unfold_1 :
+  ∀ (s : stuckness) (H : coPset) (H0 : expr Λ) (H1 : ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ))),
+    twp s H H0 H1 ⊢ twp_pre s (twp s) H H0 H1.
+  Proof.
+    intros.
+    iIntros "HF".
+    notypeclasses refine (tac_forall_specialize _ "HF" _ _ _ _ _ _ _).
+    - pm_reflexivity.
+    - tc_solve.
+    - notypeclasses refine (@ex_intro _ _ (λ x y, @OfeMor _ _ (twp_pre _ (twp _) x y) _ ) _).
+      Unshelve.
+      2: {
+        solve_proper.
+      }
+      1: {
+      pm_reduce. 
+      iApply "HF".
+      iModIntro.
+      iIntros (? ? ?) "HY".
+      iApply ((iProper (□> .> .> .> bi_wand ==> .> .> .> bi_wand) (twp_pre _))).
+      + apply twp_pre_mono.
+      + iModIntro.
+        iIntros (? ? ?) "HF".
+        iApply twp_unfold_2.
+        iApply "HF".}
+  Qed.
+
   Check twp.
   Print twp.
   Print twp_pre.

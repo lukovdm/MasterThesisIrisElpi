@@ -110,3 +110,6 @@ replace-params-ty [(par ID _IK PType C) | Params] Type (prod N PType FType) :-
   coq.id->name ID N,
   replace-params-ty Params Type Type',
   (pi x\ (copy C x :- !) => copy Type' (FType x)).
+
+:before "default-debug-print"
+std.debug-print Msg Data :- if-debug (coq.say Msg Data).

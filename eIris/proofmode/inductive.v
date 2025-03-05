@@ -10,6 +10,8 @@ From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Export reduction.
 From eIris.proofmode Require Import inductiveDB.
 From eIris.proofmode Require Import base.
+From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
+From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 
 #[arguments(raw)] 
@@ -17,19 +19,21 @@ Elpi Command EI.ind.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.
-Elpi Query lp:{{
-  true.
-  % coq.say {coq.term->string {ne-to-prod {{ bool -> nat -n> nat }} } }
-}}.
+(* Elpi Query lp:{{
+  coq.say {{{{ ∀ n (rec : lp:_NEType), lp:{{ F {{ n }} {{ rec }} }} }}}},
+  coq.say F.
+}}. *)
 Elpi Accumulate lp:{{
   pred create-iInductive i:list param, i:indt-decl, o:gref , o:indt-decl.
   create-iInductive Params' (inductive Name In-Or-Co Arity Constructors) (const Fix) (inductive Name In-Or-Co Arity BIConstructors) :-
     std.rev Params' Params,
     if-debug (coq.say Params),
     if-debug (coq.say "------ Creating inductive" Name),
-    coq.arity->term Arity NETypeTerm,
-    ne-to-prod NETypeTerm TypeTerm,
-    if-debug (coq.say "------ With NE type" { coq.term->string NeTypeTerm } " and type" { coq.term->string TypeTerm }),
+    coq.arity->term Arity NETypeTerm',
+    ne-to-prod NETypeTerm' TypeTerm',
+    std.assert-ok! (coq.elaborate-skeleton NETypeTerm' {{ Type }} NETypeTerm) "NE Type elaboration failed",
+    std.assert-ok! (coq.elaborate-skeleton TypeTerm' {{ Type }} TypeTerm) "Type elaboration failed",
+    if-debug (coq.say "------ With NE type" { coq.term->string NETypeTerm } " and type" { coq.term->string TypeTerm }),
 
     mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty,
     if-debug (coq.say "------ typed body" { coq.term->string EBo }),
@@ -49,6 +53,14 @@ Elpi Accumulate lp:{{
       if-debug (coq.say "Mono" M)
       ),!,
 
+    if (get-option "noprene" tt) (true)
+      (
+      mk-pre-ne Params NETypeTerm (global (const C)) (hole PreNEType PreNEProof),
+      coq.env.add-const { calc (Name ^ "_pre_ne") } PreNEProof PreNEType ff PreNE,
+      coq.TC.declare-instance (const PreNE) 10,
+      if-debug (coq.say "Pre Non-Expansive" PreNE)
+      ),!,
+
     if (get-option "nofixpoint" tt) (true)
       (
       mk-fixpoint Params TypeTerm NETypeTerm (global (const C)) Fixpoint,
@@ -62,16 +74,16 @@ Elpi Accumulate lp:{{
     if (get-option "nounfold" tt) (true)
       (
       mk-unfold-2 Params (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (hole Unfold2Type Unfold2Proof),
-      coq.env.add-const {calc (Name ^ "_unfold_2")} Unfold2Proof Unfold2Type ff U2,
+      coq.env.add-const {calc (Name ^ "_unfold_2")} Unfold2Proof Unfold2Type ff U2, !,
       if-debug (coq.say "unfold_2" U2), !,
 
-      mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (hole Unfold1Type Unfold1Proof),
-      coq.env.add-const {calc (Name ^ "_unfold_1")} Unfold1Proof Unfold1Type ff U1,
-      if-debug (coq.say "unfold_1" U1),
+      mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm NETypeTerm (hole Unfold1Type Unfold1Proof),
+      coq.env.add-const {calc (Name ^ "_unfold_1")} Unfold1Proof Unfold1Type ff U1, !,
+      if-debug (coq.say "unfold_1" U1), !,
 
       mk-unfold Params (global (const U1)) (global (const U2)) (global (const C)) (global (const Fix)) TypeTerm (hole UnfoldType UnfoldProof),
-      coq.env.add-const {calc (Name ^ "_unfold")} UnfoldProof UnfoldType ff U,
-      if-debug (coq.say "unfold" U),
+      coq.env.add-const {calc (Name ^ "_unfold")} UnfoldProof UnfoldType ff U, !,
+      if-debug (coq.say "unfold" U), !,
 
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-unfold (const Fix) (const U1) (const U2) (const U) NConstr))
       ),!,
@@ -112,6 +124,7 @@ Elpi Accumulate lp:{{
       att "debug" bool,
       att "noproper" bool,
       att "nosolver" bool,
+      att "noprene" bool,
       att "nofixpoint" bool,
       att "nounfold" bool,
       att "noconstr" bool,
@@ -122,8 +135,8 @@ Elpi Accumulate lp:{{
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
       create-iInductive [] I Fix I',
-      % if-debug (coq.say "saving type" Fix I'),
-      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
+      if-debug (coq.say "saving type" Fix I')
+      % coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
     ).
 }}.
 Elpi Export EI.ind.
