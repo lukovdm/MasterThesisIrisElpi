@@ -11,7 +11,8 @@
       "name": "Iris Math",
       "commandName": "text.math",
       "languages": [
-        "coq"
+        "coq",
+        "elpi"
       ],
       "triggers": [
         "\\"
@@ -344,11 +345,6 @@
           "label": "Sig",
           "body": "Σ",
           "description": "Σ"
-        },
-        {
-          "label": "-",
-          "body": "∖",
-          "description": "∖"
         },
         {
           "label": "aa",

@@ -69,8 +69,8 @@ map-goal P (goal _ _ Type _ _ as G) GL :-
   refine {{ _ : lp:Type' }} G GL.
 
 type show-goal open-tactic.
-show-goal (goal _Ctx _Trigger Type Proof _ as G) [seal G] :-
-  coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type}.
+show-goal (goal Ctx _Trigger Type Proof _ as G) [seal G] :-
+  coq.say "Goal:" {coq.term->string Proof} ":" {coq.term->string Type} "(" Ctx ")".
 
 pred goal->string o:string, i:goal, o:list sealed-goal.
 goal->string S (goal _ _ Type Proof _ as G) [seal G] :-

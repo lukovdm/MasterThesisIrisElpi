@@ -57,7 +57,7 @@ Elpi Accumulate lp:{{
       (
       mk-pre-ne Params NETypeTerm (global (const C)) (hole PreNEType PreNEProof),
       coq.env.add-const { calc (Name ^ "_pre_ne") } PreNEProof PreNEType ff PreNE,
-      coq.TC.declare-instance (const PreNE) 10,
+      coq.TC.declare-instance (const PreNE) 1,
       if-debug (coq.say "Pre Non-Expansive" PreNE)
       ),!,
 
@@ -71,13 +71,23 @@ Elpi Accumulate lp:{{
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-mono (const Fix) (const M)))
       ),!,
 
+      if (get-option "nofixne" tt) (true)
+        (
+        mk-fix-ne Params NETypeTerm (global (const Fix)) (hole FixNEType FixNEProof),
+        coq.env.add-const { calc (Name ^ "_ne") } FixNEProof FixNEType ff FixNE,
+        coq.TC.declare-instance (const FixNE) 1,
+        if-debug (coq.say "Fix Non-Expansive" FixNE)
+        ),!,
+
     if (get-option "nounfold" tt) (true)
       (
       mk-unfold-2 Params (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (hole Unfold2Type Unfold2Proof),
       coq.env.add-const {calc (Name ^ "_unfold_2")} Unfold2Proof Unfold2Type ff U2, !,
       if-debug (coq.say "unfold_2" U2), !,
-
-      mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm NETypeTerm (hole Unfold1Type Unfold1Proof),
+ 
+      mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm
+                  NETypeTerm (hole Unfold1Type Unfold1Proof), !,
+      if-debug (coq.say "unfold_1 made now defining it (slow?)"),
       coq.env.add-const {calc (Name ^ "_unfold_1")} Unfold1Proof Unfold1Type ff U1, !,
       if-debug (coq.say "unfold_1" U1), !,
 
@@ -95,8 +105,8 @@ Elpi Accumulate lp:{{
       ), !,
 
     if (get-option "noiter" tt) (true)
-      (
-      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm (hole IterType IterProof),
+      ( 
+      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm NETypeTerm (hole IterType IterProof),
       coq.env.add-const {calc (Name ^ "_iter")} IterProof IterType ff IterConst,
       if-debug (coq.say "Iter" IterConst),
       
@@ -105,7 +115,8 @@ Elpi Accumulate lp:{{
 
     if (get-option "noind" tt) (true)
       (
-      mk-ind Params (global (const C)) (global (const Fix)) (global (const U1)) (global (const U2)) (global (const M)) Proper (global (const IterConst)) TypeTerm (hole IndType IndProof), !,
+      mk-ind Params (global (const C)) (global (const Fix)) (global (const U1)) (global (const U2)) (global (const M)) Proper 
+                    (global (const IterConst)) TypeTerm NETypeTerm (hole IndType IndProof), !,
       coq.ltac.collect-goals IndProof GS SGS,
       std.forall GS (x\ coq.ltac.open show-goal x _),
       std.forall SGS (x\ coq.ltac.open show-goal x _),
@@ -126,6 +137,7 @@ Elpi Accumulate lp:{{
       att "nosolver" bool,
       att "noprene" bool,
       att "nofixpoint" bool,
+      att "nofixne" bool,
       att "nounfold" bool,
       att "noconstr" bool,
       att "noiter" bool,
@@ -134,9 +146,9 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
-      create-iInductive [] I Fix I',
-      if-debug (coq.say "saving type" Fix I')
-      % coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I'))
+      create-iInductive [] I _Fix _I'
+      % (* if-debug (coq.say "saving type" Fix I') *)
+      % (* coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I')) *)
     ).
 }}.
 Elpi Export EI.ind.

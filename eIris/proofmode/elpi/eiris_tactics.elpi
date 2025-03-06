@@ -142,11 +142,23 @@ do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
 pred do-intros-forall i:hole, i:(hole -> prop).
 do-intros-forall (hole (prod N T F) Proof) C :- !,
   if-debug (coq.say "introducing" N),
-  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
+  if (D = error Msg) 
+    (if-debug (coq.say "Failed to introduce" N "of type" {coq.term->string T} ":" Msg), fail)
+    (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
   Proof = (fun _ _ IntroFProof),
   @pi-decl N T x\
     do-intros-forall (hole (F x) (IntroFProof x)) C.
 do-intros-forall H F :- F H.
+
+pred do-intros-forall-remember i:hole, i:(list term -> hole -> prop).
+do-intros-forall-remember (hole (prod N T F) Proof) C :- !,
+  if-debug (coq.say "introducing and remembering" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    do-intros-forall-remember (hole (F x) (IntroFProof x)) (l\ h\ C [x | l] h).
+do-intros-forall-remember H F :- F [] H.
 
 
 pred do-intro i:string, i:hole, i:(hole -> prop).
@@ -662,7 +674,7 @@ do-iIntros [iDone | IPS] (ihole N (hole Type Proof)) C :-
   ((
     coq.ltac.collect-goals Proof [G] _,
     open pm-reduce-goal G [G'], !,
-    open (g\gl\ sigma T P\ g = (goal _ _ T P _), if-debug (coq.say "ahhh is on" T P)) G' _, !, % weird hack, without it things don't work. Don't know why
+    open (g\gl\ sigma T P\ g = (goal _ _ T P _), if (true) (true) (coq.say "ahhh is on" T P)) G' _, !, % weird hack, without it things don't work. Don't know why
     open done G' [],
     if-debug (coq.say "done succeeded")
     ); 

@@ -15,9 +15,11 @@ Section TWP.
 
   Context `{!irisGS_gen hlc Λ Σ}.
 
-  Set Printing Coercions.
+  (* Set Printing Coercions. *)
 
-  #[debug, noconstr, noiter, noind]
+  (* Typeclasses eauto := debug. *)
+
+  #[debug, noind]
   EI.ind
   Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
     | twp_some E v e1 (Φ : val Λ -d> iProp Σ) : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
@@ -33,6 +35,9 @@ Section TWP.
                           -∗ twp s E e1 Φ.
 
   Check twp_pre_ne.
+  Check twp_ne.
+  Check twp_none.
+  Check twp_iter. (* Defined using ne Phi instead of add it as a seperate assumption *)
 
   Global Instance twp_ne s E e n :
     Proper ((dist n) ==> dist n) (twp s E e).
@@ -56,15 +61,17 @@ Section TWP.
   Proof.
     intros.
     iIntros "HF".
+(*     iApply ("HF" $! (OfeMor (F (bi_least_fixpoint F))) with "[#]"). *)
+
     notypeclasses refine (tac_forall_specialize _ "HF" _ _ _ _ _ _ _).
     - pm_reflexivity.
     - tc_solve.
-    - notypeclasses refine (@ex_intro _ _ (λ x y, @OfeMor _ _ (twp_pre _ (twp _) x y) _ ) _).
+    - notypeclasses refine (ex_intro _ (λ x y, @OfeMor _ _ (twp_pre s (twp s) x y) _ ) _ ).
       Unshelve.
       2: {
+        Typeclasses eauto := debug.
         solve_proper.
       }
-      1: {
       pm_reduce. 
       iApply "HF".
       iModIntro.
@@ -74,7 +81,7 @@ Section TWP.
       + iModIntro.
         iIntros (? ? ?) "HF".
         iApply twp_unfold_2.
-        iApply "HF".}
+        iApply "HF".
   Qed.
 
   Check twp.
