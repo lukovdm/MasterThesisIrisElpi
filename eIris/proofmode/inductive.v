@@ -11,11 +11,13 @@ From eIris.proofmode Require Export reduction.
 From eIris.proofmode Require Import inductiveDB.
 From eIris.proofmode Require Import base.
 From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
+From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 
 #[arguments(raw)] 
 Elpi Command EI.ind.
+Elpi Accumulate File datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.
@@ -24,8 +26,8 @@ Elpi Accumulate File mkinductive.
   coq.say F.
 }}. *)
 Elpi Accumulate lp:{{
-  pred create-iInductive i:list param, i:indt-decl, o:gref , o:indt-decl.
-  create-iInductive Params' (inductive Name In-Or-Co Arity Constructors) (const Fix) (inductive Name In-Or-Co Arity BIConstructors) :-
+  pred create-iInductive i:list param, i:indt-decl, o:gref, o:iind.
+  create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) (const Fix) (iind NConstr TypeTerm) :-
     std.rev Params' Params,
     if-debug (coq.say Params),
     if-debug (coq.say "------ Creating inductive" Name),
@@ -53,9 +55,9 @@ Elpi Accumulate lp:{{
       if-debug (coq.say "Mono" M)
       ),!,
 
-    if (get-option "noprene" tt) (true)
+    if (get-option "noprene" tt; TypeTerm = NETypeTerm) (true)
       (
-      mk-pre-ne Params NETypeTerm (global (const C)) (hole PreNEType PreNEProof),
+      mk-pre-ne Params TypeTerm NETypeTerm (global (const C)) (hole PreNEType PreNEProof),
       coq.env.add-const { calc (Name ^ "_pre_ne") } PreNEProof PreNEType ff PreNE,
       coq.TC.declare-instance (const PreNE) 1,
       if-debug (coq.say "Pre Non-Expansive" PreNE)
@@ -71,13 +73,13 @@ Elpi Accumulate lp:{{
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-mono (const Fix) (const M)))
       ),!,
 
-      if (get-option "nofixne" tt) (true)
-        (
-        mk-fix-ne Params NETypeTerm (global (const Fix)) (hole FixNEType FixNEProof),
-        coq.env.add-const { calc (Name ^ "_ne") } FixNEProof FixNEType ff FixNE,
-        coq.TC.declare-instance (const FixNE) 1,
-        if-debug (coq.say "Fix Non-Expansive" FixNE)
-        ),!,
+    if (get-option "nofixne" tt; TypeTerm = NETypeTerm) (true)
+      (
+      mk-fix-ne Params NETypeTerm (global (const Fix)) (hole FixNEType FixNEProof),
+      coq.env.add-const { calc (Name ^ "_ne") } FixNEProof FixNEType ff FixNE,
+      coq.TC.declare-instance (const FixNE) 1,
+      if-debug (coq.say "Fix Non-Expansive" FixNE)
+      ),!,
 
     if (get-option "nounfold" tt) (true)
       (
@@ -87,7 +89,7 @@ Elpi Accumulate lp:{{
  
       mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm
                   NETypeTerm (hole Unfold1Type Unfold1Proof), !,
-      if-debug (coq.say "unfold_1 made now defining it (slow?)"),
+      if-debug (coq.say "unfold_1 made now defining it (slow?)"), !,
       coq.env.add-const {calc (Name ^ "_unfold_1")} Unfold1Proof Unfold1Type ff U1, !,
       if-debug (coq.say "unfold_1" U1), !,
 
@@ -118,16 +120,16 @@ Elpi Accumulate lp:{{
       mk-ind Params (global (const C)) (global (const Fix)) (global (const U1)) (global (const U2)) (global (const M)) Proper 
                     (global (const IterConst)) TypeTerm NETypeTerm (hole IndType IndProof), !,
       coq.ltac.collect-goals IndProof GS SGS,
-      std.forall GS (x\ coq.ltac.open show-goal x _),
-      std.forall SGS (x\ coq.ltac.open show-goal x _),
+      if-debug (std.forall GS (x\ coq.ltac.open show-goal x _)),
+      if-debug (std.forall SGS (x\ coq.ltac.open show-goal x _)),
       coq.env.add-const {calc (Name ^ "_ind")} IndProof IndType ff IndConst,
       if-debug (coq.say "Induction" IndConst),
 
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-ind (const Fix) (const IndConst)))
       ).
-  create-iInductive Params (parameter ID IK T IND) Fix (parameter ID IK T IND') :-
+  create-iInductive Params (parameter ID IK T IND) Fix (iind_param ID T IInd') :-
     coq.id->name {calc (ID ^ "_param")} N,
-    @pi-decl N T p\ create-iInductive [(par ID IK T p) | Params] (IND p) Fix (IND' p).
+    @pi-decl N T p\ create-iInductive [(par ID IK T p) | Params] (IND p) Fix (IInd' p).
  
   main [indt-decl I] :- 
     attributes A,
@@ -146,9 +148,9 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "start" Start | Opts] => (
       if (get-option "noproper" tt, not (get-option "nosolver" tt)) (coq.error "Can't do solver when noproper") (true),
-      create-iInductive [] I _Fix _I'
-      % (* if-debug (coq.say "saving type" Fix I') *)
-      % (* coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix I')) *)
+      create-iInductive [] I Fix IInd,
+      if-debug (coq.say "Storing" IInd),
+      coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix IInd))
     ).
 }}.
 Elpi Export EI.ind.

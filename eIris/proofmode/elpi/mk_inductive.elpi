@@ -58,7 +58,7 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
   (@pi-decl N FType f\ std.map2 (Constructors f) (ConstrBiTerms f)
                  (x\ y\ r\ sigma ID M Y\ x = constructor ID _,
                                        M is "eIris Failed elaborating constructor " ^ ID,
-                                      %  (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
+                                       (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
                                        r = constructor ID (arity y))
                  (BIConstructors f)),
   if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms", print-contructors (BIConstructors f))),
@@ -173,7 +173,18 @@ mk-ne-sig N (prod _ _ F) Sig :- !,
   (pi x\ mk-ne-sig N (F x) Sig).
 mk-ne-sig N {{ _ (_ -n> lp:NEType) }} {{ (dist lp:N ==> lp:Sig)%signature }} :- !,
   mk-ne-sig N NEType Sig.
+mk-ne-sig N {{ _ -n> lp:NEType }} {{ (dist lp:N ==> lp:Sig)%signature }} :- !,
+  mk-ne-sig N NEType Sig.
 mk-ne-sig N _ {{ dist lp:N }}.
+
+
+pred mk-ne-phi-ass i:term, i:term, i:list term, o:term.
+mk-ne-phi-ass Phi (prod N T F) Args (prod N T F') :- !,
+  (pi x\ mk-ne-phi-ass Phi (F x) [x | Args] (F' x)).
+mk-ne-phi-ass Phi NEType RevArgs {{ ∀ (n : nat), Proper lp:{{ Sig {{ n }} }} lp:PhiTerm }} :-
+  std.rev RevArgs Args,
+  PhiTerm = app [Phi | Args],
+  (pi n\ mk-ne-sig n NEType (Sig n)).
 
 
 pred mk-pre-ne.forall i:list param, i:term, i:term, i:term, i:term, i:list term, o:term.
@@ -187,35 +198,50 @@ mk-pre-ne.forall Params NEType Pre N Rec RevArgs {{ (Proper lp:Sig lp:RecTerm) -
   mk-ne-sig N NEType Sig.
 
 
-pred mk-pre-ne.toproof  i:list param, i:term, i:term, o:term.
-mk-pre-ne.toproof Params NEType Pre {{ ∀ n (rec : lp:NEType), lp:{{ F {{ n }} {{ rec }} }} }} :-
-  (pi n rec\ mk-pre-ne.forall Params NEType Pre n rec [] (F n rec)).
+pred mk-pre-ne.toproof i:list param, i:term, i:term, i:term, o:term.
+mk-pre-ne.toproof Params Type NEType Pre {{ ∀ n (rec : lp:Type), lp:{{ NonExpansiveTerm {{ rec }} }} -> lp:{{ F {{ n }} {{ rec }} }} }} :-
+  (pi n rec\ 
+    mk-pre-ne.forall Params NEType Pre n rec [] (F n rec),
+    mk-ne-phi-ass rec NEType [] (NonExpansiveTerm rec)
+  ).
 
 
-pred mk-pre-ne i:list param, i:term, i:term, o:hole.
-mk-pre-ne Params NEType Pre (hole Type Proof) :-
-  mk-pre-ne.toproof Params NEType Pre Type'', !,
-  replace-params-ty Params Type'' Type',
-  (@reversible! => @primitive! => coq.elaborate-skeleton Type' {{ Type }} Type D),
+pred mk-pre-ne i:list param, i:term, i:term, i:term, o:hole.
+mk-pre-ne Params Type NEType Pre (hole ToProof Proof) :-
+  mk-pre-ne.toproof Params Type NEType Pre ToProof'', !,
+  replace-params-ty Params ToProof'' ToProof',
+  (@reversible! => @primitive! => coq.elaborate-skeleton ToProof' {{ Type }} ToProof D),
   if (D = error Msg) 
-    (if-debug (coq.say "Failure in making Pre NonExpansive type ("{coq.term->string Type}":Type):" Msg), fail) 
-    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string Type})), !,
-  coq.typecheck Proof Type D',
+    (if-debug (coq.say "Failure in making Pre NonExpansive type ("{coq.term->string ToProof'}"):" Msg), fail) 
+    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string ToProof})), !,
+  coq.typecheck Proof ToProof D',
   if (D' = error Msg) 
-    (if-debug (coq.say "Failure in making Pre NonExpansive type (Proof:"{coq.term->string Type}"):" Msg), fail) 
-    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string Type})), !,
+    (if-debug (coq.say "Failure in making Pre NonExpansive type (Proof:"{coq.term->string ToProof}"):" Msg), fail) 
+    (if-debug (coq.say "Proving Pre Non-Expansive:" {coq.term->string ToProof})), !,
   coq.ltac.collect-goals Proof [G] _, !,
   coq.ltac.open solve_proper_ltac G [].
 
 
-pred mk-fixpoint.forall i:term, i:list param, i:term, i:list term, i:term, o:term.
-mk-fixpoint.forall Pre Params Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
+pred ne-to-lam i:term, i:term, i:list term, o:term.
+ne-to-lam Phi (prod N T F) Args (fun N T F') :-
+  (pi x\ ne-to-lam Phi (F x) [x | Args] (F' x)).
+ne-to-lam Phi {{ _ (lp:XType -n> lp:NEType) }} Args {{λ x:lp:XType, lp:{{ Lam {{ x }} }} }} :- !,
+  (pi x\ ne-to-lam Phi NEType [x | Args] (Lam x)).
+ne-to-lam Phi {{ lp:XType -n> lp:NEType }} Args {{λ x:lp:XType, lp:{{ Lam {{ x }} }} }} :- !,
+  (pi x\ ne-to-lam Phi NEType [x | Args] (Lam x)).
+ne-to-lam Phi _ RevArgs (app [Phi | Args]) :-
+  std.rev RevArgs Args.
+
+
+pred mk-fixpoint.forall i:term, i:list param, i:term, i:term, i:list term, i:term, o:term.
+mk-fixpoint.forall Pre Params NEType Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
   Fun = fun N T F',
-  pi x\ mk-fixpoint.forall Pre Params Phi [x | Xs] (F x) (F' x).
-mk-fixpoint.forall Pre Params Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
+  pi x\ mk-fixpoint.forall Pre Params NEType Phi [x | Xs] (F x) (F' x).
+mk-fixpoint.forall Pre Params NEType Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   std.rev RevXs Xs,
   std.map Params (x\r\ x = par _ _ _ r) Ps,
-  L = app { std.append [Pre | Ps] [Phi | Xs] },
+  ne-to-lam Phi NEType [] PhiLam,
+  L = app { std.append [Pre | Ps] [PhiLam | Xs] },
   R = app [Phi | Xs].
 
 
@@ -224,10 +250,10 @@ mk-fixpoint.fun Pre Params NEType Type (prod N T F) L (fun N T F') :-
   pi x\ mk-fixpoint.fun Pre Params NEType Type (F x) [x | L] (F' x).
 mk-fixpoint.fun Pre Params NEType Type _ RevL {{ bi_forall lp:F }} :-
   std.rev RevL L,
-  F = fun _ NEType Forall,
+  F = fun {coq.string->name "Φ"} NEType Forall,
   pi phi\ ( sigma AppPhi\ sigma Prem\
     AppPhi = app [phi | L],
-    mk-fixpoint.forall Pre Params phi [] Type Prem,
+    mk-fixpoint.forall Pre Params NEType phi [] Type Prem,
     Forall phi = {{ bi_wand (□ lp:Prem) lp:AppPhi }}
   ).
 
@@ -327,9 +353,15 @@ pred mk-unfold-1.proof i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:t
 mk-unfold-1.proof Ps N NEType Pre Fix Unfold2 Proper Mono (hole Type Proof) :-
   do-intros-forall-remember (hole Type Proof) (mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono), !,
   if-debug (coq.say "Only solve_proper is left"),
-  coq.ltac.collect-goals Proof [G] _, 
-  if-debug (coq.say "Found the proper goal", coq.ltac.open show-goal G _),
-  coq.ltac.open solve_proper_ltac G [].
+  coq.ltac.collect-goals Proof GS SGS, !,
+  std.forall GS (g\
+    if-debug (coq.say "Found the proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ), !,
+  std.forall SGS (g\
+    if-debug (coq.say "Found the shelved proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ).
 
 pred mk-unfold-1.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:list term, i:hole.
 mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono IntroTerms H :-
@@ -342,20 +374,20 @@ mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono IntroTerms H :-
   if-debug (coq.say "Specialization term" {coq.term->string SpecTerm}), !,
   % Specialize
   do-iSpecializeForall IH' (iNamed "HF") SpecTerm IH'',
-  if-debug (coq.say "Specialized HF" {ihole->string IH''}),!,
   do-iIntros { std.append [iHyp "HF", iModalIntro | Pures]
                           [iIdent (iNamed "Hy")] } 
               IH'' (mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono).
 
 mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms (prod N T F) L (fun N T F') :- !,
   (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms (F x) [x | L] (F' x)).
-mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms {{ _ ( _ -n> _) }} RevL OfeTerm :- !,
+mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms {{ _ (_ -n> lp:NEType) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms NEType [x | L] (OfeTerm x)).
+mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms NEType [x | L] (OfeTerm x)).
+mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms _ RevL PreTerm :- !,
   std.rev RevL L,
   std.take Ps IntroTerms ParamTerms,
-  PreTerm = app { std.append { std.append [Pre | ParamTerms] [app [Fix | ParamTerms]] } L },
-  OfeTerm = {{ @OfeMor _ _ lp:PreTerm _ }}.
-mk-unfold-1.proof-1.aux _ _ _ _ T _ _ :-
-  coq.error "Type does not contain NonExpansive markers (-n>)" T "shold be" {{ _ ( _ -n> _) }}.
+  PreTerm = app { std.append { std.append [Pre | ParamTerms] [app [Fix | ParamTerms]] } L }.
 
               
 pred mk-unfold-1.proof-2 i:int, i:int, i:term, i:term, i:term, i:ihole.
@@ -507,41 +539,65 @@ mk-iter.toproof-inner-2 Params Fix Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   R = app [Phi | Xs].
 
 
-pred mk-ne-phi-ass i:term, i:term, i:list term, o:term.
-mk-ne-phi-ass Phi (prod N T F) Args (prod N T F') :- !,
-  (pi x\ mk-ne-phi-ass Phi (F x) [x | Args] (F' x)).
-mk-ne-phi-ass Phi NEType RevArgs {{ ∀ (n : nat), Proper lp:{{ Sig {{ n }} }} lp:PhiTerm }} :-
-  std.rev RevArgs Args,
-  PhiTerm = app [Phi | Args],
-  (pi n\ mk-ne-sig n NEType (Sig n)).
-
-
 pred mk-iter.toproof i:list param, i:term, i:term, i:term, i:term, o:term.
-mk-iter.toproof Params Pre Fix Type NEType 
-                {{ ∀ (Φ : lp:NEType), lp:{{ F {{ Φ }}}} }} :-
+mk-iter.toproof Params Pre Fix Type NEType ToProof :-
   (pi phi\ 
-    mk-iter.toproof-2 Params Pre Fix Type phi (F phi)%,
-    % mk-ne-phi-ass phi NEType [] (NonExpansiveTerm phi)
+    mk-iter.toproof-2 Params Pre Fix Type phi (F phi),
+    if (Type = NEType)
+      (ToProof = {{ ∀ (Φ : lp:Type), lp:{{ F {{ Φ }}}} }})
+      (
+        mk-ne-phi-ass phi NEType [] (NonExpansiveTerm phi),
+        ToProof = {{ ∀ (Φ : lp:Type), lp:{{ NonExpansiveTerm {{ Φ }} }} -> lp:{{ F {{ Φ }}}} }}
+      )
   ).
 
 pred mk-iter.toproof-2 i:list param, i:term, i:term, i:term, i:term, o:term.
-mk-iter.toproof-2 Params Pre Fix Type Phi ToProof :-
+mk-iter.toproof-2 Params Pre Fix Type Phi {{ (□ lp:Assump) -∗ lp:Prem }} :-
   mk-iter.toproof-inner-1 Params Pre Phi [] Type Assump,
-  mk-iter.toproof-inner-2 Params Fix Phi [] Type Prem,
-  ToProof = {{ (□ lp:Assump) -∗ lp:Prem }}.
+  mk-iter.toproof-inner-2 Params Fix Phi [] Type Prem.
 
-pred mk-iter.proof i:int, i:hole.
-mk-iter.proof N (hole Type Proof) :-
-  do-intros-forall (hole Type Proof) (mk-iter.proof-1 N).
+pred mk-iter.proof i:prop, i:term, i:int, i:hole.
+mk-iter.proof HasNE NEType N (hole Type Proof) :-
+  do-intros-forall-remember (hole Type Proof) (mk-iter.proof-1 HasNE NEType N),
+  if-debug (coq.say "Only solve_proper is left"),
+  coq.ltac.collect-goals Proof GS SGS, !,
+  std.forall GS (g\
+    if-debug (coq.say "Found the proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ), !,
+  std.forall SGS (g\
+    if-debug (coq.say "Found the shelved proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ).
 
-pred mk-iter.proof-1 i:int, i:hole.
-mk-iter.proof-1 N H :-
-  if-debug (coq.say "Pre start proof iter" {ihole->string (ihole _ H)}),
+pred mk-iter.proof-1 i:prop, i:term, i:int, i:list term, i:hole.
+mk-iter.proof-1 HasNE NEType N Args H :-
   do-iStartProof H IH, !,
   std.map { std.iota N } (x\r\ r = iPure none) Pures, !,
-  do-iIntros {std.append [iIntuitionistic (iIdent (iNamed "Hphi")) | Pures]
-                          [iIdent (iNamed "HF"), iHyp "HF", iHyp "Hphi"]}
-              IH (ih\ true).
+  do-iIntros {std.append [iIntuitionistic (iIdent (iNamed "Hphi")) | Pures] [iIdent (iNamed "HF")]}
+             IH (mk-iter.proof-2 HasNE NEType Args).
+
+pred mk-iter.proof-2 i:prop, i:term, i:list term, i:ihole.
+mk-iter.proof-2 HasNE NEType Args IH :- 
+  mk-iter.proof-2.aux HasNE Args NEType [] SpecTerm,
+  if-debug (coq.say "Specialization term" {coq.term->string SpecTerm}), !,
+  do-iSpecializeForall IH (iNamed "HF") SpecTerm IH',
+  do-iIntros [iHyp "HF", iHyp "Hphi"] IH' (ih\ true).
+
+
+mk-iter.proof-2.aux HasNE IntroTerms (prod N T F) L (fun N T F') :- !,
+  (pi x\ if-debug (coq.say "aux prod" {coq.term->string (F x)}), mk-iter.proof-2.aux HasNE IntroTerms (F x) [x | L] (F' x)).
+mk-iter.proof-2.aux HasNE IntroTerms {{ _ ( _ -n> lp:NEType ) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
+  (pi x\ if-debug (coq.say "aux ne" {coq.term->string NEType}), mk-iter.proof-2.aux HasNE IntroTerms NEType [x | L] (OfeTerm x)).
+mk-iter.proof-2.aux HasNE IntroTerms {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
+  (pi x\ if-debug (coq.say "aux ne2" {coq.term->string NEType}), mk-iter.proof-2.aux HasNE IntroTerms NEType [x | L] (OfeTerm x)).
+mk-iter.proof-2.aux HasNE IntroTerms Base RevL (app [Phi | L]) :- !,
+  if-debug (coq.say "aux base" {coq.term->string Base}),
+  if (HasNE)
+    (std.rev IntroTerms [Phi | _])
+    (std.rev IntroTerms [_, Phi | _]),
+  std.rev RevL L.
+
 
 pred mk-iter i:list param, i:term, i:term, i:term, i:term, o:hole.
 mk-iter Params Pre Fix Type NEType (hole ToProof Proof) :- 
@@ -552,14 +608,21 @@ mk-iter Params Pre Fix Type NEType (hole ToProof Proof) :-
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making iter proof type ("{coq.term->string ToProof}":Type):" Msg), fail) 
     (true), !,
-  mk-iter.proof {type-depth Type} (hole ToProof Proof),
+  mk-iter.proof (Type = NEType) NEType {type-depth Type} (hole ToProof Proof),
   if-debug (coq.say "iter proof finished").
 
 
 pred mk-ind.toproof i:list param, i:term, i:term, i:term, i:term, o:term.
-mk-ind.toproof Params Pre Fix Type NEType (prod N NEType F) :-
-  coq.id->name "Φ" N,
-  (pi phi\ mk-ind.toproof-2 Params Pre Fix Type phi (F phi)).
+mk-ind.toproof Params Pre Fix Type NEType ToProof :-
+  (pi phi\ 
+    mk-ind.toproof-2 Params Pre Fix Type phi (F phi),
+    if (Type = NEType)
+      (ToProof = {{ ∀ (Φ : lp:Type), lp:{{ F {{ Φ }}}} }})
+      (
+        mk-ne-phi-ass phi NEType [] (NonExpansiveTerm phi),
+        ToProof = {{ ∀ (Φ : lp:Type), lp:{{ NonExpansiveTerm {{ Φ }} }} -> lp:{{ F {{ Φ }}}} }}
+      )
+  ).
 
 pred mk-ind.toproof-2 i:list param, i:term, i:term, i:term, i:term, o:term.
 mk-ind.toproof-2 Params Pre Fix Type Phi {{ (□ lp:L) -∗ lp:R }} :-
@@ -589,7 +652,17 @@ mk-ind.toproof-inner Params Pre Fix Phi RevXs Type _ {{ bi_wand lp:L lp:R }} :-
 
 pred mk-ind.proof i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:hole.
 mk-ind.proof Ps N Unfold1 Unfold2 Proper Mono Iter (hole Type Proof) :-
-  do-intros-forall (hole Type Proof) (mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter).
+  do-intros-forall (hole Type Proof) (mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter),
+  if-debug (coq.say "Only solve_proper is left"),
+  coq.ltac.collect-goals Proof GS SGS, !,
+  std.forall GS (g\
+    if-debug (coq.say "Found the proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ), !,
+  std.forall SGS (g\
+    if-debug (coq.say "Found the shelved proper goal", coq.ltac.open show-goal g _),
+    coq.ltac.open solve_proper_ltac g []
+  ).
 
 pred mk-ind.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term i:hole.
 mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter H :-

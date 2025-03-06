@@ -8,6 +8,7 @@ From stdpp Require Import numbers.
 
 From eIris.proofmode Require Import base inductiveDB inductive.
 From eIris.proofmode Require Export reduction.
+From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
@@ -86,6 +87,7 @@ Elpi Accumulate lp:{{
 }}.
 
 Elpi Tactic eiInduction.
+Elpi Accumulate File datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File eiris_tactics.
@@ -97,12 +99,12 @@ Elpi Accumulate lp:{{
     find-hyp ID Type (app [global GREF | Args]),
     inductive-ind GREF INDLem, !,
     if-debug (coq.say "Induction on" INDLem Args),
-    inductive-type GREF T, !,
-    if-debug (coq.say "with Type" T),
-    do-iInduction.inner ID IP T (app [global INDLem]) Args IH C.
+    inductive-type GREF IInd, !,
+    if-debug (coq.say "with Type" IInd),
+    do-iInduction.inner ID IP IInd (app [global INDLem]) Args IH C. % Maybe add a hole
 
-  pred do-iInduction.inner i:ident, i:intro_pat, i:indt-decl, i:term, i:list term, i:ihole, o:(ihole -> prop).
-  do-iInduction.inner ID IP (inductive _Name _In-Or-Co Arity Constructors) (app INDLem) Args (ihole _ (hole Type _) as IH) C :-
+  pred do-iInduction.inner i:ident, i:intro_pat, i:iind, i:term, i:list term, i:ihole, o:(ihole -> prop).
+  do-iInduction.inner ID IP (iind NConstr TypeTerm) (app INDLem) Args (ihole _ (hole Type _) as IH) C :-
     Type = {{ envs_entails _ lp:P }},
     std.map Args (x\r\ sigma N T I\ decl x N T, coq.name->id N I, r = par I _ T x ) Pars, !,
     replace-params-bo Pars P Phi, !,
@@ -113,14 +115,14 @@ Elpi Accumulate lp:{{
     do-iApplyLem Lem IH [] [IntroIH, IHyp],
     % Apply induction hyp to goal
     do-iApplySimpleExact IHyp ID,
+    if-debug (coq.say "hole left:" {ihole->string IntroIH}),
     % Introduce created goal
-    std.map {std.iota {type-depth {coq.arity->term Arity} } } (x\r\ r = iPure none) Pures,
-    (pi f\ std.length (Constructors f) NConstr),
+    std.map {std.iota {type-depth TypeTerm } } (x\r\ r = iPure none) Pures,
     if (IP = iAll) (
         IP' = iList {std.map {std.iota NConstr} (x\r\ r = [iFresh])}
       ) (IP' = IP),
     do-iIntros {std.append [iModalIntro| Pures] [IP']} IntroIH C.
-  do-iInduction.inner HID IP (parameter _ _ _ IND) (app INDLem) [A | Args] IH C :-
+  do-iInduction.inner HID IP (iind_param _ _ IND) (app INDLem) [A | Args] IH C :-
     pi p\ do-iInduction.inner HID IP (IND p) (app {std.append INDLem [A]}) Args IH C.
 
 
@@ -162,7 +164,7 @@ Tactic Notation "eiDestruct" string(x) :=
   elpi eiDestruct ltac_string:(x) "**".
 
 Tactic Notation "eiInduction" string(x) "as" string(y) :=
-  elpi eiInduction ltac_string:(x) ltac_string:(y).
+  elpi eiInduction "debug" ltac_string:(x) ltac_string:(y).
 
 Tactic Notation "eiInduction" string(x) :=
-  elpi eiInduction ltac_string:(x) "**".
+  elpi eiInduction "debug" ltac_string:(x) "**".

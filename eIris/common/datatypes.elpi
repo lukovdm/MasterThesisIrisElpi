@@ -1,0 +1,4 @@
+% Store amount of constructors and the type
+kind iind type.
+type iind_param id -> term -> (term -> iind) -> iind.
+type iind int -> term -> iind.

@@ -15,14 +15,10 @@ Section TWP.
 
   Context `{!irisGS_gen hlc Λ Σ}.
 
-  (* Set Printing Coercions. *)
-
-  (* Typeclasses eauto := debug. *)
-
-  #[debug, noind]
+  #[debug]
   EI.ind
   Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
-    | twp_some E v e1 (Φ : val Λ -d> iProp Σ) : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
+    | twp_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
     | twp_none E e1 Φ : (∀ σ1 ns κs nt,
                           state_interp σ1 ns κs nt ={E,∅}=∗
                             ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
@@ -34,87 +30,25 @@ Section TWP.
                           -∗ ⌜to_val e1 = None⌝ 
                           -∗ twp s E e1 Φ.
 
+  (* EI.ind
+  Inductive twp' (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> (val Λ -d> iProp Σ) -n> iProp Σ :=
+    | twp'_some E v e1 Φ Φ1 : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp' s E e1 Φ Φ1
+    | twp'_none E e1 Φ Φ1 : (∀ σ1 ns κs nt,
+                          state_interp σ1 ns κs nt ={E,∅}=∗
+                            ⌜if s is NotStuck then reducible_no_obs e1 σ1 else True⌝ ∗
+                            ∀ κ e2 σ2 efs, ⌜prim_step e1 σ1 κ e2 σ2 efs⌝ ={∅,E}=∗
+                              ⌜κ = []⌝ ∗
+                              state_interp σ2 (S ns) κs (length efs + nt) ∗
+                              twp' s E e2 Φ Φ1 ∗
+                              [∗ list] ef ∈ efs, twp' s ⊤ ef Φ1 Φ1) 
+                          -∗ ⌜to_val e1 = None⌝ 
+                          -∗ twp' s E e1 Φ Φ1. *)
+
   Check twp_pre_ne.
   Check twp_ne.
   Check twp_none.
-  Check twp_iter. (* Defined using ne Phi instead of add it as a seperate assumption *)
-
-  Global Instance twp_ne s E e n :
-    Proper ((dist n) ==> dist n) (twp s E e).
-  Proof.
-    solve_proper.
-  Qed.
-
-  (* Lemma twp_pre_ne :
-    ∀ n (rec : coPset → expr Λ → ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ)) -n> iProp Σ) 
-      (s : stuckness) (H : coPset) (H0 : expr Λ),
-    (Proper (dist n ==> dist n) (rec H H0)) -> Proper (dist n ==> dist n) (twp_pre s rec H H0).
-  Proof.
-    solve_proper.
-  Qed. *)
-
-  (* Local Existing Instance twp_pre_ne. *)
-
-  Lemma unfold_1 :
-  ∀ (s : stuckness) (H : coPset) (H0 : expr Λ) (H1 : ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ))),
-    twp s H H0 H1 ⊢ twp_pre s (twp s) H H0 H1.
-  Proof.
-    intros.
-    iIntros "HF".
-(*     iApply ("HF" $! (OfeMor (F (bi_least_fixpoint F))) with "[#]"). *)
-
-    notypeclasses refine (tac_forall_specialize _ "HF" _ _ _ _ _ _ _).
-    - pm_reflexivity.
-    - tc_solve.
-    - notypeclasses refine (ex_intro _ (λ x y, @OfeMor _ _ (twp_pre s (twp s) x y) _ ) _ ).
-      Unshelve.
-      2: {
-        Typeclasses eauto := debug.
-        solve_proper.
-      }
-      pm_reduce. 
-      iApply "HF".
-      iModIntro.
-      iIntros (? ? ?) "HY".
-      iApply ((iProper (□> .> .> .> bi_wand ==> .> .> .> bi_wand) (twp_pre _))).
-      + apply twp_pre_mono.
-      + iModIntro.
-        iIntros (? ? ?) "HF".
-        iApply twp_unfold_2.
-        iApply "HF".
-  Qed.
-
-  Check twp.
-  Print twp.
-  Print twp_pre.
-
-  Definition twp_pre' : stuckness -> (leibnizO coPset -> expr Λ -> (val Λ -d> iProp Σ) -> iProp Σ) -> leibnizO coPset -> expr Λ -> (val Λ -d> iProp Σ) -> iProp Σ := twp_pre.
-  Definition twp' : stuckness -> leibnizO coPset -> expr Λ -> (val Λ -d> iProp Σ) -> iPropI Σ := twp.
-
-  Definition twp_pre'' := 
-    λ (s : stuckness) (rec : coPset → expr Λ → (val Λ -d> iProp Σ) -> iProp Σ) (H : coPset) (H0 : expr Λ) (H1 : val Λ -d> iProp Σ),
-    ((∃ v : val Λ, (|={H}=> H1 v) ∗ ⌜to_val H0 = Some v⌝ ∗ True)
-    ∨ (∀ (σ1 : state Λ) (ns : nat) (κs : list (observation Λ)) (nt : nat),
-    state_interp σ1 ns κs nt ={H,∅}=∗
-    ⌜match s with
-    | NotStuck => reducible_no_obs H0 σ1
-    | MaybeStuck => True
-    end⌝ ∗
-    ∀ (κ : list (observation Λ)) (e2 : expr Λ) (σ2 : state Λ) (efs : list (expr Λ)),
-    ⌜prim_step H0 σ1 κ e2 σ2 efs⌝ ={∅,H}=∗ ⌜κ = []⌝ ∗ state_interp σ2 (S ns) κs (length efs + nt) ∗ rec H e2 H1 ∗
-    ([∗ list] ef ∈ efs, rec ⊤ ef fork_post)) ∗ ⌜to_val H0 = None⌝ ∗ True)%I.
-
-  Definition twp'' := λ (s : stuckness) (H : coPset) (H0 : expr Λ) (H1 : val Λ -d> iProp Σ),
-    (∀ H2 : coPset → expr Λ → (val Λ -d> iProp Σ) -n> iProp Σ,
-    □ (∀ (H3 : coPset) (H4 : expr Λ) (H5 : val Λ -d> iProp Σ), twp_pre'' s H2 H3 H4 H5 -∗ H2 H3 H4 H5) -∗ H2 H H0 H1)%I.
-
-  
-
-  Global Instance twp_ne s E e n :
-    Proper ((dist n) ==> dist n) (twp'' s E e).
-  Proof.
-    solve_proper.
-  Qed.
+  Check twp_iter.
+  Check twp_ind.
 
   Notation "'WPE' e @ s ; E [{ Φ } ]" := (twp s E e%E Φ)
     (at level 20, e, Φ at level 200, only parsing) : bi_scope.
@@ -156,18 +90,18 @@ Section TWP.
   Proof.
     iIntros (? HE) "H HΦ".
     iRevert (E2 Ψ HE) "HΦ".
-    eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (E2 Ψ HE) "HΦ"; 
+    eiInduction "H" as "[* IH %Htv % | * IH %Htv %]"; try iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
+    - solve_proper.
     - iApply twp_some.
-      iExists _, _, _, _.
+      iExists _.
       iSplitL; [|repeat iSplit; done].
       iApply ("HΦ" with "[> -]").
-      by iApply (fupd_mask_mono E _).
+      by iApply (fupd_mask_mono _ _).
     - iApply twp_none.
-      iExists _, _, _.
       iSplitL; [|repeat iSplit; done].
       iIntros (σ1 ns κs nt) "Hσ".
-      iMod (fupd_mask_subseteq E) as "Hclose"; first done.
+      iMod (fupd_mask_subseteq _) as "Hclose"; first done.
       iMod ("IH" with "[$]") as "[% IH]".
       iModIntro; iSplit; [by destruct s1, s2|]. iIntros (κ e2 σ2 efs Hstep).
       iMod ("IH" with "[//]") as (?) "(Hσ & IH & IHefs)"; auto.
@@ -182,15 +116,14 @@ Section TWP.
   Proof.
     iIntros "H". destruct (to_val e) as [v|] eqn:?.
     - iApply twp_some.
-      iExists E, v, e, Φ.
+      iExists v.
       repeat iSplit; try done.
       iMod "H".
-      eiDestruct "H" as "[% % % % H % [% %] % | % % % H % [% %] %]"; by simplify_eq.
+      eiDestruct "H" as "[% H % % | H % %]"; by simplify_eq.
     - iApply twp_none.
-      iExists E, e, Φ.
       repeat iSplit; try done.
       iIntros (σ1 ns κs nt) "Hσ1". iMod "H".
-      eiDestruct "H" as "[% % % % H % [% %] % | % % % H % [% %] %]"; simplify_eq.
+      eiDestruct "H" as "[% H % % | H % %]"; simplify_eq.
       by iApply "H".
   Qed.      
 
@@ -204,10 +137,9 @@ Section TWP.
       (∀ v, Φ' v -∗ WPE K (of_val v) @ s; E [{ Φ }]) -∗ WPE K e @ s; E [{ Φ }]).
     { iIntros (help Φ) "H". iApply (help with "H"); auto. }
     iIntros (Φ') "H". 
-    eiInduction "H" as "[* IH %Htv [%Ha %Hb] %HaPhi | * IH %Htv [%Ha %Hb] %HaPhi]"; iIntros (Φ'') "HΦ".
+    eiInduction "H" as "[* IH %Htv % | * IH %Htv %]"; first solve_proper; iIntros (Φ'') "HΦ".
     - simplify_eq. apply of_to_val in Htv as <-. iApply fupd_twp. by iApply "HΦ".
     - iApply twp_none.
-      iExists _, (K e1), _.
       simplify_eq.
       iSplitL; [|repeat iSplit; try done].
       2: { iPureIntro. by apply fill_not_val. }
@@ -216,7 +148,7 @@ Section TWP.
       { iPureIntro. unfold reducible_no_obs in *.
         destruct s; naive_solver eauto using fill_step. }
       iIntros (κ e2 σ2 efs Hstep).
-      destruct (fill_step_inv e1 σ1 κ e2 σ2 efs) as (e2'&->&?); auto.
+      destruct (fill_step_inv e0 σ1 κ e2 σ2 efs) as (e2'&->&?); auto.
       iMod ("IH" $! κ e2' σ2 efs with "[//]") as (?) "(Hσ & IH & IHefs)".
       iModIntro. iFrame "Hσ". iSplit; first done. iSplitR "IHefs".
       + iDestruct "IH" as "[IH _]". by iApply "IH".

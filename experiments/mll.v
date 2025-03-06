@@ -16,15 +16,14 @@ Section SkipQueue.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  (* Elpi Trace Browser. *)
   EI.ind
-  Inductive is_MLL : val → list val → iProp :=
-      (* | test_is_MLL v vs : is_MLL v vs *)
+  Inductive is_MLL : val → list val -> iProp :=
       | empty_is_MLL : is_MLL NONEV []
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
   Print is_MLL_pre.
+  About is_MLL_ind.
   Check mark_is_MLL.
   Print is_MLL.
 
@@ -53,7 +52,6 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    (* eiInduction "His". *)
     eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".
