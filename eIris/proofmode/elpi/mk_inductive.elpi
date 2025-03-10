@@ -97,8 +97,11 @@ last-rec-to-and Binders {{ bi_exist lp:{{ fun N T F }} }} Replacements' ResTerm 
       (Replacements' = Replacements, ResTerm = {{ bi_exist lp:{{ fun N T F' }} }})
     )
   ).
-last-rec-to-and Binders {{ bi_sep lp:L lp:R }} Replacements {{ bi_sep lp:L lp:R' }} :- !,
-  last-rec-to-and Binders R Replacements R'.
+last-rec-to-and Binders {{ bi_sep lp:L lp:R }} Replacements SepTerm :- !,
+  last-rec-to-and Binders R Replacements R',
+  if (R' = {{ (⌜True⌝)%I }})
+    (SepTerm = L)
+    (SepTerm = {{ bi_sep lp:L lp:R' }}).
 last-rec-to-and BindersRev (app [FixBinder | TS]) Replacements EQTerm :-
   std.rev BindersRev [FixBinder | BS],
   {std.length BS} = {std.length TS}, !,
@@ -349,9 +352,9 @@ mk-unfold-2 Params Pre Proper Mono Fix Type (hole ToProof Proof) :-
   mk-unfold-2.proof {std.length Params} {type-depth Type} Proper Mono (hole ToProof Proof).
 
 
-pred mk-unfold-1.proof i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:hole.
-mk-unfold-1.proof Ps N NEType Pre Fix Unfold2 Proper Mono (hole Type Proof) :-
-  do-intros-forall-remember (hole Type Proof) (mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono), !,
+pred mk-unfold-1.proof i:list param, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:hole.
+mk-unfold-1.proof Params N NEType Pre Fix Unfold2 Proper Mono (hole Type Proof) :-
+  do-intros-forall (hole Type Proof) (mk-unfold-1.proof-1 Params N NEType Pre Fix Unfold2 Proper Mono), !,
   if-debug (coq.say "Only solve_proper is left"),
   coq.ltac.collect-goals Proof GS SGS, !,
   std.forall GS (g\
@@ -363,30 +366,31 @@ mk-unfold-1.proof Ps N NEType Pre Fix Unfold2 Proper Mono (hole Type Proof) :-
     coq.ltac.open solve_proper_ltac g []
   ).
 
-pred mk-unfold-1.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:list term, i:hole.
-mk-unfold-1.proof-1 Ps N NEType Pre Fix Unfold2 Proper Mono IntroTerms H :-
+pred mk-unfold-1.proof-1 i:list param, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:hole.
+mk-unfold-1.proof-1 Params N NEType Pre Fix Unfold2 Proper Mono H :-
   do-iStartProof H IH, !,
   if-debug (coq.say "started proof unfold_1" {ihole->string IH}),
   std.map {std.iota N} (x\r\ r = iPure none) Pures, !,
   do-iIntro-ident (iNamed "HF") IH IH',
   % Generate argument to specialize with
-  mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms NEType [] SpecTerm,
+  mk-unfold-1.proof-1.aux Pre Fix Params NEType [] SpecTerm,
+  % TODO: Change params to introduced versions
   if-debug (coq.say "Specialization term" {coq.term->string SpecTerm}), !,
   % Specialize
   do-iSpecializeForall IH' (iNamed "HF") SpecTerm IH'',
   do-iIntros { std.append [iHyp "HF", iModalIntro | Pures]
                           [iIdent (iNamed "Hy")] } 
-              IH'' (mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono).
+              IH'' (mk-unfold-1.proof-2 {std.length Params} N Unfold2 Proper Mono).
 
-mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms (prod N T F) L (fun N T F') :- !,
-  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms (F x) [x | L] (F' x)).
-mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms {{ _ (_ -n> lp:NEType) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
-  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms NEType [x | L] (OfeTerm x)).
-mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
-  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms NEType [x | L] (OfeTerm x)).
-mk-unfold-1.proof-1.aux Pre Fix Ps IntroTerms _ RevL PreTerm :- !,
+mk-unfold-1.proof-1.aux Pre Fix Params (prod N T F) L (fun N T F') :- !,
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Params (F x) [x | L] (F' x)).
+mk-unfold-1.proof-1.aux Pre Fix Params {{ _ (_ -n> lp:NEType) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Params NEType [x | L] (OfeTerm x)).
+mk-unfold-1.proof-1.aux Pre Fix Params {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :-
+  (pi x\ mk-unfold-1.proof-1.aux Pre Fix Params NEType [x | L] (OfeTerm x)).
+mk-unfold-1.proof-1.aux Pre Fix Params _ RevL PreTerm :- !,
   std.rev RevL L,
-  std.take Ps IntroTerms ParamTerms,
+  std.map Params (x\r\ x = par _ _ _ r) ParamTerms,
   PreTerm = app { std.append { std.append [Pre | ParamTerms] [app [Fix | ParamTerms]] } L }.
 
               
@@ -414,14 +418,14 @@ mk-unfold-1.proof-3 Ps Unfold2 IH :-
 
 pred mk-unfold-1 i:list param, i:term, i:term, i:term, i:term, i:term , i:term, i:term, o:hole.
 mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type NEType (hole ToProof Proof) :-
-  mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:F ⊢ lp:U }}) Params Pre [Fix] [] Type ToProof', !,
-  replace-params-ty Params ToProof' ToProof'',!,
-  if-debug (coq.say "unfold 1:" {coq.term->string ToProof''}),
-  coq.elaborate-skeleton ToProof'' {{ Type }} ToProof D, !,
+  mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:F ⊢ lp:U }}) Params Pre [Fix] [] Type ToProofNoParams', !,
+  coq.elaborate-skeleton ToProofNoParams' {{ Type }} ToProofNoParams D, !,
   if (D = error Msg) 
-    (if-debug (coq.say "Failure in making Unfold1 type ("{coq.term->string ToProof}":Type):" Msg), fail) 
-    (if-debug (coq.say "Proving Unfold1:" {coq.term->string ToProof})), !,
-  mk-unfold-1.proof {std.length Params} {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (hole ToProof Proof),
+    (if-debug (coq.say "Failure in making Unfold1 type ("{coq.term->string ToProofNoParams}":Type):" Msg), fail) 
+    (if-debug (coq.say "Proving Unfold1:" {coq.term->string ToProofNoParams})), !,
+  mk-unfold-1.proof Params {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (hole ToProofNoParams ProofNoPramas),
+  replace-params-ty Params ToProofNoParams ToProof,!,
+  replace-params-bo Params ProofNoPramas Proof,
   if-debug (coq.say "unfold 1 done").
 
 
@@ -518,21 +522,21 @@ mk-constr-lem Params Unfold2 Constructors PreBody Fix Type Nth Total ConstrLem :
   coq.env.add-const Name ConstrProof ConstrType ff ConstrLem.
 
 
-pred mk-iter.toproof-inner-1 i:list param, i:term, i:term, i:list term, i:term, o:term.
-mk-iter.toproof-inner-1 Params Pre Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
+pred mk-iter.toproof.inner-1 i:list param, i:term, i:term, i:list term, i:term, o:term.
+mk-iter.toproof.inner-1 Params Pre Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
   Fun = fun N T F',
-  @pi-decl N T x\ mk-iter.toproof-inner-1 Params Pre Phi [x | Xs] (F x) (F' x).
-mk-iter.toproof-inner-1 Params Pre Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
+  @pi-decl N T x\ mk-iter.toproof.inner-1 Params Pre Phi [x | Xs] (F x) (F' x).
+mk-iter.toproof.inner-1 Params Pre Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   std.rev RevXs Xs,
   std.map Params (x\r\ x = par _ _ _ r) Ps,
   L = app {std.append [Pre | Ps] [Phi | Xs]},
   R = app [Phi | Xs].
 
-pred mk-iter.toproof-inner-2 i:list param, i:term, i:term, i:list term, i:term, o:term.
-mk-iter.toproof-inner-2 Params Fix Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
+pred mk-iter.toproof.inner-2 i:list param, i:term, i:term, i:list term, i:term, o:term.
+mk-iter.toproof.inner-2 Params Fix Phi Xs (prod N T F) {{ bi_forall lp:Fun }} :-
   Fun = fun N T F',
-  @pi-decl N T x\ mk-iter.toproof-inner-2 Params Fix Phi [x | Xs] (F x) (F' x).
-mk-iter.toproof-inner-2 Params Fix Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
+  @pi-decl N T x\ mk-iter.toproof.inner-2 Params Fix Phi [x | Xs] (F x) (F' x).
+mk-iter.toproof.inner-2 Params Fix Phi RevXs _ {{ bi_wand lp:L lp:R }} :-
   std.rev RevXs Xs,
   std.map Params (x\r\ x = par _ _ _ r) Ps,
   L = app {std.append [Fix | Ps] Xs},
@@ -553,12 +557,12 @@ mk-iter.toproof Params Pre Fix Type NEType ToProof :-
 
 pred mk-iter.toproof-2 i:list param, i:term, i:term, i:term, i:term, o:term.
 mk-iter.toproof-2 Params Pre Fix Type Phi {{ (□ lp:Assump) -∗ lp:Prem }} :-
-  mk-iter.toproof-inner-1 Params Pre Phi [] Type Assump,
-  mk-iter.toproof-inner-2 Params Fix Phi [] Type Prem.
+  mk-iter.toproof.inner-1 Params Pre Phi [] Type Assump,
+  mk-iter.toproof.inner-2 Params Fix Phi [] Type Prem.
 
-pred mk-iter.proof i:prop, i:term, i:int, i:hole.
-mk-iter.proof HasNE NEType N (hole Type Proof) :-
-  do-intros-forall-remember (hole Type Proof) (mk-iter.proof-1 HasNE NEType N),
+pred mk-iter.proof i:list param, i:prop, i:term, i:int, i:hole.
+mk-iter.proof Params HasNE NEType N (hole Type Proof) :-
+  do-intros-forall-remember (hole Type Proof) (mk-iter.proof-1 Params HasNE NEType N),
   if-debug (coq.say "Only solve_proper is left"),
   coq.ltac.collect-goals Proof GS SGS, !,
   std.forall GS (g\
@@ -570,32 +574,40 @@ mk-iter.proof HasNE NEType N (hole Type Proof) :-
     coq.ltac.open solve_proper_ltac g []
   ).
 
-pred mk-iter.proof-1 i:prop, i:term, i:int, i:list term, i:hole.
-mk-iter.proof-1 HasNE NEType N Args H :-
+pred mk-iter.proof-1 i:list param, i:prop, i:term, i:int, i:list term, i:hole.
+mk-iter.proof-1 Params HasNE NEType N Args H :-
   do-iStartProof H IH, !,
   std.map { std.iota N } (x\r\ r = iPure none) Pures, !,
   do-iIntros {std.append [iIntuitionistic (iIdent (iNamed "Hphi")) | Pures] [iIdent (iNamed "HF")]}
-             IH (mk-iter.proof-2 HasNE NEType Args).
+             IH (mk-iter.proof-2 Params HasNE NEType Args).
 
-pred mk-iter.proof-2 i:prop, i:term, i:list term, i:ihole.
-mk-iter.proof-2 HasNE NEType Args IH :- 
-  mk-iter.proof-2.aux HasNE Args NEType [] SpecTerm,
+pred mk-iter.proof-2 i:list param, i:prop, i:term, i:list term, i:ihole.
+mk-iter.proof-2 Params HasNE NEType Args IH :- 
+  if (HasNE)
+    (std.rev Args [Phi | ParamTerms])
+    (std.rev Args [_, Phi | ParamTerms]),
+  replace-params-terms Params {std.rev ParamTerms} NEType NEType',
+  mk-iter.proof-2.aux Phi NEType' [] SpecTerm,
   if-debug (coq.say "Specialization term" {coq.term->string SpecTerm}), !,
   do-iSpecializeForall IH (iNamed "HF") SpecTerm IH',
   do-iIntros [iHyp "HF", iHyp "Hphi"] IH' (ih\ true).
 
 
-mk-iter.proof-2.aux HasNE IntroTerms (prod N T F) L (fun N T F') :- !,
-  (pi x\ if-debug (coq.say "aux prod" {coq.term->string (F x)}), mk-iter.proof-2.aux HasNE IntroTerms (F x) [x | L] (F' x)).
-mk-iter.proof-2.aux HasNE IntroTerms {{ _ ( _ -n> lp:NEType ) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
-  (pi x\ if-debug (coq.say "aux ne" {coq.term->string NEType}), mk-iter.proof-2.aux HasNE IntroTerms NEType [x | L] (OfeTerm x)).
-mk-iter.proof-2.aux HasNE IntroTerms {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
-  (pi x\ if-debug (coq.say "aux ne2" {coq.term->string NEType}), mk-iter.proof-2.aux HasNE IntroTerms NEType [x | L] (OfeTerm x)).
-mk-iter.proof-2.aux HasNE IntroTerms Base RevL (app [Phi | L]) :- !,
+pred replace-params-terms i:list param, i:list term, i:term, o:term.
+replace-params-terms Params RTerms ITerm OTerm :-
+  std.map Params (x\r\ x = par _ _ _ r) ParamBinders,
+  std.map2 ParamBinders RTerms (p\t\r\ r = (copy p t)) Copies,
+  (Copies => copy ITerm OTerm).
+
+
+mk-iter.proof-2.aux Phi (prod N T F) L (fun N T F') :- !,
+  (pi x\ if-debug (coq.say "aux prod" {coq.term->string (F x)}), mk-iter.proof-2.aux Phi (F x) [x | L] (F' x)).
+mk-iter.proof-2.aux Phi {{ _ ( _ -n> lp:NEType ) }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
+  (pi x\ if-debug (coq.say "aux ne" {coq.term->string NEType}), mk-iter.proof-2.aux Phi NEType [x | L] (OfeTerm x)).
+mk-iter.proof-2.aux Phi {{ _ -n> lp:NEType }} L {{ λne x, lp:{{ OfeTerm {{ x }} }} }} :- !,
+  (pi x\ if-debug (coq.say "aux ne2" {coq.term->string NEType}), mk-iter.proof-2.aux Phi NEType [x | L] (OfeTerm x)).
+mk-iter.proof-2.aux Phi Base RevL (app [Phi | L]) :- !,
   if-debug (coq.say "aux base" {coq.term->string Base}),
-  if (HasNE)
-    (std.rev IntroTerms [Phi | _])
-    (std.rev IntroTerms [_, Phi | _]),
   std.rev RevL L.
 
 
@@ -608,7 +620,7 @@ mk-iter Params Pre Fix Type NEType (hole ToProof Proof) :-
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making iter proof type ("{coq.term->string ToProof}":Type):" Msg), fail) 
     (true), !,
-  mk-iter.proof (Type = NEType) NEType {type-depth Type} (hole ToProof Proof),
+  mk-iter.proof Params (Type = NEType) NEType {type-depth Type} (hole ToProof Proof),
   if-debug (coq.say "iter proof finished").
 
 
@@ -627,7 +639,7 @@ mk-ind.toproof Params Pre Fix Type NEType ToProof :-
 pred mk-ind.toproof-2 i:list param, i:term, i:term, i:term, i:term, o:term.
 mk-ind.toproof-2 Params Pre Fix Type Phi {{ (□ lp:L) -∗ lp:R }} :-
   mk-ind.toproof-inner Params Pre Fix Phi [] Type Type L,
-  mk-iter.toproof-inner-2 Params Fix Phi [] Type R.
+  mk-iter.toproof.inner-2 Params Fix Phi [] Type R.
 
 pred mk-ind.toproof-fun i:list param, i:term, i:term, i:list term, i:term, o:term.
 mk-ind.toproof-fun Params Phi Fix Xs (prod N T F) (fun N T F') :-

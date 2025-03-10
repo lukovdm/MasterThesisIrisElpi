@@ -920,5 +920,6 @@
   "vscoq.path": "/home/luko/.opam/elpi-better/bin/vscoqtop",
   "github.copilot.enable": {
     "elpi": false
-  }
+  },
+  "vscoq.goals.display": "Tabs"
 }

@@ -108,16 +108,16 @@ Elpi Accumulate lp:{{
     Type = {{ envs_entails _ lp:P }},
     std.map Args (x\r\ sigma N T I\ decl x N T, coq.name->id N I, r = par I _ T x ) Pars, !,
     replace-params-bo Pars P Phi, !,
-    if-debug (coq.say "phi is" Phi),
+    if-debug (coq.say "phi is" {coq.term->string Phi}),
     Lem = app {std.append INDLem [Phi]},
-    if-debug (coq.say "Lem to apply" Lem),
+    if-debug (coq.say "Lem to apply" {coq.term->string Lem}),
     % Apply induction lemma
     do-iApplyLem Lem IH [] [IntroIH, IHyp],
     % Apply induction hyp to goal
     do-iApplySimpleExact IHyp ID,
     if-debug (coq.say "hole left:" {ihole->string IntroIH}),
     % Introduce created goal
-    std.map {std.iota {type-depth TypeTerm } } (x\r\ r = iPure none) Pures,
+    std.map {std.iota {type-depth TypeTerm} } (x\r\ r = iPure none) Pures,
     if (IP = iAll) (
         IP' = iList {std.map {std.iota NConstr} (x\r\ r = [iFresh])}
       ) (IP' = IP),

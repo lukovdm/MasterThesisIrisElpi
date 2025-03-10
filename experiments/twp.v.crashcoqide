@@ -12,10 +12,16 @@ From iris.proofmode Require Import base environments proofmode tactics coq_tacti
 From eIris.proofmode Require Import base inductive intros.
 
 Section TWP.
+
   Context `{!irisGS_gen hlc Λ Σ}.
-  
+
+  (* Set Printing Coercions. *)
+
+  (* Typeclasses eauto := debug. *)
+
+  #[debug, nounfold, noconstr, noind]
   EI.ind
-  Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -> iProp Σ) -> iProp Σ :=
+  Inductive twp (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
     | twp_some E v e1 (Φ : val Λ -d> iProp Σ) : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
     | twp_none E e1 Φ : (∀ σ1 ns κs nt,
                           state_interp σ1 ns κs nt ={E,∅}=∗
@@ -27,6 +33,56 @@ Section TWP.
                               [∗ list] ef ∈ efs, twp s ⊤ ef fork_post) 
                           -∗ ⌜to_val e1 = None⌝ 
                           -∗ twp s E e1 Φ.
+
+  Check twp_pre_ne.
+  Check twp.
+  Check twp_iter. (* Defined using ne Phi instead of add it as a seperate assumption *)
+
+  Global Instance twp_ne s E e n :
+    Proper ((dist n) ==> dist n) (twp s E e).
+  Proof.
+    solve_proper.
+  Qed.
+
+  (* Lemma twp_pre_ne :
+    ∀ n (rec : coPset → expr Λ → ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ)) -n> iProp Σ) 
+      (s : stuckness) (H : coPset) (H0 : expr Λ),
+    (Proper (dist n ==> dist n) (rec H H0)) -> Proper (dist n ==> dist n) (twp_pre s rec H H0).
+  Proof.
+    solve_proper.
+  Qed. *)
+
+  (* Local Existing Instance twp_pre_ne. *)
+
+  Lemma unfold_1 :
+  ∀ (s : stuckness) (H : coPset) (H0 : expr Λ) (H1 : ofe_car (val Λ -d> reverse_coercion (iPropO Σ) (iProp Σ))),
+    twp s H H0 H1 ⊢ twp_pre s (twp s) H H0 H1.
+  Proof.
+    intros.
+    iIntros "HF".
+(*     iApply ("HF" $! (OfeMor (F (bi_least_fixpoint F))) with "[#]"). *)
+
+    notypeclasses refine (tac_forall_specialize _ "HF" _ _ _ _ _ _ _).
+    - pm_reflexivity.
+    - tc_solve.
+    - notypeclasses refine (ex_intro _ (λ x y, @OfeMor _ _ (twp_pre s (twp s) x y) _ ) _ ).
+      Unshelve.
+      2: {
+        Typeclasses eauto := debug.
+        solve_proper.
+      }
+      pm_reduce. 
+      iApply "HF".
+      iModIntro.
+      iIntros (? ? ?) "HY".
+      iApply ((iProper (□> .> .> .> bi_wand ==> .> .> .> bi_wand) (twp_pre _))).
+      + apply twp_pre_mono.
+      + iModIntro.
+        iIntros (? ? ?) "HF".
+        iApply twp_unfold_2.
+        iApply "HF".}
+  Qed.
+
   Check twp.
   Print twp.
   Print twp_pre.
@@ -35,7 +91,7 @@ Section TWP.
   Definition twp' : stuckness -> leibnizO coPset -> expr Λ -> (val Λ -d> iProp Σ) -> iPropI Σ := twp.
 
   Definition twp_pre'' := 
-    λ (s : stuckness) (rec : coPset → expr Λ → (val Λ -d> iProp Σ) -n> iProp Σ) (H : coPset) (H0 : expr Λ) (H1 : val Λ -d> iProp Σ),
+    λ (s : stuckness) (rec : coPset → expr Λ → (val Λ -d> iProp Σ) -> iProp Σ) (H : coPset) (H0 : expr Λ) (H1 : val Λ -d> iProp Σ),
     ((∃ v : val Λ, (|={H}=> H1 v) ∗ ⌜to_val H0 = Some v⌝ ∗ True)
     ∨ (∀ (σ1 : state Λ) (ns : nat) (κs : list (observation Λ)) (nt : nat),
     state_interp σ1 ns κs nt ={H,∅}=∗
@@ -51,7 +107,7 @@ Section TWP.
     (∀ H2 : coPset → expr Λ → (val Λ -d> iProp Σ) -n> iProp Σ,
     □ (∀ (H3 : coPset) (H4 : expr Λ) (H5 : val Λ -d> iProp Σ), twp_pre'' s H2 H3 H4 H5 -∗ H2 H3 H4 H5) -∗ H2 H H0 H1)%I.
 
-  Check twp''.
+  
 
   Global Instance twp_ne s E e n :
     Proper ((dist n) ==> dist n) (twp'' s E e).

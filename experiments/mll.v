@@ -10,6 +10,7 @@ From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
 
 From eIris.proofmode Require Import base reduction inductive intros.
+Import twp.
 
 Section SkipQueue.
   Context `{!heapGS Σ}.
