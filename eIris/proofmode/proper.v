@@ -1,6 +1,6 @@
 Require Import Program.Tactics.
 From stdpp Require Import coPset.
-From iris.bi Require Export bi fixpoint.
+From iris.bi Require Export bi.
 From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 

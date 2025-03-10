@@ -1,6 +1,5 @@
 -arg -w -arg +elpi.typecheck
 -R eIris/ eIris
-# -Q experiments
 
 eIris/proofmode/base.v
 eIris/proofmode/reduction.v
@@ -11,5 +10,5 @@ eIris/proofmode/apply.v
 eIris/proofmode/proper.v
 eIris/proofmode/inductive.v
 
-experiments/twp.v
-# experiments/sets.v
+eIris/experiments/twp.v
+eIris/experiments/mll.v
