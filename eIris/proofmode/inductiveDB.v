@@ -1,4 +1,6 @@
 From elpi Require Import elpi.
+From iris.prelude Require Import options.
+
 
 Elpi Db induction.db lp:{{
   accumulate eIris/common/datatypes.

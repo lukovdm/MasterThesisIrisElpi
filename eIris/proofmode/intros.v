@@ -12,8 +12,6 @@ From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
-From iris.heap_lang Require Import proofmode notation.
-
 Elpi Tactic eiIntros.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.

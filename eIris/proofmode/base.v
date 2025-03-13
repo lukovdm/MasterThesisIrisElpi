@@ -1,6 +1,6 @@
 From iris.proofmode Require Export base environments classes classes_make modality_instances tactics coq_tactics reduction.
 From iris.prelude Require Import options.
-From iris.bi Require Export bi telescopes interface derived_laws.
+From iris.bi Require Import bi telescopes interface derived_laws.
 Import bi.
 Import env_notations.
 
@@ -20,13 +20,12 @@ Global Lemma tac_exist_destruct_without_name {A} Δ i p j P (Φ : A → PROP) (n
         end) →
   envs_entails Δ Q.
 Proof.
-  (* rewrite envs_entails_unseal => ?? HΦ. rewrite envs_lookup_sound //.
+  rewrite envs_entails_unseal => ?? HΦ. rewrite envs_lookup_sound //.
   rewrite (into_exist P) intuitionistically_if_exist sep_exist_r.
-  apply exist_elim=> a; specialize (HΦ a) as Hmatch.
+  apply iris.bi.interface.bi.exist_elim=> a; specialize (HΦ a) as Hmatch.
   destruct (envs_simple_replace _ _ _ _) as [Δ'|] eqn:Hrep; last done.
   rewrite envs_simple_replace_singleton_sound' //; simpl. by rewrite wand_elim_r.
-Qed. *)
-Admitted.
+Qed.
 
 Global Lemma tac_forall_intro_nameless {A} Δ (Φ : A → PROP) Q name :
   FromForall Q Φ name →

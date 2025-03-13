@@ -3,7 +3,6 @@ From iris.proofmode Require Import base environments proofmode tactics coq_tacti
 From iris.prelude Require Import options.
 From iris.bi Require Import  bi.
 From iris.algebra Require Import ofe monoid list.
-From iris.heap_lang Require Import proofmode notation.
 From stdpp Require Import base finite.
 
 From eIris.proofmode Require Export proper.
