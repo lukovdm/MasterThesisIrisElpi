@@ -86,11 +86,11 @@ type-depth _ 0.
 kind hole type.
 type hole term -> term -> hole. % A pair of of Type, Proof
 
-kind ihole type.
-type ihole term -> hole -> ihole. % the anonymous iris hyp counter and the hole
+kind igoal type.
+type igoal term -> hole -> igoal. % the anonymous iris hyp counter and the hole
 
-pred ihole->string i:ihole, o:string.
-ihole->string (ihole N (hole T P)) S :-
+pred igoal->string i:igoal, o:string.
+igoal->string (igoal N (hole T P)) S :-
   S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " (" ^ {std.any->string P} ^ ") : \n" ^ {coq.term->string T}.
 
 % Handle params and remove them when neccesary
