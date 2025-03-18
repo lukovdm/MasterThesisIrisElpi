@@ -139,28 +139,6 @@ do-iModIntro (hole Type Proof) (hole ModType ModProof) :-
   coq.typecheck ModProof ModType ok.
 
 
-pred do-intros-forall i:hole, i:(hole -> prop).
-do-intros-forall (hole (prod N T F) Proof) C :- !,
-  if-debug (coq.say "introducing" N),
-  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
-  if (D = error Msg) 
-    (if-debug (coq.say "Failed to introduce" N "of type" {coq.term->string T} ":" Msg), fail)
-    (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
-  Proof = (fun _ _ IntroFProof),
-  @pi-decl N T x\
-    do-intros-forall (hole (F x) (IntroFProof x)) C.
-do-intros-forall H F :- F H.
-
-pred do-intros-forall-remember i:hole, i:(list term -> hole -> prop).
-do-intros-forall-remember (hole (prod N T F) Proof) C :- !,
-  if-debug (coq.say "introducing and remembering" N),
-  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
-  Proof = (fun _ _ IntroFProof),
-  @pi-decl N T x\
-    do-intros-forall-remember (hole (F x) (IntroFProof x)) (l\ h\ C [x | l] h).
-do-intros-forall-remember H F :- F [] H.
-
-
 pred do-intro i:string, i:hole, i:(hole -> prop).
 do-intro ID (hole Type Proof) C :-
   coq.ltac.collect-goals Proof [G] _,
