@@ -113,3 +113,27 @@ replace-params-ty [(par ID _IK PType C) | Params] Type (prod N PType FType) :-
 
 :before "default-debug-print"
 std.debug-print Msg Data :- if-debug (coq.say Msg Data).
+
+% TODO: use elpi goal
+pred do-intros-forall i:goal, i:(goal -> prop).
+do-intros-forall (goal Ctx _ (prod N T F) Proof _) C :- !,
+  if-debug (coq.say "introducing" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
+  if (D = error Msg) 
+    (if-debug (coq.say "Failed to introduce" N "of type" {coq.term->string T} ":" Msg), fail)
+    (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    do-intros-forall (goal [decl x N T|Ctx] _ (F x) (IntroFProof x) []) C.
+do-intros-forall H F :- F H.
+
+pred do-intros-forall-remember i:goal, i:(list term -> goal -> prop).
+do-intros-forall-remember (goal Ctx _ (prod N T F) Proof _) C :- !,
+  if-debug (coq.say "introducing and remembering" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    do-intros-forall-remember (goal [decl x N T|Ctx] _ (F x) (IntroFProof x) []) (l\ h\ C [x | l] h).
+do-intros-forall-remember H F :- F [] H.
+
+
