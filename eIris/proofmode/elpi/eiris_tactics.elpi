@@ -215,6 +215,10 @@ eiIntro-ident ID _ _ :-
   ident->term ID X _,
   coq.error "eiIntro: " X " could not introduce".
 
+pred eiIntro-fresh i:ihole, o:ihole.
+eiIntro-fresh (ihole N H) IH :-
+  increase-ctx-count N NS,
+  eiIntro-ident (iAnon N) (ihole NS H) IH.
 
 pred eiExFalso i:hole, o:hole.
 eiExFalso (hole Type Proof) (hole FalseType FalseProof) :-
@@ -680,10 +684,9 @@ eiIntros [iDone | IPS] (ihole N (hole Type Proof)) C :-
     ); 
     eiIntros IPS (ihole N (hole Type Proof)) C
   ).
-eiIntros [iFresh | IPS] (ihole N H) C :- !,
-  increase-ctx-count N NS,
-  eiIntro-ident (iAnon N) (ihole NS H) IH, !, 
-  eiIntros IPS IH C.
+eiIntros [iFresh | IPS] IH C :- !,
+  eiIntro-fresh IH IH', !,
+  eiIntros IPS IH' C.
 eiIntros [iDrop | IPS] (ihole N (hole Type Proof)) C :- !,
   (
     (coq.elaborate-skeleton {{ tac_impl_intro_drop _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_impl_intro_drop _ _ _ _ _ lp:IntroProof }});
