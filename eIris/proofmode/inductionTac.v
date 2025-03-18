@@ -22,7 +22,7 @@ Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
  
   pred eiInduction i:ident, i:intro_pat, i:igoal, o:(igoal -> prop).
-  eiInduction ID IP (igoal _ (hole Type _) as IH) C :-
+  eiInduction ID IP (igoal _ Type _ as IH) C :-
     find-hyp ID Type (app [global GREF | Args]),
     inductive-ind GREF INDLem, !,
     if-debug (coq.say "Induction on" INDLem Args),
@@ -31,7 +31,7 @@ Elpi Accumulate lp:{{
     eiInduction.inner ID IP IInd (app [global INDLem]) Args IH C.
 
   pred eiInduction.inner i:ident, i:intro_pat, i:iind, i:term, i:list term, i:igoal, o:(igoal -> prop).
-  eiInduction.inner ID IP (iind NConstr TypeTerm) (app INDLem) Args (igoal _ (hole Type _) as IH) C :-
+  eiInduction.inner ID IP (iind NConstr TypeTerm) (app INDLem) Args (igoal _ Type _ as IH) C :-
     Type = {{ envs_entails _ lp:P }},
     std.map Args (x\r\ sigma N T I\ decl x N T, coq.name->id N I, r = par I _ T x ) Pars, !,
     replace-params-bo Pars P Phi, !,
@@ -42,7 +42,7 @@ Elpi Accumulate lp:{{
     eiApplyLem Lem IH [] [IntroIH, IHyp],
     % Apply induction hyp to goal
     eiApplySimpleExact IHyp ID,
-    if-debug (coq.say "hole left:" {igoal->string IntroIH}),
+    if-debug (coq.say "igoal left:" {igoal->string IntroIH}),
     % Introduce created goal
     std.map {std.iota {type-depth TypeTerm} } (x\r\ r = iPure none) Pures,
     if (IP = iAll) (
@@ -60,11 +60,11 @@ Elpi Accumulate lp:{{
   parse_destruct_args Args _ _ :-
     coq.ltac.fail 0 "Did not recognize arguments" Args.
 
-  solve (goal _ _ Type Proof [str "debug" | Args]) GS :- !,
+  solve (goal _ _ _ Proof [str "debug" | Args] as G) GS :- !,
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
       parse_destruct_args Args ID IP, !,
-      eiStartProof (hole Type Proof) IH, !,
+      eiOfCoqProof G IH, !,
       eiInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
       if-debug (coq.say "Induction done"),
       coq.ltac.collect-goals Proof GL SG, !,
@@ -72,9 +72,9 @@ Elpi Accumulate lp:{{
       all (open show-goal) GL' _, !,
       std.append GL' SG GS
     ).
-  solve (goal _ _ Type Proof Args) GS :-
+  solve (goal _ _ _ Proof Args as G) GS :-
     parse_destruct_args Args ID IP, !,
-    eiStartProof (hole Type Proof) IH, !,
+    eiOfCoqProof G IH, !,
     eiInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
     coq.ltac.collect-goals Proof GL SG,
     all (open pm-reduce-goal) GL GL',

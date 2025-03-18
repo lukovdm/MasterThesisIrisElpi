@@ -47,21 +47,24 @@ find-hyp.aux IDT {{ Esnoc lp:E _ _ }} H :- !,
 
 
 % Start an Iris proof
-pred eiStartProof i:hole, o:igoal.
-eiStartProof (hole {{ let _ := _ in _ }} _) _ :- !,
+pred eiStartProof i:igoal, o:igoal.
+eiStartProof (igoal _ {{ let _ := _ in _ }} _) _ :- !,
   coq.error "iStartProof: goal is a `let`, use `simpl`, `intros x`, `iIntros (x)`, or `iIntros ""%x""".
-eiStartProof (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (igoal N (hole {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof)) :- !.
-eiStartProof (hole Type Proof) (igoal N (hole NType NProof)) :- 
+eiStartProof (igoal _ {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) (igoal N {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:CI lp:CS lp:N) lp:P }} Proof) :- !.
+eiStartProof (igoal _ Type Proof) (igoal N NType NProof) :- 
   std.assert-ok! (coq.elaborate-skeleton {{ as_emp_valid_2 lp:Type _ (tac_start _ _) }} Type Proof) "iStartProof elaborate failed",
   Proof = {{ as_emp_valid_2 _ _ (tac_start _ lp:NProof) }},
   coq.typecheck NProof NType ok,
   NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
 pred eiOfCoqProof i:goal, o:igoal.
-eiOfCoqProof (goal _ _ T P _) IH :- eiStartProof (hole T P) IH.
+eiOfCoqProof (goal _ _ ({{ envs_entails (Envs _ _ lp:N) _}} as T) P _) IH :- eiStartProof (igoal N T P) IH.
 
-pred eiLeft i:hole, o:hole.
-eiLeft (hole Type Proof) (hole LeftType LeftProof) :-
+pred eiOfHole i:term, i:term, o:igoal.
+eiOfHole ({{ envs_entails (Envs _ _ lp:N) _}} as T) P IH :- eiStartProof (igoal N T P) IH.
+
+pred eiLeft i:igoal, o:igoal.
+eiLeft (igoal HC Type Proof) (igoal HC LeftType LeftProof) :-
   (@no-tc! => coq.elaborate-skeleton {{ tac_or_l _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_l _ _ _ _ lp:FromOr lp:LeftProof }},
   coq.ltac.collect-goals FromOr [G1] _,
@@ -69,8 +72,8 @@ eiLeft (hole Type Proof) (hole LeftType LeftProof) :-
   coq.typecheck LeftProof LeftType ok.
 
 
-pred eiRight i:hole, o:hole.
-eiRight (hole Type Proof) (hole RightType RightProof) :-
+pred eiRight i:igoal, o:igoal.
+eiRight (igoal HC Type Proof) (igoal HC RightType RightProof) :-
   (@no-tc! => coq.elaborate-skeleton {{ tac_or_r _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_r _ _ _ _ lp:FromOr lp:RightProof }},
   coq.ltac.collect-goals FromOr [G1] _,
@@ -78,8 +81,8 @@ eiRight (hole Type Proof) (hole RightType RightProof) :-
   coq.typecheck RightProof RightType ok.
 
 
-pred eiSplit i:bool, i:list ident, i:hole, o:hole, o:hole.
-eiSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
+pred eiSplit i:bool, i:list ident, i:igoal, o:igoal, o:igoal.
+eiSplit IsLeft Hyps (igoal HC Type Proof) (igoal HC LType LProof) (igoal HC RType RProof) :-
   if (IsLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
   std.map Hyps (x\r\ ident->term x _ r) HypsT,
   list->listterm HypsT ListT,
@@ -98,8 +101,8 @@ eiSplit IsLeft Hyps (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
   pm-reduce RType' RType.
  
 
-pred eiAndSplit i:hole, o:hole, o:hole.
-eiAndSplit (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
+pred eiAndSplit i:igoal, o:igoal, o:igoal.
+eiAndSplit (igoal HC Type Proof) (igoal HC LType LProof) (igoal HC RType RProof) :-
   (@no-tc! => coq.elaborate-skeleton {{ tac_and_split _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_and_split _ _ _ _ lp:FromAnd lp:LProof lp:RProof }},
   coq.ltac.collect-goals FromAnd [G1] _,
@@ -108,8 +111,8 @@ eiAndSplit (hole Type Proof) (hole LType LProof) (hole RType RProof) :-
   coq.typecheck RProof RType ok.
 
 
-pred eiEvalIn i:ident, i:hole, o:igoal, o:hole.
-eiEvalIn ID (hole Type Proof) IH (hole EvalType EvalProof) :-
+pred eiEvalIn i:ident, i:igoal, o:igoal, o:igoal.
+eiEvalIn ID (igoal HC Type Proof) IH (igoal HC EvalType EvalProof) :-
   ident->term ID _ T,
   pm-reduce Type Type',
   (@no-tc! => coq.elaborate-skeleton {{ tac_eval_in _ lp:T _ _ _ _ _ _ _ }} Type' Proof ok),
@@ -118,13 +121,13 @@ eiEvalIn ID (hole Type Proof) IH (hole EvalType EvalProof) :-
   open pm_reflexivity G1 [],
   coq.typecheck StartProof StartType' ok,
   pm-reduce StartType' StartType,
-  eiStartProof (hole StartType StartProof) IH,
+  eiStartProof (igoal HC StartType StartProof) IH,
   coq.typecheck EvalProof EvalType' ok,
   pm-reduce EvalType' EvalType.
 
 % Introduce a mod
-pred eiModIntro i:hole, o:hole.
-eiModIntro (hole Type Proof) (hole ModType ModProof) :-
+pred eiModIntro i:igoal, o:igoal.
+eiModIntro (igoal HC Type Proof) (igoal HC ModType ModProof) :-
   (@no-tc! => coq.elaborate-skeleton {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_modal_intro _ _ _ _ _ _ _ _ _ _ _ lp:TC1 lp:TC2 lp:TC3 lp:PM4 lp:SC5 lp:ModProof }},
   coq.ltac.collect-goals TC1 [G1] _,
@@ -141,8 +144,8 @@ eiModIntro (hole Type Proof) (hole ModType ModProof) :-
   coq.typecheck ModProof ModType ok.
 
 
-pred eintro i:string, i:hole, i:(hole -> prop).
-eintro ID (hole Type Proof) C :-
+pred eintro i:string, i:igoal, i:(igoal -> prop).
+eintro ID (igoal HC Type Proof) C :-
   coq.ltac.collect-goals Proof [G] _,
   open (g\gl\ std.assert! (coq.ltac.id-free? ID g) "eiIntro: name already taken") G _,
   coq.id->name ID N,
@@ -150,11 +153,11 @@ eintro ID (hole Type Proof) C :-
   Proof = (fun _ T IntroFProof),
   @pi-decl N T x\ 
     coq.typecheck (IntroFProof x) (F x) ok,
-    C (hole (F x) (IntroFProof x)).
+    C (igoal HC (F x) (IntroFProof x)).
 
 
-pred eintro-anon i:hole, i:(hole -> prop).
-eintro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
+pred eintro-anon i:igoal, i:(igoal -> prop).
+eintro-anon  (igoal HC (prod N' Ty _ as Type) Proof) C :-
   coq.name->id N' S,
   coq.ltac.fresh-id S Ty ID,
   coq.id->name ID N,
@@ -162,10 +165,10 @@ eintro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
   Proof = (fun _ T IntroFProof),
   @pi-decl N T x\  
     coq.typecheck (IntroFProof x) (F x) ok,
-    C (hole (F x) (IntroFProof x)).
+    C (igoal HC (F x) (IntroFProof x)).
 
-pred eintros-forall i:hole, i:(hole -> prop).
-eintros-forall (hole (prod N T F) Proof) C :- !,
+pred eintros-forall i:igoal, i:(igoal -> prop).
+eintros-forall (igoal HC (prod N T F) Proof) C :- !,
   if-debug (coq.say "introducing" N),
   coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
   if (D = error Msg) 
@@ -173,40 +176,40 @@ eintros-forall (hole (prod N T F) Proof) C :- !,
     (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
   Proof = (fun _ _ IntroFProof),
   @pi-decl N T x\
-    eintros-forall (hole (F x) (IntroFProof x)) C.
+    eintros-forall (igoal HC (F x) (IntroFProof x)) C.
 eintros-forall H F :- F H.
 
-pred eintros-forall-remember i:hole, i:(list term -> hole -> prop).
-eintros-forall-remember (hole (prod N T F) Proof) C :- !,
+pred eintros-forall-remember i:igoal, i:(list term -> igoal -> prop).
+eintros-forall-remember (igoal HC (prod N T F) Proof) C :- !,
   if-debug (coq.say "introducing and remembering" N),
   coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
   Proof = (fun _ _ IntroFProof),
   @pi-decl N T x\
-    eintros-forall-remember (hole (F x) (IntroFProof x)) (l\ h\ C [x | l] h).
+    eintros-forall-remember (igoal HC (F x) (IntroFProof x)) (l\ h\ C [x | l] h).
 eintros-forall-remember H F :- F [] H.
 
-pred eintro-anon-external-hint i:string, i:hole, i:(hole -> prop).
-eintro-anon-external-hint S (hole (prod _ Ty _ as Type) Proof) C :-
+pred eintro-anon-external-hint i:string, i:igoal, i:(igoal -> prop).
+eintro-anon-external-hint S (igoal HC (prod _ Ty _ as Type) Proof) C :-
   coq.ltac.fresh-id S Ty ID,
   coq.id->name ID N,
   coq.elaborate-skeleton (fun N _ _) Type Proof ok,
   Proof = (fun _ T IntroFProof),
   @pi-decl N T x\  
     coq.typecheck (IntroFProof x) (F x) ok,
-    C (hole (F x) (IntroFProof x)).
+    C (igoal HC (F x) (IntroFProof x)).
 
-pred refine-igoal-with i:term, i:hole.
-refine-igoal-with T (hole Ty P) :-
+pred refine-igoal-with i:term, i:igoal.
+refine-igoal-with T (igoal _ Ty P) :-
   coq.elaborate-skeleton T Ty P ok, T = P.
 
 pred eiIntro-ident i:ident, i:igoal, o:igoal.
-eiIntro-ident ID (igoal N H) (igoal N (hole IType IProof)) :-
+eiIntro-ident ID (igoal N _ _ as H) (igoal N IType IProof) :-
   ident->term ID X T,
   refine-igoal-with {{ tac_impl_intro _ lp:T _ _ _ _ _ _ lp:IProof }} H, !,
   coq.typecheck IProof IType' ok,
   pm-reduce IType' IType,
   if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
-eiIntro-ident ID (igoal N H) (igoal N (hole IType Proof1)) :-
+eiIntro-ident ID (igoal N _ _ as H) (igoal N IType Proof1) :-
   ident->term ID IDStr T, % data conversion
   refine-igoal-with {{ tac_wand_intro _ lp:T _ _ _ _ lp:Proof1 }} H, !, % partial proof 
   coq.typecheck Proof1 IType' ok, % inspect subgoal
@@ -217,19 +220,19 @@ eiIntro-ident ID _ _ :-
   coq.error "eiIntro: " X " could not introduce".
 
 pred eiIntro-fresh i:igoal, o:igoal.
-eiIntro-fresh (igoal N H) IH :-
+eiIntro-fresh (igoal N T P) IH :-
   increase-ctx-count N NS, % increase fresh name counter
-  eiIntro-ident (iAnon N) (igoal NS H) IH.
+  eiIntro-ident (iAnon N) (igoal NS T P) IH.
 
-pred eiExFalso i:hole, o:hole.
-eiExFalso (hole Type Proof) (hole FalseType FalseProof) :-
+pred eiExFalso i:igoal, o:igoal.
+eiExFalso (igoal HC Type Proof) (igoal HC FalseType FalseProof) :-
   coq.elaborate-skeleton {{ tac_ex_falso _ _ _ }} Type Proof ok,
   Proof = {{ tac_ex_falso _ _ lp:FalseProof }},
   coq.typecheck FalseProof FalseType ok.
 
 
-pred eiClear i:ident, i:hole, o:hole.
-eiClear ID (hole Type Proof) (hole ClearType ClearProof) :-
+pred eiClear i:ident, i:igoal, o:igoal.
+eiClear ID (igoal HC Type Proof) (igoal HC ClearType ClearProof) :-
   ident->term ID IDS IDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_clear _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
@@ -251,8 +254,8 @@ eiClear ID (hole Type Proof) (hole ClearType ClearProof) :-
   % I am skipping the simpl here, and hope it doesn't matter as much.
 
 
-pred eiPure i:ident, i:option string, i:hole, i:(hole -> prop).
-eiPure ID PID (hole Type Proof) C :-
+pred eiPure i:ident, i:option string, i:igoal, i:(igoal -> prop).
+eiPure ID PID (igoal HC Type Proof) C :-
   ident->term ID IDS IDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_pure _ lp:IDT _ _ _ _ _ _ _ _ }} Type Proof ok),
@@ -275,16 +278,16 @@ eiPure ID PID (hole Type Proof) C :-
   pm-reduce IntroType IntroType',
   ((
     PID = some SID, 
-    eintro SID (hole IntroType' IntroProof) C
+    eintro SID (igoal HC IntroType' IntroProof) C
   );
   (
     PID = none,
-    eintro-anon (hole IntroType' IntroProof) C
+    eintro-anon (igoal HC IntroType' IntroProof) C
   )).
 
 
-pred eiPoseLem i:term, i:igoal, o:ident, i:list (hole -> prop), o:igoal.
-eiPoseLem Lem (igoal N (hole Type Proof)) (iAnon N) Cs (igoal NS (hole PosedType PosedProof)) :-
+pred eiPoseLem i:term, i:igoal, o:ident, i:list (igoal -> prop), o:igoal.
+eiPoseLem Lem (igoal N Type Proof) (iAnon N) Cs (igoal NS PosedType PosedProof) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT, !,
 
@@ -298,7 +301,7 @@ eiPoseLem Lem (igoal N (hole Type Proof)) (iAnon N) Cs (igoal NS (hole PosedType
   open (coq.ltac.call "iIntoEmpValid" []) G1 GL,
   forall2-flex GL Cs (sg\ c\ open (g\gl\ sigma Proof'\ sigma Type'\ 
                                   g = (goal _ _ Type' Proof' _), !,
-                                  c (hole Type' Proof')
+                                  c (igoal NS Type' Proof')
                     ) sg _),
 
   coq.typecheck PosedProof NormType ok,
@@ -306,7 +309,7 @@ eiPoseLem Lem (igoal N (hole Type Proof)) (iAnon N) Cs (igoal NS (hole PosedType
 
 
 pred eiPoseHyp i:term, i:igoal, o:ident, o:igoal.
-eiPoseHyp Hyp (igoal N (hole Type Proof)) (iAnon N) (igoal NS (hole PosedType PosedProof)) :-
+eiPoseHyp Hyp (igoal N Type Proof) (iAnon N) (igoal NS PosedType PosedProof) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
   (@no-tc! => coq.elaborate-skeleton 
@@ -320,8 +323,8 @@ eiPoseHyp Hyp (igoal N (hole Type Proof)) (iAnon N) (igoal NS (hole PosedType Po
 
 
 pred eiSpecializeWand i:igoal, i:ident, o:igoal, o:igoal.
-eiSpecializeWand (igoal N (hole Type Proof)) ID 
-  (igoal N (hole LType LProof)) (igoal N (hole RType RProof)) :-
+eiSpecializeWand (igoal N Type Proof) ID 
+  (igoal N LType LProof) (igoal N RType RProof) :-
     ident->term ID _IDS IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
                 Type Proof ok),
@@ -343,7 +346,7 @@ eiSpecializeWand (igoal N (hole Type Proof)) ID
 
 
 pred eiSpecializeForall i:igoal, i:ident, i:term, o:igoal.
-eiSpecializeForall (igoal N (hole Type Proof)) ID Arg (igoal N (hole SType SProof)) :- 
+eiSpecializeForall (igoal N Type Proof) ID Arg (igoal N SType SProof) :- 
     ident->term ID _IDS IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_forall_specialize _ lp:IDT _ _ _ _ _ _ _ }} 
                 Type Proof D),
@@ -366,7 +369,7 @@ eiSpecializeForall (igoal N (hole Type Proof)) ID Arg (igoal N (hole SType SProo
 
 
 pred eiApplySimpleHyp i:igoal, i:ident, o:igoal.
-eiApplySimpleHyp (igoal N (hole Type Proof)) ID (igoal N (hole ApType ApProof)) :-
+eiApplySimpleHyp (igoal N Type Proof) ID (igoal N ApType ApProof) :-
   ident->term ID _IDS IDT,
   (@no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply hyp failed" D), fail),
@@ -380,7 +383,7 @@ eiApplySimpleHyp (igoal N (hole Type Proof)) ID (igoal N (hole ApType ApProof)) 
 
 
 pred eiApplySimpleExact i:igoal, i:ident.
-eiApplySimpleExact (igoal _ (hole Type Proof)) ID :-
+eiApplySimpleExact (igoal _ Type Proof) ID :-
   ident->term ID _IDS IDT,
   (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply exact failed" D), fail),
@@ -394,7 +397,7 @@ eiApplySimpleExact (igoal _ (hole Type Proof)) ID :-
   open tc_solve G3' [].
 
 
-pred eiApplyLem i:term, i:igoal, i:list (hole -> prop), o:list igoal.
+pred eiApplyLem i:term, i:igoal, i:list (igoal -> prop), o:list igoal.
 eiApplyLem Lem IH Cs IHS :-
   if-debug (coq.say "eiApplyLem" {coq.term->string Lem}),
   eiPoseLem Lem IH ID Cs IHPosed, !,
@@ -431,8 +434,8 @@ eiApplyHyp.aux IH ID [IHL | IHS] :-
   eiApplyHyp.aux IHR ID IHS.
 
 
-pred eiIntuitionistic i:ident, i:hole, o:hole.
-eiIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
+pred eiIntuitionistic i:ident, i:igoal, o:igoal.
+eiIntuitionistic ID (igoal HC Type Proof) (igoal HC IntType IntProof) :-
   ident->term ID X T,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }} Type Proof ok),
@@ -448,7 +451,7 @@ eiIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
   pm-reduce RedType IntType,
   if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " X " not fresh") (true).
 
-eiIntuitionistic ID (hole Type Proof) (hole IntType IntProof) :-
+eiIntuitionistic ID (igoal HC Type Proof) (igoal HC IntType IntProof) :-
   ident->term ID X T,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok),
@@ -471,8 +474,8 @@ eiIntuitionistic ID _ _ :- !,
   coq.error {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
 
 
-pred eiAndDestruct i:ident, i:ident, i:ident, i:hole, o:hole.
-eiAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
+pred eiAndDestruct i:ident, i:ident, i:ident, i:igoal, o:igoal.
+eiAndDestruct HID H1ID H2ID (igoal HC Type Proof) (igoal HC AndType AndProof) :-
   ident->term HID ID HIDT,
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
@@ -496,8 +499,8 @@ eiAndDestruct HID H1ID H2ID (hole Type Proof) (hole AndType AndProof) :-
   if (AndType = {{ False }}) (coq.error "iAndDestruct: left or right not fresh") (true).
 
 
-pred eiAndChoiceDestruct i:ident, i:ident, i:bool, i:hole, o:hole.
-eiAndChoiceDestruct ID OID ChooseLeft (hole Type Proof) (hole AndType AndProof) :-
+pred eiAndChoiceDestruct i:ident, i:ident, i:bool, i:igoal, o:igoal.
+eiAndChoiceDestruct ID OID ChooseLeft (igoal HC Type Proof) (igoal HC AndType AndProof) :-
   ident->term ID X IDT,
   ident->term OID OX OIDT,
 
@@ -522,8 +525,8 @@ eiAndChoiceDestruct ID OID ChooseLeft (hole Type Proof) (hole AndType AndProof) 
   if (AndType = {{ False }}) (coq.error "iAndChoiceDestruct: " OX " not fresh") (true).
 
 
-pred eiOrDestruct i:ident, i:ident, i:ident, i:hole, o:hole, o:hole.
-eiOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrRType OrRProof) :-
+pred eiOrDestruct i:ident, i:ident, i:ident, i:igoal, o:igoal, o:igoal.
+eiOrDestruct HID H1ID H2ID (igoal HC Type Proof) (igoal HC OrLType OrLProof) (igoal HC OrRType OrRProof) :-
   ident->term HID ID HIDT,
   ident->term H1ID _ H1IDT,
   ident->term H2ID _ H2IDT,
@@ -550,8 +553,8 @@ eiOrDestruct HID H1ID H2ID (hole Type Proof) (hole OrLType OrLProof) (hole OrRTy
 macro @set-bt-error! B :- (get-option "bt-error" BT_FAIL_VAL :- !, BT_FAIL_VAL = B).
 macro @bt-error! B :- get-option "bt-error" B.
 
-pred eiExistDestruct i:ident, i:option string, i:ident, i:hole, i:(hole -> prop).
-eiExistDestruct ID X HID (hole Type Proof) C :- !,
+pred eiExistDestruct i:ident, i:option string, i:ident, i:igoal, i:(igoal -> prop).
+eiExistDestruct ID X HID (igoal HC Type Proof) C :- !,
   ident->term ID _ IDT,
   ident->term HID _ HIDT,
 
@@ -570,18 +573,18 @@ eiExistDestruct ID X HID (hole Type Proof) C :- !,
   coq.typecheck ExistProof RedType ok,
   pm-reduce RedType ExistType,
   if (X = some XN) 
-    (eintro XN (hole ExistType ExistProof) C)
+    (eintro XN (igoal HC ExistType ExistProof) C)
     (
       Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ lp:NameT _ _ _ _ }},
       NameT = (fun Name _ _),
       coq.name->id Name S,
       if (rex.match "^elpi_ctx_entry_" S) (S' = "a") (S = S'), 
-      eintro-anon-external-hint S' (hole ExistType ExistProof) C
+      eintro-anon-external-hint S' (igoal HC ExistType ExistProof) C
     ).
 
 
-pred eiExact i:ident, i:hole.
-eiExact ID (hole Type Proof) :-
+pred eiExact i:ident, i:igoal.
+eiExact ID (igoal _ Type Proof) :-
   ident->term ID IDS IDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
@@ -607,52 +610,52 @@ eiDestruct ID IP _ _ :- if-debug (coq.say "eiDestruct: " ID IP), fail.
 eiDestruct ID (iList [[IP]]) IH C :- !, eiDestruct ID IP IH C.
 eiDestruct ID (iIdent ID) IH C :- !, C IH.
 eiDestruct (iAnon _) iFresh IH C :- !, C IH.
-eiDestruct ID iDrop (igoal N H) C :- !, eiClear ID H H', C (igoal N H').
-eiDestruct ID (iPure PID) (igoal N H) C :- !, eiPure ID PID H (h\ C (igoal N h)).
-eiDestruct ID (iList [[]]) (igoal _ H) _ :-
+eiDestruct ID iDrop H C :- !, eiClear ID H H', C H'.
+eiDestruct ID (iPure PID) H C :- !, eiPure ID PID H C.
+eiDestruct ID (iList [[]]) H _ :-
   eiExFalso H H',
   eiExact ID H'.
 eiDestruct ID (iList [[iForall | IPSS]]) IH C :-
   @set-bt-error! ff => eiDestruct ID (iList [[iPure none, iForall | IPSS]]) IH C.
 eiDestruct ID (iList [[iForall | IPSS]]) IH C :- !,
   @set-bt-error! tt => eiDestruct ID (iList [IPSS]) IH C.
-eiDestruct ID (iAll) (igoal N (hole Type Proof)) C :-
+eiDestruct ID (iAll) (igoal N Type Proof) C :-
   find-hyp ID Type (app [global GREF | _]),
   inductive-unfold GREF _ _ _ NConstr, !,
   std.map {std.iota NConstr} (x\r\ r = [iFresh]) IPSS,
-  eiDestruct ID (iList IPSS) (igoal N (hole Type Proof)) C.
-eiDestruct ID (iList IPSS) (igoal N (hole Type Proof)) C :-
+  eiDestruct ID (iList IPSS) (igoal N Type Proof) C.
+eiDestruct ID (iList IPSS) (igoal N Type Proof) C :-
   find-hyp ID Type (app [global GREF | _]),
   inductive-unfold GREF U1 _ _ NConstr, !,
   if-debug (coq.say "Destructing ind" {coq.term->string (global GREF)} NConstr),
-  eiEvalIn ID (hole Type Proof) IH H,
+  eiEvalIn ID (igoal N Type Proof) IH H,
   eiApplyLem (global U1) IH [] [],
-  eiDestruct ID (iList IPSS) (igoal N H) C.
-eiDestruct ID (iList [[iPure PN, IP | IPS]]) (igoal N H) C :- !,
+  eiDestruct ID (iList IPSS) H C.
+eiDestruct ID (iList [[iPure PN, IP | IPS]]) (igoal N T P) C :- !,
   ident-for-pat.default IP ID N HID NS,
-  eiExistDestruct ID PN HID H (h\ eiDestruct HID (iList [[IP | IPS]]) (igoal NS h) C).
+  eiExistDestruct ID PN HID (igoal NS T P) (h\ eiDestruct HID (iList [[IP | IPS]]) h C).
   % This case now also handles the pure and exists case with typeclasses,
   % however, that is not neccessary as we can just backtrack in here
   % And take the next case if iExistsDestruct fails.
-eiDestruct ID (iList [[IP, iDrop]]) (igoal N H) C :- !,
+eiDestruct ID (iList [[IP, iDrop]]) (igoal N T P) C :- !,
   ident-for-pat.default IP ID N HID N',
-  eiAndChoiceDestruct ID HID tt H H', !,
-  eiDestruct HID IP (igoal N' H') C.
-eiDestruct ID (iList [[iDrop, IP]]) (igoal N H) C :- !,
+  eiAndChoiceDestruct ID HID tt (igoal N' T P) H', !,
+  eiDestruct HID IP H' C.
+eiDestruct ID (iList [[iDrop, IP]]) (igoal N T P) C :- !,
   ident-for-pat.default IP ID N HID N',
-  eiAndChoiceDestruct ID HID ff H H', !,
-  eiDestruct HID IP (igoal N' H') C.
-eiDestruct ID (iList [[IP1, IP2 | IPSS]]) (igoal N H) C :-
+  eiAndChoiceDestruct ID HID ff (igoal N' T P) H', !,
+  eiDestruct HID IP H' C.
+eiDestruct ID (iList [[IP1, IP2 | IPSS]]) (igoal N T P) C :-
   ident-for-pat.default IP1 ID N ID1 N',
   ident-for-pat IP2 N' ID2 N'',
-  eiAndDestruct ID ID1 ID2 H H', !,
-  eiDestruct ID1 IP1 (igoal N'' H') (ih\ eiDestruct ID2 (iList [[IP2 | IPSS]]) ih C).
-eiDestruct ID (iList [IPSL, IPSR | IPSS]) (igoal N H) C :-
+  eiAndDestruct ID ID1 ID2 (igoal N'' T P) H', !,
+  eiDestruct ID1 IP1 H' (ih\ eiDestruct ID2 (iList [[IP2 | IPSS]]) ih C).
+eiDestruct ID (iList [IPSL, IPSR | IPSS]) (igoal N T P) C :-
   ident-for-pat.default (iList [IPSL]) ID N ID1 N',
   ident-for-pat (iList [IPSR]) N' ID2 N'',
-  eiOrDestruct ID ID1 ID2 H HL HR, !,
-  eiDestruct ID1 (iList [IPSL]) (igoal N'' HL) C, !,
-  eiDestruct ID2 (iList [IPSR | IPSS]) (igoal N'' HR) C.
+  eiOrDestruct ID ID1 ID2 (igoal N'' T P) HL HR, !,
+  eiDestruct ID1 (iList [IPSL]) HL C, !,
+  eiDestruct ID2 (iList [IPSR | IPSS]) HR C.
 eiDestruct _ IP IH C :-
   coq.say "eiDestruct: Skipping " {std.any->string IP}, !,
   C IH.
@@ -660,22 +663,22 @@ eiDestruct _ IP IH C :-
 pred eiIntros i:(list intro_pat), i:igoal, i:(igoal -> prop).
 eiIntros [IP | _] IH _ :- if-debug (coq.say "eiIntros: " IP "in" {igoal->string IH}), fail.
 eiIntros [] IH C :- !, if-debug (coq.say "eiIntros done" {igoal->string IH}), C IH.
-eiIntros [iCoqIntro X | IPS] (igoal N (hole _ Proof)) C :-
+eiIntros [iCoqIntro X | IPS] (igoal N _ Proof) C :-
   coq.ltac.collect-goals Proof [G] _,
   open (coq.ltac.call-ltac1 X) G [GTac], !,
   open (g\gl\ sigma TacProof TacType\ 
           g = (goal _ _ TacType TacProof _), !,
-          eiIntros IPS (igoal N (hole TacType TacProof)) C
+          eiIntros IPS (igoal N TacType TacProof) C
        ) GTac _.
-eiIntros [iSimpl | IPS] (igoal N (hole _ Proof)) C :-
+eiIntros [iSimpl | IPS] (igoal N _ Proof) C :-
   coq.ltac.collect-goals Proof [G] _,
   open pm-reduce-goal G [G'], !,
   open simpl G' [G''], !,
   open (g\gl\ sigma SimplProof SimplType\ 
           g = (goal _ _ SimplType SimplProof _), !,
-          eiIntros IPS (igoal N (hole SimplType SimplProof)) C
+          eiIntros IPS (igoal N SimplType SimplProof) C
        ) G'' _.
-eiIntros [iDone | IPS] (igoal N (hole Type Proof)) C :-
+eiIntros [iDone | IPS] (igoal N Type Proof) C :-
   ((
     coq.ltac.collect-goals Proof [G] _,
     open pm-reduce-goal G [G'], !,
@@ -683,12 +686,12 @@ eiIntros [iDone | IPS] (igoal N (hole Type Proof)) C :-
     open done G' [],
     if-debug (coq.say "done succeeded")
     ); 
-    eiIntros IPS (igoal N (hole Type Proof)) C
+    eiIntros IPS (igoal N Type Proof) C
   ).
 eiIntros [iFresh | IPS] IH C :- !,
   eiIntro-fresh IH IH', !,
   eiIntros IPS IH' C.
-eiIntros [iDrop | IPS] (igoal N (hole Type Proof)) C :- !,
+eiIntros [iDrop | IPS] (igoal N Type Proof) C :- !,
   (
     (coq.elaborate-skeleton {{ tac_impl_intro_drop _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_impl_intro_drop _ _ _ _ _ lp:IntroProof }});
     (coq.elaborate-skeleton {{ tac_wand_intro_drop _ _ _ _ _ _ _ }} Type Proof ok, Proof = {{ tac_wand_intro_drop _ _ _ _ _ _ lp:IntroProof }});
@@ -696,57 +699,57 @@ eiIntros [iDrop | IPS] (igoal N (hole Type Proof)) C :- !,
     (!, coq.error "eiIntro: Could not introduce", fail)
   ),
   coq.typecheck IntroProof IntroType ok, !,
-  eiIntros IPS (igoal N (hole IntroType IntroProof)) C.
-eiIntros [iPure (some X) | IPS] (igoal N (hole Type Proof)) C :-
+  eiIntros IPS (igoal N IntroType IntroProof) C.
+eiIntros [iPure (some X) | IPS] (igoal N Type Proof) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
   coq.typecheck IProof IType ok, !,
-  eintro X (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
-    h = hole IntroType IntroProof,
+  eintro X (igoal N IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType NS\
+    h = igoal NS IntroType IntroProof,
     coq.reduction.lazy.bi-norm IntroType NormType, !,
-    eiIntros IPS (igoal N (hole NormType IntroProof)) C
+    eiIntros IPS (igoal NS NormType IntroProof) C
   ).
-eiIntros [iPure (none) | IPS] (igoal N (hole Type Proof)) C :-
+eiIntros [iPure (none) | IPS] (igoal N Type Proof) C :-
   coq.elaborate-skeleton {{ tac_forall_intro_nameless _ _ _ _ _ _ }} Type Proof ok,
   Proof = {{ tac_forall_intro_nameless _ _ _ _ _ lp:IProof }},
   coq.typecheck IProof IType ok, !,
-  eintro-anon (hole IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType\
-    h = hole IntroType IntroProof,
+  eintro-anon (igoal N IType IProof) (h\ sigma IntroProof\ sigma IntroType\ sigma NormType NS\
+    h = igoal NS IntroType IntroProof,
     coq.reduction.lazy.bi-norm IntroType NormType, !,
-    eiIntros IPS (igoal N (hole NormType IntroProof)) C
+    eiIntros IPS (igoal NS NormType IntroProof) C
   ).
   % coq.ltac.collect-goals IProof [G] _,
   % open (coq.ltac.call "intros_anon" []) G [G'],
   % open (g\gl\ sigma AnonRedType\ sigma AnonType\ sigma AnonProof\ 
   %           g = (goal _ _ AnonRedType AnonProof _), 
   %           coq.reduction.lazy.bi-norm AnonRedType AnonType, !,
-  %           eiIntros IPS (igoal N (hole AnonType AnonProof)) C
+  %           eiIntros IPS (igoal N AnonType AnonProof) C
   %       ) G' _.
 eiIntros [iIdent ID | IPS] IH C :-
   eiIntro-ident ID IH IH', !,
   eiIntros IPS IH' C.
-eiIntros [iModalIntro | IPS] (igoal N H) C :- !,
+eiIntros [iModalIntro | IPS] H C :- !,
   eiModIntro H H', !,
-  eiIntros IPS (igoal N H') C.
+  eiIntros IPS H' C.
 eiIntros [iHyp H | IPS] IH C :-
   eiApplyHyp H IH IHS, !,
   std.forall IHS (ih\ eiIntros IPS ih C).
-eiIntros [iIntuitionistic iFresh | IPS] (igoal N H) C :- !,
+eiIntros [iIntuitionistic iFresh | IPS] (igoal N T P) C :- !,
   increase-ctx-count N NS,
-  eiIntuitionistic (iAnon N) H H', !,
-  eiIntros IPS (igoal NS H') C.
-eiIntros [iIntuitionistic (iIdent ID) | IPS] (igoal N H) C :-
+  eiIntuitionistic (iAnon N) (igoal NS T P) H', !,
+  eiIntros IPS H' C.
+eiIntros [iIntuitionistic (iIdent ID) | IPS] H C :-
   eiIntuitionistic ID H H', !,
-  eiIntros IPS (igoal N H') C.
-eiIntros [iIntuitionistic (iList IPS) | IPSS] (igoal N H) C :-
+  eiIntros IPS H' C.
+eiIntros [iIntuitionistic (iList IPS) | IPSS] (igoal N T P) C :-
   increase-ctx-count N NS,
-  eiIntuitionistic (iAnon N) H H', !,
-  eiDestruct (iAnon N) (iList IPS) (igoal NS H') (ih\ !, eiIntros IPSS ih C).
-eiIntros [iList IPS | IPSS] (igoal N H) C :- !,
+  eiIntuitionistic (iAnon N) (igoal NS T P) H', !,
+  eiDestruct (iAnon N) (iList IPS) H' (ih\ !, eiIntros IPSS ih C).
+eiIntros [iList IPS | IPSS] (igoal N T P) C :- !,
   increase-ctx-count N NS,
-  eiIntro-ident (iAnon N) (igoal NS H) IH, !,
+  eiIntro-ident (iAnon N) (igoal NS T P) IH, !,
   eiDestruct (iAnon N) (iList IPS) IH (ih'\ !,
     eiIntros IPSS ih' C
   ).
 % eiIntros IPS IH _ :-
-%   coq.error "Failed to apply" IPS "in hole" {igoal->string IH}.
+%   coq.error "Failed to apply" IPS "in igoal" {igoal->string IH}.
