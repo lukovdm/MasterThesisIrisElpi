@@ -104,11 +104,15 @@ esteps.do IH _ _ _ :-
 esteps.do _ T F _ :- !,
   if-debug (coq.say "No case for relation" T "with " F "😢 stopping").
 
-pred esolve-proper i:hole.
-esolve-proper (hole Type Proof) :-
-  unfold-id "IProper" Type UnfoldedType',
-  coq.typecheck Proof UnfoldedType' ok,
-  eintros-forall (hole UnfoldedType' Proof) (h\ sigma IH\
-    eiStartProof h IH,
+pred eiunfold-id i:id, i:goal, o:goal.
+eiunfold-id ID (goal Ctx R T P A) (goal Ctx R T' P A) :-
+  unfold-id ID T T',
+  coq.typecheck P T' ok.
+
+pred esolve-proper i:goal, o:list sealed-goal.
+esolve-proper G [] :-
+  eiunfold-id "IProper" G G',
+  ltac.intros-forall G' (h\ sigma IH\
+    eiOfCoqProof h IH,
     esteps IH
   ).
