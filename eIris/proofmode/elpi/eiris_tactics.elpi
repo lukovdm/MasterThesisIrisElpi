@@ -60,9 +60,6 @@ eiStartProof (igoal _ Type Proof) (igoal N NType NProof) :-
 pred eiOfCoqProof i:goal, o:igoal.
 eiOfCoqProof (goal _ _ T P _) IH :- eiStartProof (igoal _ T P) IH.
 
-pred eiOfHole i:term, i:term, o:igoal.
-eiOfHole ({{ envs_entails (Envs _ _ lp:N) _}} as T) P IH :- eiStartProof (igoal N T P) IH.
-
 pred eiLeft i:igoal, o:igoal.
 eiLeft (igoal HC Type Proof) (igoal HC LeftType LeftProof) :-
   (@no-tc! => coq.elaborate-skeleton {{ tac_or_l _ _ _ _ _ _ }} Type Proof ok),
