@@ -57,6 +57,8 @@ eiStartProof (hole Type Proof) (ihole N (hole NType NProof)) :-
   coq.typecheck NProof NType ok,
   NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
+pred eiOfCoqProof i:goal, o:ihole.
+eiOfCoqProof (goal _ _ T P _) IH :- eiStartProof (hole T P) IH.
 
 pred eiLeft i:hole, o:hole.
 eiLeft (hole Type Proof) (hole LeftType LeftProof) :-
@@ -162,6 +164,26 @@ eintro-anon  (hole (prod N' Ty _ as Type) Proof) C :-
     coq.typecheck (IntroFProof x) (F x) ok,
     C (hole (F x) (IntroFProof x)).
 
+pred eintros-forall i:hole, i:(hole -> prop).
+eintros-forall (hole (prod N T F) Proof) C :- !,
+  if-debug (coq.say "introducing" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
+  if (D = error Msg) 
+    (if-debug (coq.say "Failed to introduce" N "of type" {coq.term->string T} ":" Msg), fail)
+    (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    eintros-forall (hole (F x) (IntroFProof x)) C.
+eintros-forall H F :- F H.
+
+pred eintros-forall-remember i:hole, i:(list term -> hole -> prop).
+eintros-forall-remember (hole (prod N T F) Proof) C :- !,
+  if-debug (coq.say "introducing and remembering" N),
+  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
+  Proof = (fun _ _ IntroFProof),
+  @pi-decl N T x\
+    eintros-forall-remember (hole (F x) (IntroFProof x)) (l\ h\ C [x | l] h).
+eintros-forall-remember H F :- F [] H.
 
 pred eintro-anon-external-hint i:string, i:hole, i:(hole -> prop).
 eintro-anon-external-hint S (hole (prod _ Ty _ as Type) Proof) C :-

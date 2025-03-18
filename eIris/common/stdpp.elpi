@@ -115,8 +115,8 @@ replace-params-ty [(par ID _IK PType C) | Params] Type (prod N PType FType) :-
 std.debug-print Msg Data :- if-debug (coq.say Msg Data).
 
 % TODO: use elpi goal
-pred eintros-forall i:goal, i:(goal -> prop).
-eintros-forall (goal Ctx _ (prod N T F) Proof _) C :- !,
+pred ltac.intros-forall i:goal, i:(goal -> prop).
+ltac.intros-forall (goal Ctx _ (prod N T F) Proof _) C :- !,
   if-debug (coq.say "introducing" N),
   coq.elaborate-skeleton (fun N T _) (prod N T F) Proof D,
   if (D = error Msg) 
@@ -124,16 +124,5 @@ eintros-forall (goal Ctx _ (prod N T F) Proof _) C :- !,
     (if-debug (coq.say "Introduced" N "of type" {coq.term->string T} ":" {coq.term->string Proof}), true),
   Proof = (fun _ _ IntroFProof),
   @pi-decl N T x\
-    eintros-forall (goal [decl x N T|Ctx] _ (F x) (IntroFProof x) []) C.
-eintros-forall H F :- F H.
-
-pred eintros-forall-remember i:goal, i:(list term -> goal -> prop).
-eintros-forall-remember (goal Ctx _ (prod N T F) Proof _) C :- !,
-  if-debug (coq.say "introducing and remembering" N),
-  coq.elaborate-skeleton (fun N T _) (prod N T F) Proof ok,
-  Proof = (fun _ _ IntroFProof),
-  @pi-decl N T x\
-    eintros-forall-remember (goal [decl x N T|Ctx] _ (F x) (IntroFProof x) []) (l\ h\ C [x | l] h).
-eintros-forall-remember H F :- F [] H.
-
-
+    ltac.intros-forall (goal [decl x N T|Ctx] _ (F x) (IntroFProof x) []) C.
+ltac.intros-forall H F :- F H.

@@ -15,7 +15,8 @@ mk-proper Params F Type EBo :-
 pred proper-proof i:term, o:term.
 proper-proof Proper Proof :-
   coq.typecheck Proof Proper ok,
-  esolve-proper (hole Proper Proof).
+  coq.ltac.collect-goals Proof [G] _,
+  coq.ltac.open esolve-proper G [].
 
 
 pred mk-ne-sig i:term, i:term, o:term.
