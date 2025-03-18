@@ -7,8 +7,6 @@ From eIris.proofmode Require Import base reduction inductiveDB.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
-From iris.heap_lang Require Import proofmode.
-
 Elpi Tactic eiApply.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.

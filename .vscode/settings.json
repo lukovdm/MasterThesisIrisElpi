@@ -1,6 +1,4 @@
 {
-  "coqtop.coqidetopExe": "/home/luko/.opam/iris-dev/bin/coqidetop.opt",
-  "coqtop.coqtopExe": "/home/luko/.opam/iris-dev/bin/coqtop",
   "todo-tree.filtering.includeGlobs": [
     "**/*.v",
     "**/*.elpi"
@@ -917,7 +915,7 @@
   ],
   "explorer.excludeGitIgnore": true,
   "makefile.configureOnOpen": false,
-  "vscoq.path": "/home/luko/.opam/elpi-better/bin/vscoqtop",
+  "vscoq.path": "/home/luko/.opam/stable-iris/bin/vscoqtop",
   "github.copilot.enable": {
     "elpi": false
   },

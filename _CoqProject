@@ -6,10 +6,10 @@ eIris/proofmode/base.v
 eIris/proofmode/reduction.v
 eIris/proofmode/inductiveDB.v
 eIris/proofmode/startProof.v
-eIris/proofmode/intros.v
+eIris/proofmode/tactics.v
 eIris/proofmode/apply.v
 eIris/proofmode/proper.v
 eIris/proofmode/inductive.v
+eIris/proofmode/inductionTac.v
 
 eIris/experiments/twp.v
-eIris/experiments/mll.v

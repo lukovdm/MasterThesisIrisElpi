@@ -13,6 +13,7 @@ From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
 From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
+From eIris.proofmode.elpi Extra Dependency "inductive_rules.elpi" as inductive_rules.
 
 #[arguments(raw)] 
 Elpi Command EI.ind.
@@ -20,10 +21,7 @@ Elpi Accumulate File datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.
-(* Elpi Query lp:{{
-  coq.say {{{{ ∀ n (rec : lp:_NEType), lp:{{ F {{ n }} {{ rec }} }} }}}},
-  coq.say F.
-}}. *)
+Elpi Accumulate File inductive_rules.
 Elpi Accumulate lp:{{
   pred create-iInductive i:list param, i:indt-decl, o:gref, o:iind.
   create-iInductive Params' (inductive Name _In-Or-Co Arity Constructors) (const Fix) (iind NConstr TypeTerm) :-
@@ -36,7 +34,7 @@ Elpi Accumulate lp:{{
     std.assert-ok! (coq.elaborate-skeleton TypeTerm' {{ Type }} TypeTerm) "Type elaboration failed",
     if-debug (coq.say "------ With NE type" { coq.term->string NETypeTerm } " and type" { coq.term->string TypeTerm }),
 
-    mk-constr-body Params TypeTerm Constructors NConstr BIConstructors EBo Ty,
+    mk-pre-fixpoint Params TypeTerm Constructors NConstr BIConstructors EBo Ty,
     if-debug (coq.say "------ typed body" { coq.term->string EBo }),
     coq.env.add-const {calc (Name ^ "_pre")} EBo Ty ff C,
     if-debug (coq.say "const" C),!,

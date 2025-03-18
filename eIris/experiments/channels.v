@@ -5,28 +5,23 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 
 Section Channels.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l nl tl lh lt : loc.
 
-
-  Local Definition tag_nil : Z := 0.
-  Local Definition tag_cons : Z := 1.
-  Local Definition tag_link : Z := 2.
-
   (* #[debug] *)
   EI.ind
-  Inductive is_queue : loc → loc → list val → iProp :=
-      | nill_is_queue l : l ↦ #tag_nil -∗ is_queue l l []
-      | cons_is_queue v vs l nl tl : 
-          l ↦ #tag_cons -∗ (l +ₗ 1) ↦ v -∗ (l +ₗ 2) ↦ #nl -∗ 
-          is_queue nl tl vs -∗ is_queue l tl (v :: vs)
-      | link_is_queue vs l nl tl : 
-          l ↦ #tag_cons -∗ (l +ₗ 2) ↦ #nl -∗ 
-          is_queue nl tl vs -∗ is_queue l tl vs.
+  Inductive is_queue (tl : loc) : loc → list val → iProp :=
+      | nill_is_queue : tl ↦ NONEV -∗ is_queue tl tl []
+      | cons_is_queue v vs l nl : 
+          l ↦ SOMEV (#1, v, #nl) -∗ 
+          is_queue tl nl vs -∗ is_queue tl l (v :: vs)
+      | link_is_queue vs l nl : 
+          l ↦ SOMEV (#2, NONEV, #nl) -∗ 
+          is_queue tl nl vs -∗ is_queue tl l vs.
 
   Print is_queue_pre.
 

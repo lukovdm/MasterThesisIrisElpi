@@ -5,8 +5,7 @@ From iris.program_logic Require Export weakestpre.
 From iris.prelude Require Import options.
 Import uPred.
 
-
-From eIris.proofmode Require Import base inductive intros.
+From eIris.proofmode Require Import base inductive tactics inductionTac.
 
 EI.ind
 Inductive twp `{!irisGS_gen hlc Λ Σ} (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
@@ -22,7 +21,7 @@ Inductive twp `{!irisGS_gen hlc Λ Σ} (s : stuckness) : coPset -> expr Λ -> (v
                         -∗ ⌜to_val e1 = None⌝ 
                         -∗ twp s E e1 Φ.
 
-Arguments twp {hlc Λ Σ irisGS_gen0} s _ _%_expr_scope _%_function_scope.
+Global Arguments twp {hlc Λ Σ irisGS_gen0} s _ _%_expr_scope _%_function_scope.
 
 Global Instance twp_ne' `{!irisGS_gen hlc Λ Σ} s E e n :
   Proper (pointwise_relation _ (dist n) ==> dist n) (twp s E e).
@@ -84,7 +83,7 @@ Section twp.
   Proof.
     iIntros (? HE) "H HΦ".
     iRevert (E2 Ψ HE) "HΦ".
-    eiInduction "H" as "[* IH %Htv | * IH %Htv]". try iIntros (E2 Ψ HE) "HΦ"; 
+    eiInduction "H" as "[* IH %Htv | * IH %Htv]"; try iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
     - solve_proper.
     - iApply twp_some.
