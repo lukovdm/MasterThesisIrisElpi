@@ -18,14 +18,14 @@ Elpi Accumulate lp:{{
   go-iApply [str Hyp] H GL' :-
     eiStartProof H IH, !,
     eiApplyHyp Hyp IH IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 
   go-iApply [trm Lem] H GL' :-
     eiStartProof H IH, !,
     eiApplyLem Lem IH [] IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 

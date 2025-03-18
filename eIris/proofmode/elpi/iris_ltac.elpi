@@ -45,8 +45,8 @@ set-ctx-count
 set-ctx-count T N _ :-
   coq.error "set-ctx-count: type not of shape envs entails: " N T.
 
-pred set-ctx-count-proof i:ihole, o:ihole.
-set-ctx-count-proof (ihole N (hole Type Proof)) (ihole N (hole IncType IncProof)) :-
+pred set-ctx-count-proof i:igoal, o:igoal.
+set-ctx-count-proof (igoal N (hole Type Proof)) (igoal N (hole IncType IncProof)) :-
   set-ctx-count Type N IncType,
   coq.elaborate-skeleton {{ _ : lp:IncType }} Type Proof ok,
   Proof = {{ lp:IncProof : _ }}.

@@ -5,8 +5,8 @@ accumulate eIris/proofmode/elpi/eiris_tactics.
 
 shorten coq.ltac.{ open, thenl, all }.
 
-pred eiPoseProper i:ihole, i:term, i:term, o:ident, o:ihole.
-eiPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+pred eiPoseProper i:igoal, i:term, i:term, o:ident, o:igoal.
+eiPoseProper (igoal N (hole Type Proof)) R F (iAnon N) (igoal NS (hole PosedType PosedProof)) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
   (@no-tc! => coq.elaborate-skeleton 
@@ -21,11 +21,11 @@ eiPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType
   coq.typecheck PosedProof NormType ok,
   pm-reduce NormType PosedType.
 
-pred eiApplyProper i:ihole, i:term, i:term, o:list ihole.
+pred eiApplyProper i:igoal, i:term, i:term, o:list igoal.
 eiApplyProper IH R F IHS :-
   if-debug (coq.say "eiApplyProper"),
   eiPoseProper IH R F ID IHPosed,
-  if-debug (coq.say "Posed Lemma" {ihole->string IHPosed}),
+  if-debug (coq.say "Posed Lemma" {igoal->string IHPosed}),
   eiApplyProper.aux IHPosed ID IHS.
 eiApplyProper.aux IH ID [IH'] :- 
   if-debug (coq.say "simpleApplyHyp"),
@@ -36,7 +36,7 @@ eiApplyProper.aux IH ID [] :-
 eiApplyProper.aux IH ID [IHL | IHS] :-
   if-debug (coq.say "specialize"),
   eiSpecializeWand IH ID IHL IHR,
-  if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
+  if-debug (coq.say "Specialized Lemma" {igoal->string IHL} {igoal->string IHR}),
   eiApplyProper.aux IHR ID IHS.
 
 pred unfold-id i:string, i:term, o:term.
@@ -50,9 +50,9 @@ unfold-gref (const IP) I O :-
   ((copy (global (const IP)) Bo :- !) => copy I I'),
   coq.reduction.lazy.bi-norm I' O.
 
-pred esteps i:ihole.
-esteps (ihole _ (hole Type _) as IH) :-
-  if-debug (coq.say "================= Goal =================" {ihole->string IH} ""),
+pred esteps i:igoal.
+esteps (igoal _ (hole Type _) as IH) :-
+  if-debug (coq.say "================= Goal =================" {igoal->string IH} ""),
   esteps.conn Type R LF RF, !,
   esteps.do IH R LF RF.
 
@@ -68,17 +68,17 @@ pred relation-on i:term, o:term, o:term.
 relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :- 
   std.take-last 2 AS [L, R].
 
-pred esteps.do i:ihole, i:term, i:term, i:term.
+pred esteps.do i:igoal, i:term, i:term, i:term.
 esteps.do IH {{ @iRespectful _ }} _ _ :- !,
   if-debug (coq.say "==>"),
   eiIntros [iPure (none), iPure (none), iIntuitionistic iFresh] IH esteps.
 esteps.do IH {{ @iPointwise_relation _ }} _ _ :- !,
   if-debug (coq.say ".>"), !,
   eiIntros [iPure (none)] IH esteps.
-esteps.do (ihole N H) {{ @iPersistent_relation _ }} _ _ :- !,
+esteps.do (igoal N H) {{ @iPersistent_relation _ }} _ _ :- !,
   if-debug (coq.say "□>"),
   eiModIntro H ModH, !,
-  esteps (ihole N ModH).
+  esteps (igoal N ModH).
 esteps.do IH _ F F :-
   if-debug (coq.say "Applying wand identity" {coq.term->string F}),
   eiIntros [iFresh, iDone] IH (_\ if-debug (coq.say "done failed"), fail).
@@ -90,14 +90,14 @@ esteps.do IH R (app [F | FS]) _ :-
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
   eiApplyProper IH R (app [F | FS']) HS, !,
   std.map HS (x\r\ esteps x) _.
-esteps.do (ihole N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
+esteps.do (igoal N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (ihole N (hole UnfoldedType Proof)).
-esteps.do (ihole N (hole Type Proof)) _ (global (const F)) _ :-
+  esteps (igoal N (hole UnfoldedType Proof)).
+esteps.do (igoal N (hole Type Proof)) _ (global (const F)) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (ihole N (hole UnfoldedType Proof)).
+  esteps (igoal N (hole UnfoldedType Proof)).
 esteps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
   eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
