@@ -33,8 +33,8 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
       parse_args Args IPS, !,
-      do-iStartProof (hole Type Proof) IH, !,
-      do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+      eiStartProof (hole Type Proof) IH, !,
+      eiIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
       coq.ltac.collect-goals Proof GL SG,
       all (open show-goal) GL _,
       all (open pm-reduce-goal) GL GL', !,
@@ -43,8 +43,8 @@ Elpi Accumulate lp:{{
     ).
   solve (goal _ _ Type Proof Args) GS :-
     parse_args Args IPS, !,
-    do-iStartProof (hole Type Proof) IH, !,
-    do-iIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+    eiStartProof (hole Type Proof) IH, !,
+    eiIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
     coq.ltac.collect-goals Proof GL SG,
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
@@ -68,8 +68,8 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
       parse_destruct_args Args ID IP, !,
-      do-iStartProof (hole Type Proof) IH, !,
-      do-iDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
+      eiStartProof (hole Type Proof) IH, !,
+      eiDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
       coq.ltac.collect-goals Proof GL SG,
       all (open pm-reduce-goal) GL GL',
       all (open show-goal) GL' _,
@@ -77,8 +77,8 @@ Elpi Accumulate lp:{{
     ).
   solve (goal _ _ Type Proof Args) GS :-
     parse_destruct_args Args ID IP, !,
-    do-iStartProof (hole Type Proof) IH, !,
-    do-iDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
+    eiStartProof (hole Type Proof) IH, !,
+    eiDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
     coq.ltac.collect-goals Proof GL SG,
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.
