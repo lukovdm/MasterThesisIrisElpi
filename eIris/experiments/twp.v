@@ -6,7 +6,7 @@ From iris.prelude Require Import options.
 Import uPred.
 
 From eIris.proofmode Require Import base inductive tactics inductionTac.
-
+#[debug]
 EI.ind
 Inductive twp `{!irisGS_gen hlc Λ Σ} (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
   | twp_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ

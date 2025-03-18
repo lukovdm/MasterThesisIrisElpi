@@ -58,7 +58,7 @@ eiStartProof (igoal _ Type Proof) (igoal N NType NProof) :-
   NType = {{ envs_entails (Envs _ _ lp:N) _}}.
 
 pred eiOfCoqProof i:goal, o:igoal.
-eiOfCoqProof (goal _ _ ({{ envs_entails (Envs _ _ lp:N) _}} as T) P _) IH :- eiStartProof (igoal N T P) IH.
+eiOfCoqProof (goal _ _ T P _) IH :- eiStartProof (igoal _ T P) IH.
 
 pred eiOfHole i:term, i:term, o:igoal.
 eiOfHole ({{ envs_entails (Envs _ _ lp:N) _}} as T) P IH :- eiStartProof (igoal N T P) IH.
@@ -103,10 +103,17 @@ eiSplit IsLeft Hyps (igoal HC Type Proof) (igoal HC LType LProof) (igoal HC RTyp
 
 pred eiAndSplit i:igoal, o:igoal, o:igoal.
 eiAndSplit (igoal HC Type Proof) (igoal HC LType LProof) (igoal HC RType RProof) :-
+  if-debug (coq.say "x1" {coq.term->string Type}),
   (@no-tc! => coq.elaborate-skeleton {{ tac_and_split _ _ _ _ _ _ _ }} Type Proof ok),
+  if-debug (coq.say "x2" {coq.term->string Proof}),
   Proof = {{ tac_and_split _ _ _ _ lp:FromAnd lp:LProof lp:RProof }},
+  if-debug (coq.say "x3"),
+    coq.typecheck FromAnd XX ok,
+
   coq.ltac.collect-goals FromAnd [G1] _,
+  if-debug (coq.say "x4" {coq.term->string XX} G1),
   open tc_solve G1 [],
+  if-debug (coq.say "x5"),
   coq.typecheck LProof LType ok,
   coq.typecheck RProof RType ok.
 
@@ -177,7 +184,9 @@ eintros-forall (igoal HC (prod N T F) Proof) C :- !,
   Proof = (fun _ _ IntroFProof),
   @pi-decl N T x\
     eintros-forall (igoal HC (F x) (IntroFProof x)) C.
-eintros-forall H F :- F H.
+eintros-forall H F :-
+  if-debug (coq.say "Caling K on" {igoal->string H}),
+  F H.
 
 pred eintros-forall-remember i:igoal, i:(list term -> igoal -> prop).
 eintros-forall-remember (igoal HC (prod N T F) Proof) C :- !,
