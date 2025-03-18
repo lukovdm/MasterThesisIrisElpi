@@ -6,7 +6,7 @@ accumulate eIris/proofmode/elpi/eiris_tactics.
 shorten coq.ltac.{ open, thenl, all }.
 
 pred eiPoseProper i:igoal, i:term, i:term, o:ident, o:igoal.
-eiPoseProper (igoal N (hole Type Proof)) R F (iAnon N) (igoal NS (hole PosedType PosedProof)) :-
+eiPoseProper (igoal N Type Proof) R F (iAnon N) (igoal NS PosedType PosedProof) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
   (@no-tc! => coq.elaborate-skeleton 
@@ -51,7 +51,7 @@ unfold-gref (const IP) I O :-
   coq.reduction.lazy.bi-norm I' O.
 
 pred esteps i:igoal.
-esteps (igoal _ (hole Type _) as IH) :-
+esteps (igoal _ Type _ as IH) :-
   if-debug (coq.say "================= Goal =================" {igoal->string IH} ""),
   esteps.conn Type R LF RF, !,
   esteps.do IH R LF RF.
@@ -75,10 +75,10 @@ esteps.do IH {{ @iRespectful _ }} _ _ :- !,
 esteps.do IH {{ @iPointwise_relation _ }} _ _ :- !,
   if-debug (coq.say ".>"), !,
   eiIntros [iPure (none)] IH esteps.
-esteps.do (igoal N H) {{ @iPersistent_relation _ }} _ _ :- !,
+esteps.do H {{ @iPersistent_relation _ }} _ _ :- !,
   if-debug (coq.say "□>"),
   eiModIntro H ModH, !,
-  esteps (igoal N ModH).
+  esteps ModH.
 esteps.do IH _ F F :-
   if-debug (coq.say "Applying wand identity" {coq.term->string F}),
   eiIntros [iFresh, iDone] IH (_\ if-debug (coq.say "done failed"), fail).
@@ -90,14 +90,14 @@ esteps.do IH R (app [F | FS]) _ :-
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
   eiApplyProper IH R (app [F | FS']) HS, !,
   std.map HS (x\r\ esteps x) _.
-esteps.do (igoal N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
+esteps.do (igoal N Type Proof) _ (app [global (const F) | _ ]) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (igoal N (hole UnfoldedType Proof)).
-esteps.do (igoal N (hole Type Proof)) _ (global (const F)) _ :-
+  esteps (igoal N UnfoldedType Proof).
+esteps.do (igoal N Type Proof) _ (global (const F)) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (igoal N (hole UnfoldedType Proof)).
+  esteps (igoal N UnfoldedType Proof).
 esteps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
   eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).

@@ -10,8 +10,8 @@ Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
-  solve (goal _ _ Type Proof _) _ :-
-    eiStartProof (hole Type Proof) _.
+  solve G _ :-
+    eiStartProof {eiOfCoqProof G} _.
 }}.
 
 Tactic Notation "eiStartProof" :=
