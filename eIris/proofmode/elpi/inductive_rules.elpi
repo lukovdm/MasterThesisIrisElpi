@@ -240,7 +240,8 @@ mk-unfold.proof Ps Unfold1 Unfold2 IH :-
   eintros-forall IH (mk-unfold.proof-1 Ps Unfold1 Unfold2).
 
 pred mk-unfold.proof-1 i:int, i:term, i:term, i:igoal.
-mk-unfold.proof-1 Ps Unfold1 Unfold2 H :-
+mk-unfold.proof-1 Ps Unfold1 Unfold2 H0 :-
+  eiStartProof H0 H,
   if-debug (coq.say "Started proof" {igoal->string H}),
   eiAndSplit H H1 H2,
   if-debug (coq.say "H1:" {igoal->string H1}),
@@ -321,7 +322,7 @@ pred mk-constr-lem i:list param, i:term, i:(term -> list indc-decl), i:term, i:t
 mk-constr-lem Params Unfold2 Constructors PreBody Fix Type Nth Total ConstrLem :-
   mk-constr-lem.toproof Params PreBody Fix Type Nth Total [] [] ConstrType,
   if-debug (coq.say "----- Constr Lemma" { coq.term->string ConstrType } ),
-  mk-constr-lem.proof Unfold2 {std.length Params} Nth Total {eiOfHole ConstrType ConstrProof},
+  mk-constr-lem.proof Unfold2 {std.length Params} Nth Total (igoal {{ 1%positive }} ConstrType ConstrProof),
   
   std.nth Nth (Constructors Fix) (constructor Name _),
   coq.env.add-const Name ConstrProof ConstrType ff ConstrLem.
