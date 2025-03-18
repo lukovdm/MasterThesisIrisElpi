@@ -21,17 +21,17 @@ Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
  
-  pred do-iInduction i:ident, i:intro_pat, i:ihole, o:(ihole -> prop).
-  do-iInduction ID IP (ihole _ (hole Type _) as IH) C :-
+  pred eiInduction i:ident, i:intro_pat, i:ihole, o:(ihole -> prop).
+  eiInduction ID IP (ihole _ (hole Type _) as IH) C :-
     find-hyp ID Type (app [global GREF | Args]),
     inductive-ind GREF INDLem, !,
     if-debug (coq.say "Induction on" INDLem Args),
     inductive-type GREF IInd, !,
     if-debug (coq.say "with Type" IInd),
-    do-iInduction.inner ID IP IInd (app [global INDLem]) Args IH C.
+    eiInduction.inner ID IP IInd (app [global INDLem]) Args IH C.
 
-  pred do-iInduction.inner i:ident, i:intro_pat, i:iind, i:term, i:list term, i:ihole, o:(ihole -> prop).
-  do-iInduction.inner ID IP (iind NConstr TypeTerm) (app INDLem) Args (ihole _ (hole Type _) as IH) C :-
+  pred eiInduction.inner i:ident, i:intro_pat, i:iind, i:term, i:list term, i:ihole, o:(ihole -> prop).
+  eiInduction.inner ID IP (iind NConstr TypeTerm) (app INDLem) Args (ihole _ (hole Type _) as IH) C :-
     Type = {{ envs_entails _ lp:P }},
     std.map Args (x\r\ sigma N T I\ decl x N T, coq.name->id N I, r = par I _ T x ) Pars, !,
     replace-params-bo Pars P Phi, !,
@@ -39,18 +39,18 @@ Elpi Accumulate lp:{{
     Lem = app {std.append INDLem [Phi]},
     if-debug (coq.say "Lem to apply" {coq.term->string Lem}),
     % Apply induction lemma
-    do-iApplyLem Lem IH [] [IntroIH, IHyp],
+    eiApplyLem Lem IH [] [IntroIH, IHyp],
     % Apply induction hyp to goal
-    do-iApplySimpleExact IHyp ID,
+    eiApplySimpleExact IHyp ID,
     if-debug (coq.say "hole left:" {ihole->string IntroIH}),
     % Introduce created goal
     std.map {std.iota {type-depth TypeTerm} } (x\r\ r = iPure none) Pures,
     if (IP = iAll) (
         IP' = iList {std.map {std.iota NConstr} (x\r\ r = [iFresh])}
       ) (IP' = IP),
-    do-iIntros {std.append [iModalIntro| Pures] [IP']} IntroIH C.
-  do-iInduction.inner HID IP (iind_param _ _ IND) (app INDLem) [A | Args] IH C :-
-    pi p\ do-iInduction.inner HID IP (IND p) (app {std.append INDLem [A]}) Args IH C.
+    eiIntros {std.append [iModalIntro| Pures] [IP']} IntroIH C.
+  eiInduction.inner HID IP (iind_param _ _ IND) (app INDLem) [A | Args] IH C :-
+    pi p\ eiInduction.inner HID IP (IND p) (app {std.append INDLem [A]}) Args IH C.
 
 
   pred parse_destruct_args i:list argument, o:ident, o:intro_pat.
@@ -64,8 +64,8 @@ Elpi Accumulate lp:{{
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
       parse_destruct_args Args ID IP, !,
-      do-iStartProof (hole Type Proof) IH, !,
-      do-iInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
+      eiStartProof (hole Type Proof) IH, !,
+      eiInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
       if-debug (coq.say "Induction done"),
       coq.ltac.collect-goals Proof GL SG, !,
       all (open pm-reduce-goal) GL GL', !,
@@ -74,8 +74,8 @@ Elpi Accumulate lp:{{
     ).
   solve (goal _ _ Type Proof Args) GS :-
     parse_destruct_args Args ID IP, !,
-    do-iStartProof (hole Type Proof) IH, !,
-    do-iInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
+    eiStartProof (hole Type Proof) IH, !,
+    eiInduction ID IP IH (ih\ set-ctx-count-proof ih _), !,
     coq.ltac.collect-goals Proof GL SG,
     all (open pm-reduce-goal) GL GL',
     std.append GL' SG GS.

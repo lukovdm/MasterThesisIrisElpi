@@ -16,15 +16,15 @@ Elpi Accumulate lp:{{
 
   pred go-iApply i:list argument, i:hole, o:list sealed-goal.
   go-iApply [str Hyp] H GL' :-
-    do-iStartProof H IH, !,
-    do-iApplyHyp Hyp IH IHS, !,
+    eiStartProof H IH, !,
+    eiApplyHyp Hyp IH IHS, !,
     std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 
   go-iApply [trm Lem] H GL' :-
-    do-iStartProof H IH, !,
-    do-iApplyLem Lem IH [] IHS, !,
+    eiStartProof H IH, !,
+    eiApplyLem Lem IH [] IHS, !,
     std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
