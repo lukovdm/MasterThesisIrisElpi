@@ -227,15 +227,17 @@ mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type NEType (igoal HC ToProof Pro
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making Unfold1 type ("{coq.term->string ToProofNoParams}":Type):" Msg), fail) 
     (if-debug (coq.say "Proving Unfold1:" {coq.term->string ToProofNoParams})), !,
+  HC = {{ 1%positive }},
   mk-unfold-1.proof Params {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (igoal HC ToProofNoParams ProofNoPramas),
   replace-params-ty Params ToProofNoParams ToProof,!,
   replace-params-bo Params ProofNoPramas Proof,
-  if-debug (coq.say "unfold 1 done").
+  if-debug (coq.say "unfold 1 done"). % {igoal->string (igoal HC ToProof Proof)}).
 
 
 pred mk-unfold.proof i:int, i:term, i:term, i:igoal.
-mk-unfold.proof Ps Unfold1 Unfold2 (igoal HC Type Proof) :-
-  eintros-forall (igoal HC Type Proof) (mk-unfold.proof-1 Ps Unfold1 Unfold2).
+mk-unfold.proof Ps Unfold1 Unfold2 IH :-
+  if-debug (coq.say "mk-unfold.proof:" {igoal->string IH}),
+  eintros-forall IH (mk-unfold.proof-1 Ps Unfold1 Unfold2).
 
 pred mk-unfold.proof-1 i:int, i:term, i:term, i:igoal.
 mk-unfold.proof-1 Ps Unfold1 Unfold2 H :-
@@ -287,8 +289,8 @@ mk-constr-lem.toproof [] PreBody Fix _ Nth Total PsRev XsRev {{ lp:Constr -∗ l
   FixTerm = app {std.append [Fix | Ps] Xs}.
 
 pred mk-constr-lem.proof i:term, i:int, i:int, i:int, i:igoal.
-mk-constr-lem.proof Unfold2 Ps Nth Total (igoal HC Type Proof) :-
-  eintros-forall (igoal HC Type Proof) (mk-constr-lem.proof-1 Unfold2 Ps Nth Total).
+mk-constr-lem.proof Unfold2 Ps Nth Total IH :-
+  eintros-forall IH (mk-constr-lem.proof-1 Unfold2 Ps Nth Total).
 
 pred mk-constr-lem.proof-1 i:term, i:int, i:int, i:int, i:igoal.
 mk-constr-lem.proof-1 Unfold2 Ps Nth Total H :-
