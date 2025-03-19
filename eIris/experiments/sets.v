@@ -19,6 +19,7 @@ Section BinarySearchTree.
   Notation iProp := (iProp Σ).
   Implicit Types l tl tr ll lr : loc.
   Implicit Types n : Z.
+  Open Scope Z_scope.
 
   Local Definition LEAF : val := NONEV.
   Local Definition NODE (v : val) : val := SOMEV v.
@@ -30,8 +31,8 @@ Section BinarySearchTree.
       l ↦ NODE (#n, #ll, #lr) -∗ 
       is_search_tree ll Xl -∗ 
       is_search_tree lr Xr -∗
-      ⌜set_Forall (λ (n':Z), (n' < n)%Z) Xl⌝ -∗ 
-      ⌜set_Forall (λ (n':Z), (n < n')%Z) Xr⌝ -∗
+      ⌜set_Forall (λ n', n' < n) Xl⌝ -∗ 
+      ⌜set_Forall (λ n', n < n') Xr⌝ -∗
       is_search_tree l ({[ n ]} ∪ Xl ∪ Xr).
 
 End BinarySearchTree.
