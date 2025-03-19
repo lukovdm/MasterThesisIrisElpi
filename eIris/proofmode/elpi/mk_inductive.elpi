@@ -56,10 +56,10 @@ mk-constr-body-disj FType Constructors NConstr BIConstructors ConstrBo :-
   if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms pre elaboration" {std.map (ConstrBiTerms f) coq.term->string})),
   % Create constructors for later use in induction.
   (@pi-decl N FType f\ std.map2 (Constructors f) (ConstrBiTerms f)
-                 (x\ y\ r\ sigma ID M Y\ x = constructor ID _,
+                 (x\ y\ r\ sigma ID Y M\ x = constructor ID _,
                                        M is "eIris Failed elaborating constructor " ^ ID,
                                        (@reversible! => @primitive! => std.assert-ok! (coq.elaborate-skeleton y _ Y) M), 
-                                       r = constructor ID (arity y))
+                                       r = constructor ID (arity Y))
                  (BIConstructors f)),
   if-debug ((@pi-decl N FType f\ coq.say "------ Constructor Bi Terms", print-contructors (BIConstructors f))),
   % connect constructors with bi_or's

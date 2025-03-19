@@ -19,8 +19,7 @@ Section Channels.
   Iris Inductive is_queue (tl : loc) : loc → list val → iProp :=
       | nill_is_queue : tl ↦ NIL -∗ is_queue tl tl []
       | cons_is_queue v vs l nl : 
-          l ↦ CONS (v, #nl) -∗ 
-          is_queue tl nl vs -∗ is_queue tl l (v :: vs)
+          l ↦ CONS (v, #nl) -∗ is_queue tl nl vs -∗ is_queue tl l (v :: vs)
       | link_is_queue vs l nl : 
           l ↦ LINK nl -∗ 
           is_queue tl nl vs -∗ is_queue tl l vs.
