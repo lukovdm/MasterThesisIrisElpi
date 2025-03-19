@@ -16,8 +16,6 @@ Section Channels.
   Local Definition CONS (v:val) : val := SOMEV (#0, v).
   Local Definition LINK (l:loc) : val := SOMEV (#1, #l).
 
-  (* Elpi Trace 37078 999999 / "-trace-only" "unif". *)
-  #[debug]
   Iris Inductive is_queue (tl : loc) : loc → list val → iProp :=
       | nill_is_queue : tl ↦ NIL -∗ is_queue tl tl []
       | cons_is_queue v vs l nl : 
