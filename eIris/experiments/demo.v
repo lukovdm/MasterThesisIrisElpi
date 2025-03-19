@@ -2,22 +2,18 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 
 Section MLL.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_MLL : val → list val → iProp :=
+  Iris Inductive is_MLL : val → list val → iProp :=
     | empty_is_MLL : is_MLL NONEV []
     | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
     | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-  Print is_MLL.
-  Print is_MLL_pre.
-  Check is_MLL_ind.
     
   Definition MLL_delete : val :=
     rec: "MLL_delete" "l" "i" :=
@@ -40,7 +36,7 @@ Section MLL.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha %Ha'| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
+    iInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_pures.
       iModIntro.
@@ -53,9 +49,8 @@ Section MLL.
       wp_apply "IH" as "?".
       iApply "Hphi".
       iApply mark_is_MLL.
-      iExists _, _, _, _.
-      iFrame.
-      iSplit; done.
+      iExists _, _, _.
+      by iFrame.
     - wp_rec.
       wp_load.
       wp_pures.
@@ -66,7 +61,7 @@ Section MLL.
         iModIntro.
         iApply "Hphi".
         iApply mark_is_MLL.
-        iExists _, _, _, _.
+        iExists _, _, _.
         iFrame.
         iDestruct "IH" as "[_ IH]".
         by iFrame.

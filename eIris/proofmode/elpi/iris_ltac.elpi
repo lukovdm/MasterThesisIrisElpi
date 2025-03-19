@@ -24,6 +24,9 @@ split G GL :- coq.ltac.call "split" [] G GL.
 type done open-tactic.
 done G GL :- coq.ltac.call "done" [] G GL.
 
+type pm-reduce-done open-tactic.
+pm-reduce-done G GL :- coq.ltac.call "pm_reduce_done" [] G GL.
+
 type solve_proper_ltac open-tactic.
 solve_proper_ltac G GL :- coq.ltac.call "solve_proper" [] G GL.
 
@@ -45,8 +48,8 @@ set-ctx-count
 set-ctx-count T N _ :-
   coq.error "set-ctx-count: type not of shape envs entails: " N T.
 
-pred set-ctx-count-proof i:ihole, o:ihole.
-set-ctx-count-proof (ihole N (hole Type Proof)) (ihole N (hole IncType IncProof)) :-
+pred set-ctx-count-proof i:igoal, o:igoal.
+set-ctx-count-proof (igoal N Type Proof) (igoal N IncType IncProof) :-
   set-ctx-count Type N IncType,
   coq.elaborate-skeleton {{ _ : lp:IncType }} Type Proof ok,
   Proof = {{ lp:IncProof : _ }}.

@@ -7,8 +7,7 @@ Import uPred.
 
 From eIris.proofmode Require Import base inductive tactics inductionTac.
 
-EI.ind
-Inductive twp `{!irisGS_gen hlc Λ Σ} (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
+Iris Inductive twp `{!irisGS_gen hlc Λ Σ} (s : stuckness) : coPset -> expr Λ -> (val Λ -d> iProp Σ) -n> iProp Σ :=
   | twp_some E v e1 Φ : (|={E}=> Φ v) -∗ ⌜to_val e1 = Some v⌝ -∗ twp s E e1 Φ
   | twp_none E e1 Φ : (∀ σ1 ns κs nt,
                         state_interp σ1 ns κs nt ={E,∅}=∗
@@ -83,7 +82,7 @@ Section twp.
   Proof.
     iIntros (? HE) "H HΦ".
     iRevert (E2 Ψ HE) "HΦ".
-    eiInduction "H" as "[* IH %Htv | * IH %Htv]"; try iIntros (E2 Ψ HE) "HΦ"; 
+    iInduction "H" as "[* IH %Htv | * IH %Htv]"; try iIntros (E2 Ψ HE) "HΦ"; 
     simplify_eq.
     - solve_proper.
     - iApply twp_some.
@@ -155,7 +154,7 @@ Section twp.
       (∀ v, Φ' v -∗ WPE K (of_val v) @ s; E [{ Φ }]) -∗ WPE K e @ s; E [{ Φ }]).
     { iIntros (help Φ) "H". iApply (help with "H"); auto. }
     iIntros (Φ') "H". 
-    eiInduction "H" as "[* IH %Htv | * IH %Htv]"; first solve_proper; iIntros (Φ'') "HΦ".
+    iInduction "H" as "[* IH %Htv | * IH %Htv]"; first solve_proper; iIntros (Φ'') "HΦ".
     - simplify_eq. apply of_to_val in Htv as <-. iApply fupd_twp. by iApply "HΦ".
     - iApply twp_none.
       simplify_eq.

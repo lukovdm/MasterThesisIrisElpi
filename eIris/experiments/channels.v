@@ -12,48 +12,44 @@ Section Channels.
   Notation iProp := (iProp Σ).
   Implicit Types l nl tl lh lt : loc.
 
-  (* #[debug] *)
-  EI.ind
-  Inductive is_queue (tl : loc) : loc → list val → iProp :=
-      | nill_is_queue : tl ↦ NONEV -∗ is_queue tl tl []
+  Local Definition NIL : val := NONEV.
+  Local Definition CONS (v:val) : val := SOMEV (#0, v).
+  Local Definition LINK (l:loc) : val := SOMEV (#1, #l).
+
+  Iris Inductive is_queue (tl : loc) : loc → list val → iProp :=
+      | nill_is_queue : tl ↦ NIL -∗ is_queue tl tl []
       | cons_is_queue v vs l nl : 
-          l ↦ SOMEV (#1, v, #nl) -∗ 
-          is_queue tl nl vs -∗ is_queue tl l (v :: vs)
+          l ↦ CONS (v, #nl) -∗ is_queue tl nl vs -∗ is_queue tl l (v :: vs)
       | link_is_queue vs l nl : 
-          l ↦ SOMEV (#2, NONEV, #nl) -∗ 
+          l ↦ LINK nl -∗ 
           is_queue tl nl vs -∗ is_queue tl l vs.
 
-  Print is_queue_pre.
 
   Definition new_queue : val := λ: <>,
-    let: "end" := AllocN #3 #() in
-    ("end" +ₗ #0) <- #tag_nil;;
+    let: "end" := Alloc NONE in
     ("end", "end").
 
   Definition enqueue : val := λ: "t" "x",
-    let: "end" := AllocN #3 #() in
-    ("end" +ₗ #0) <- #tag_nil;;
-
-    ("t" +ₗ #1) <- "x";;
-    ("t" +ₗ #2) <- "end";;
-    ("t" +ₗ #0) <- #tag_cons;;
-
+    let: "end" := Alloc NONE  in
+    let: "v" := ("x", "end") in
+    "t" <- SOME "v";;
     "end".
 
   Definition dequeue : val :=
     rec: "dequeue" "d" :=
-      if: !("d" +ₗ #0) = #tag_nil then
-        "dequeue" "d"
-      else if: !("d" +ₗ #0) = #tag_cons then
-        (!("d" +ₗ #2), !("d" +ₗ #1))
-      else
-        "dequeue" !("d" +ₗ #2).
+      match: !"d" with
+          NONE => "dequeue" "d"
+        | SOME "v" =>
+            if: Fst "v" = #0 then
+              (Snd (Snd "v"), Fst (Snd "v"))
+            else
+              "dequeue" (Snd (Snd "v"))
+      end.
 
   Definition link_queue : val := λ: "t" "h",
     let: "node" := !"t" in
     let: "lh" := !"h" in
-    ("node" +ₗ #2) <- "lh";;
-    ("node" +ₗ #0) <- #tag_link;;
+    "node" <- SOME (#1, "lh");;
     #().
 
   Lemma new_queue_spec:
@@ -63,13 +59,8 @@ Section Channels.
         is_queue lh lt [] }}}.
   Proof.
     iIntros (Φ) "_ HΦ".
-    wp_lam. wp_alloc l as "Hl /="; first by lia.
-    wp_pures.
-    iDestruct (array_cons with "Hl") as "[Hl0 Hl]".
-    iDestruct (array_cons with "Hl") as "[Hl1 Hl]".
-    iDestruct (array_cons with "Hl") as "[Hl2 Hl]".
-    rewrite !Loc.add_assoc Loc.add_0.
-    wp_store.
+    wp_lam. wp_alloc l as "Hl /=".
     wp_pures. iModIntro. iApply "HΦ".
     iApply nill_is_queue. by iFrame.
   Qed.
+End Channels.

@@ -6,6 +6,8 @@ Import env_notations.
 
 From eIris.proofmode Require Import proper.
 
+Ltac pm_reduce_done := pm_reduce; done.
+
 Section tactics.
 Context {PROP : bi}.
 Implicit Types Γ : env PROP.

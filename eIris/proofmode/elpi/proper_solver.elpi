@@ -5,8 +5,8 @@ accumulate eIris/proofmode/elpi/eiris_tactics.
 
 shorten coq.ltac.{ open, thenl, all }.
 
-pred do-iPoseProper i:ihole, i:term, i:term, o:ident, o:ihole.
-do-iPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedType PosedProof)) :-
+pred eiPoseProper i:igoal, i:term, i:term, o:ident, o:igoal.
+eiPoseProper (igoal N Type Proof) R F (iAnon N) (igoal NS PosedType PosedProof) :-
   increase-ctx-count N NS,
   ident->term (iAnon N) _ NT,
   (@no-tc! => coq.elaborate-skeleton 
@@ -21,23 +21,23 @@ do-iPoseProper (ihole N (hole Type Proof)) R F (iAnon N) (ihole NS (hole PosedTy
   coq.typecheck PosedProof NormType ok,
   pm-reduce NormType PosedType.
 
-pred do-iApplyProper i:ihole, i:term, i:term, o:list ihole.
-do-iApplyProper IH R F IHS :-
-  if-debug (coq.say "do-iApplyProper"),
-  do-iPoseProper IH R F ID IHPosed,
-  if-debug (coq.say "Posed Lemma" {ihole->string IHPosed}),
-  do-iApplyProper.aux IHPosed ID IHS.
-do-iApplyProper.aux IH ID [IH'] :- 
+pred eiApplyProper i:igoal, i:term, i:term, o:list igoal.
+eiApplyProper IH R F IHS :-
+  if-debug (coq.say "eiApplyProper"),
+  eiPoseProper IH R F ID IHPosed,
+  if-debug (coq.say "Posed Lemma" {igoal->string IHPosed}),
+  eiApplyProper.aux IHPosed ID IHS.
+eiApplyProper.aux IH ID [IH'] :- 
   if-debug (coq.say "simpleApplyHyp"),
-  do-iApplySimpleHyp IH ID IH'.
-do-iApplyProper.aux IH ID [] :- 
+  eiApplySimpleHyp IH ID IH'.
+eiApplyProper.aux IH ID [] :- 
   if-debug (coq.say "simpleApplyExact"),
-  do-iApplySimpleExact IH ID.
-do-iApplyProper.aux IH ID [IHL | IHS] :-
+  eiApplySimpleExact IH ID.
+eiApplyProper.aux IH ID [IHL | IHS] :-
   if-debug (coq.say "specialize"),
-  do-iSpecializeWand IH ID IHL IHR,
-  if-debug (coq.say "Specialized Lemma" {ihole->string IHL} {ihole->string IHR}),
-  do-iApplyProper.aux IHR ID IHS.
+  eiSpecializeWand IH ID IHL IHR,
+  if-debug (coq.say "Specialized Lemma" {igoal->string IHL} {igoal->string IHR}),
+  eiApplyProper.aux IHR ID IHS.
 
 pred unfold-id i:string, i:term, o:term.
 unfold-id S I O :- 
@@ -50,14 +50,14 @@ unfold-gref (const IP) I O :-
   ((copy (global (const IP)) Bo :- !) => copy I I'),
   coq.reduction.lazy.bi-norm I' O.
 
-pred do-steps i:ihole.
-do-steps (ihole _ (hole Type _) as IH) :-
-  if-debug (coq.say "================= Goal =================" {ihole->string IH} ""),
-  do-steps.conn Type R LF RF, !,
-  do-steps.do IH R LF RF.
+pred esteps i:igoal.
+esteps (igoal _ Type _ as IH) :-
+  if-debug (coq.say "################# Goal #################" {igoal->string IH} ""),
+  esteps.conn Type R LF RF, !,
+  esteps.do IH R LF RF.
 
-pred do-steps.conn i:term, o:term, o:term, o:term.
-do-steps.conn Type R LF RF:-
+pred esteps.conn i:term, o:term, o:term, o:term.
+esteps.conn Type R LF RF:-
   top-relation Type R, !,
   relation-on Type LF RF.
 
@@ -68,47 +68,51 @@ pred relation-on i:term, o:term, o:term.
 relation-on {{ envs_entails _ lp:{{ app AS }} }} L R :- 
   std.take-last 2 AS [L, R].
 
-pred do-steps.do i:ihole, i:term, i:term, i:term.
-do-steps.do IH {{ @iRespectful _ }} _ _ :- !,
+pred esteps.do i:igoal, i:term, i:term, i:term.
+esteps.do IH {{ @iRespectful _ }} _ _ :- !,
   if-debug (coq.say "==>"),
-  do-iIntros [iPure (none), iPure (none), iIntuitionistic iFresh] IH do-steps.
-do-steps.do IH {{ @iPointwise_relation _ }} _ _ :- !,
+  eiIntros [iPure (none), iPure (none), iIntuitionistic iFresh] IH esteps.
+esteps.do IH {{ @iPointwise_relation _ }} _ _ :- !,
   if-debug (coq.say ".>"), !,
-  do-iIntros [iPure (none)] IH do-steps.
-do-steps.do (ihole N H) {{ @iPersistent_relation _ }} _ _ :- !,
+  eiIntros [iPure (none)] IH esteps.
+esteps.do H {{ @iPersistent_relation _ }} _ _ :- !,
   if-debug (coq.say "□>"),
-  do-iModIntro H ModH, !,
-  do-steps (ihole N ModH).
-do-steps.do IH _ F F :-
+  eiModIntro H ModH, !,
+  esteps ModH.
+esteps.do IH _ F F :-
   if-debug (coq.say "Applying wand identity" {coq.term->string F}),
-  do-iIntros [iFresh, iDone] IH (_\ if-debug (coq.say "done failed"), fail).
-do-steps.do IH _ F F :-
+  eiIntros [iFresh, iDone] IH (_\ if-debug (coq.say "done failed"), fail).
+esteps.do IH _ F F :-
   if-debug (coq.say "Applying assumption" {coq.term->string F}),
-  do-iIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
-do-steps.do IH R (app [F | FS]) _ :- 
+  eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
+esteps.do IH R (app [F | FS]) _ :- 
   std.exists { std.iota {calc ({std.length FS} + 1) } } (n\ std.take n FS FS'),
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
-  do-iApplyProper IH R (app [F | FS']) HS, !,
-  std.map HS (x\r\ do-steps x) _.
-do-steps.do (ihole N (hole Type Proof)) _ (app [global (const F) | _ ]) _ :-
+  eiApplyProper IH R (app [F | FS']) HS, !,
+  std.map HS (x\r\ esteps x) _.
+esteps.do (igoal N Type Proof) _ (app [global (const F) | _ ]) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  do-steps (ihole N (hole UnfoldedType Proof)).
-do-steps.do (ihole N (hole Type Proof)) _ (global (const F)) _ :-
+  esteps (igoal N UnfoldedType Proof).
+esteps.do (igoal N Type Proof) _ (global (const F)) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  do-steps (ihole N (hole UnfoldedType Proof)).
-do-steps.do IH _ _ _ :-
+  esteps (igoal N UnfoldedType Proof).
+esteps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
-  do-iIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
-do-steps.do _ T F _ :- !,
-  if-debug (coq.say "No case for relation" T "with " F "😢 stopping").
+  eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
+esteps.do _ T F _ :- !,
+  if-debug (coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping" T F).
 
-pred do-solve-proper i:hole.
-do-solve-proper (hole Type Proof) :-
-  unfold-id "IProper" Type UnfoldedType',
-  coq.typecheck Proof UnfoldedType' ok,
-  do-intros-forall (hole UnfoldedType' Proof) (h\ sigma IH\
-    do-iStartProof h IH,
-    do-steps IH
+pred eiunfold-id i:id, i:goal, o:goal.
+eiunfold-id ID (goal Ctx R T P A) (goal Ctx R T' P A) :-
+  unfold-id ID T T',
+  coq.typecheck P T' ok.
+
+pred esolve-proper i:goal, o:list sealed-goal.
+esolve-proper G [] :-
+  eiunfold-id "IProper" G G',
+  ltac.intros-forall G' (h\ sigma IH\
+    eiOfCoqProof h IH,
+    esteps IH
   ).

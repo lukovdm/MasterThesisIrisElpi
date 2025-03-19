@@ -8,37 +8,41 @@ From stdpp Require Import gmap numbers countable mapset.
 From iris.proofmode Require Import tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 From eIris.experiments Require Import twp.
 
 From iris.heap_lang Require Import proofmode notation.
 
-
-Section B.
+Section BinarySearchTree.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
-  Implicit Types l tl tr : loc.
+  Implicit Types l tl tr ll lr : loc.
+  Implicit Types n : Z.
+  Open Scope Z_scope.
 
-  EI.ind
-  Inductive is_tree : loc -> gset nat -> iProp :=
-  | tree_empty l : l ↦ NONEV -∗ is_tree l ∅
-  | tree_node l (n : nat) tl tr Xl Xr :
-    l ↦ (#n, #tl, #tr) -∗
-    is_tree tl Xl -∗
-    is_tree tr Xr -∗
-    ⌜set_Forall (λ n', n' < n) Xl⌝ -∗
-    ⌜set_Forall (λ n', n < n') Xr⌝ -∗
-    is_tree l ({[ n ]} ∪ Xl ∪ Xr).
+  Local Definition LEAF : val := NONEV.
+  Local Definition NODE (v : val) : val := SOMEV v.
 
-End B.
+  Iris Inductive is_search_tree : loc → gset Z → iProp :=
+    | is_search_tree_empty l :
+      l ↦ LEAF -∗ is_search_tree l ∅
+    | is_search_tree_node l n ll lr Xl Xr :
+      l ↦ NODE (#n, #ll, #lr) -∗ 
+      is_search_tree ll Xl -∗ 
+      is_search_tree lr Xr -∗
+      ⌜set_Forall (λ n', n' < n) Xl⌝ -∗ 
+      ⌜set_Forall (λ n', n < n') Xr⌝ -∗
+      is_search_tree l ({[ n ]} ∪ Xl ∪ Xr).
 
-Section GSets.
+End BinarySearchTree.
+
+Section GSetsList.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_gset : val -> @gset nat _ nat_countable -> iProp :=
+  Iris Inductive is_gset : val -> @gset nat _ nat_countable -> iProp :=
     | empty_is_gset : is_gset NONEV ∅
     | cons_is_gset l tl s (e : nat) ss : 
       l ↦ (#e, tl) -∗ 
@@ -68,7 +72,7 @@ Section GSets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
+    iInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".
@@ -122,7 +126,7 @@ Section GSets.
           destruct (Nat.eq_dec e a1); try done.
           simplify_eq.
   Qed.
-End GSets.
+End GSetsList.
 
 
 Section Sets.
@@ -130,8 +134,7 @@ Section Sets.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_set : val -> Ensemble nat -> iProp :=
+  Iris Inductive is_set : val -> Ensemble nat -> iProp :=
     | empty_is_set : is_set NONEV (Empty_set nat)
     | cons_is_set l tl s (e : nat) ss : 
       l ↦ (#e, tl) -∗ 
@@ -180,7 +183,7 @@ Section Sets.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi).
-    eiInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
+    iInduction "His" as "[%Hhd %Hset | * Hpt %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
       wp_alloc l as "Hl".

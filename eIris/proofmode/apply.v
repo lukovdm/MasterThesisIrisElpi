@@ -14,28 +14,26 @@ Elpi Accumulate File eiris_tactics.
 Elpi Accumulate lp:{{
   shorten coq.ltac.{ open, thenl, all }.
 
-  pred go-iApply i:list argument, i:hole, o:list sealed-goal.
-  go-iApply [str Hyp] H GL' :-
-    do-iStartProof H IH, !,
-    do-iApplyHyp Hyp IH IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
+  pred go-iApply i:list argument, i:igoal, o:list sealed-goal.
+  go-iApply [str Hyp] IH GL' :-
+    eiApplyHyp Hyp IH IHS, !,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ _ Proof), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 
-  go-iApply [trm Lem] H GL' :-
-    do-iStartProof H IH, !,
-    do-iApplyLem Lem IH [] IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (ihole _ (hole _ Proof)), coq.ltac.collect-goals Proof r _) GLL,
+  go-iApply [trm Lem] IH GL' :-
+    eiApplyLem Lem IH [] IHS, !,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ _ Proof), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 
-  solve (goal _ _ Type Proof [str "debug" | Args]) GS :-
+  solve (goal _ _ _ _ [str "debug" | Args] as G) GS :-
     gettimeofday Start,
     [get-option "debug" tt, get-option "start" Start] => (
-      go-iApply Args (hole Type Proof) GS
+      go-iApply Args {eiOfCoqProof G} GS
     ).
-  solve (goal _ _ Type Proof Args) GS :-
-    go-iApply Args (hole Type Proof) GS.
+  solve (goal _ _ _ _ Args as G) GS :-
+    go-iApply Args {eiOfCoqProof G} GS.
 }}.
 
 

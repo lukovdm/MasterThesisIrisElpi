@@ -8,7 +8,7 @@ From stdpp Require Import gmap numbers countable mapset.
 From iris.proofmode Require Import tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 From eIris.experiments Require Import twp.
 
 From iris.heap_lang Require Import proofmode notation.
@@ -18,17 +18,11 @@ Section SkipQueue.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_MLL : val → list val -> iProp :=
+  Iris Inductive is_MLL : val → list val -> iProp :=
       | empty_is_MLL : is_MLL NONEV []
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-  Check is_MLL_unfold.
-  Print is_MLL_pre.
-  About is_MLL_ind.
-  Check mark_is_MLL.
-  Print is_MLL.
 
   Definition MLL_insert : val :=
     rec: "MLL_insert" "l" "i" "v" :=
@@ -48,7 +42,7 @@ Section SkipQueue.
               "l"
       end.
   
-  Print Grammar.
+  Print MLL_insert.
 
 
   Lemma MLL_insert_spec (vs : list val) (v : val) (i : nat) (hd : val) :
