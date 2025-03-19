@@ -9,7 +9,7 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 
 (* Section Tests.
   Context `{!heapGS Σ}.
@@ -88,21 +88,18 @@ Section Proof.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
-  (* Implicit Types v : val. *)
  
   Iris Inductive is_list (q : Qp) : val → iProp :=
     | empty_is_list : is_list q NONEV
     | cons_is_list l v tl : l ↦{#q} (v,tl) -∗ is_list q tl -∗ is_list q (SOMEV #l).
       
-  (* Check is_list_pre. *)
 
   Lemma ind_test_1 (q q' : Qp) (v : val) :
     is_list q v ∗ is_list q' v ∗-∗ is_list (q+q') v.
   Proof.
     iSplit.
     - eiIntros "[Hq Hq']".
-      (* iRevert "Hq'". *)
-      eiInduction "Hq" as "[%Ha | * Hl' IH %Ha]". 
+      iInduction "Hq" as "[%Ha | * Hl' IH %Ha]". 
       + by iApply empty_is_list.
       + simplify_eq.
         iApply cons_is_list.
@@ -115,7 +112,7 @@ Section Proof.
         * iApply ("IH" with "[$]").
         * by iPureIntro.
     - eiIntros "Hi".
-      eiInduction "Hi" as "[%Ha | * [Hq Hq'] [[Hiq Hiq'] _] %Hy]".
+      iInduction "Hi" as "[%Ha | * [Hq Hq'] [[Hiq Hiq'] _] %Hy]".
       + simplify_eq.
         iSplitL; by iApply empty_is_list.
       + iSplitL "Hq Hiq".
@@ -127,7 +124,7 @@ Section Proof.
           by iFrame.
   Qed.
 
-  (* Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
+  Lemma ind_test_2 (q : Qp) (v : val) (vs : list val) :
     is_list q v vs -∗ ⌜vs = []⌝ ∨ ⌜(q ≤ 1)%Qp⌝.
   Proof.
     eiIntros "[Hv Hvs | (%l & %v' & %vs' & %tl & Hl & _ & _ & _)]".
@@ -139,17 +136,15 @@ Section Proof.
       iPureIntro.
       intros Hq.
       by apply dfrac_valid in Hq.
-  Qed. *)
+  Qed.
 
 
-  (* Elpi Trace Browser. *)
   Lemma intros_1 (Q : Prop) (P : nat -> iProp) :
     ∀ x:nat, ∀ y:nat, ∀ z:nat, □ P x -∗ P x.
   Proof.
     elpi eiIntros "% % % #H @H".
   Qed.
 
-  (* Elpi Trace Browser. *)
   Lemma intros_2 (P : nat -> iProp) :
     □ (∃b, ((P b ∗ P 2) ∨ P 3)) -∗ (∃b, P b) -∗ ∃y, P y.
   Proof.
