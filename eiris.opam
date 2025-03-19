@@ -3,7 +3,9 @@ name: "eiris"
 version: "dev"
 synopsis: "Extending the Iris Proof Mode with Inductive Predicates using Elpi"
 description: """
-Extends the Iris Proof Mode with additional inductive predicates.
+A system of commands and tactics to generate least fixpoint inductive predicates 
+in the Iris speartion logic. The project is created using the Elpi 
+meta-programming language.
 """
 maintainer: "Luko van der Maas <eiInd@luko.dev>"
 authors: "Luko van der Maas <eiInd@luko.dev>"
@@ -12,9 +14,10 @@ homepage: "https://github.com/lukovdm/MasterThesisIrisElpi"
 bug-reports: "https://github.com/lukovdm/MasterThesisIrisElpi/issues"
 dev-repo: "git://github.com/lukovdm/MasterThesisIrisElpi.git"
 depends: [
-    "coq" {>= "8.20"}
-    "coq-iris" {>= "4.3.0"}
-    "coq-elpi" {>= "2.5.0"}
+    "coq" {= "8.20"}
+    "coq-iris" {= "4.3.0"}
+    "coq-iris-heap-lang" {= "4.3.0"}
+    "rocq-elpi" {= "2.5.0"}
 ]
 build: [
     ["make"]

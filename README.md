@@ -39,12 +39,14 @@ This project contains three main folders
 - **eIris**: This folder contains the proofmode, including Elpi source files.
   - **common**: Contains the Elpi source for the commonly used predicates.
   - **proofmode**: Contains the sources for the eIris proofmode.
-- **experiments**: Any experiments or examples using our tactics.
+  - **experiments**: Any experiments or examples using our tactics.
+    
+    - **indtest.v**: Contains basic examples for using the `Iris` command and `eiIntros` tactic.
+    - **sets.v**: Contains the definition of `is_MLL`, the representation predicate for marked linked lists. And several proofs of specifications concerning MLL.
+    - **twp.v**: Contains the definition of the total weakest precondition and proofs of associated lemmas using our system.
+- **Utils** Containing python scripts to generate tables
   - **Timing**: Contains a Python script and Coq source file which tests the speed of the intro pattern parser written in Elpi.
-  - **indtest.v**: Contains basic examples for using the `ei.Ind` and `eiIntros` tactics.
-  - **sets.v**: Contains the definition of `is_MLL`, the representation predicate for marked linked lists. And several proofs of specifications concerning MLL.
-  - **twp.v**: Contains the definition of the total weakest precondition and proofs of associated lemmas using our system.
-- **Latex**: Contains the latex source for the thesis, project proposal and (WIP) presentation.
+  - **generate_linecount_table.py** Generates LOC table as found in the paper
 
 ## Explanation of added introduction patterns
 
@@ -54,7 +56,3 @@ A few introduction patterns have been added or overloaded to improve the ergonom
 - `[|]`: The conjunction and disjunction introduction pattern can take more than two options and are destructed assuming the terms are written right-associative.
 - `*`: Destructs Iris existentials until none can be found at the head of the assumption.
 - `**`: Destructs an inductive predicate and splits it into any possible branches. Does not further introduce the resulting assumptions.
-
-## Latex sources
-
-The latex sources are compiled using `xelatex`.
