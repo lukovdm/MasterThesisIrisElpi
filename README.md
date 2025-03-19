@@ -1,21 +1,16 @@
-# Extending the Iris Proof Mode with Inductive Predicates using Elpi
+# Fixpoints in Higher-Order Separation Logic
 
-The source code for the master thesis _Extending the Iris Proof Mode with Inductive Predicates using Elpi_
+The source code for the paper _Fixpoints in Higher-Order Separation Logic_
 
 ## Installing dependencies
 
-This project is built for Coq 8.19 with the associated version of the IPM and Coq-Elpi.
+This project is built for Rocq 8.20 with the associated version of the IPM and Rocq-Elpi.
 
-This project is built using the opam package manager. When opam is installed, run the following to install all dependencies.
+This project is built using the opam package manager. 
+When opam is installed, run the following to install all dependencies.
 
 ```bash
 opam install . --deps-only
-```
-
-To run the experiments, the Iris heaplang package is also necessary.
-
-```bash
-opam install coq-iris-heap-lang
 ```
 
 ## Building the project
@@ -40,10 +35,10 @@ This project contains three main folders
   - **common**: Contains the Elpi source for the commonly used predicates.
   - **proofmode**: Contains the sources for the eIris proofmode.
   - **experiments**: Any experiments or examples using our tactics.
-    
-    - **indtest.v**: Contains basic examples for using the `Iris` command and `eiIntros` tactic.
-    - **sets.v**: Contains the definition of `is_MLL`, the representation predicate for marked linked lists. And several proofs of specifications concerning MLL.
-    - **twp.v**: Contains the definition of the total weakest precondition and proofs of associated lemmas using our system.
+    - **channels.v**: Contains the linked list with delete nodes example from the paper.
+    - **indtest.v**: Contains basic examples for using the `Iris` command, and `iInduction` and `eiIntros` tactics.
+    - **sets.v**: Contains several specifications of Sets using inductive predicates including the one from Section 3.
+    - **twp.v**: Contains the definition of the total weakest precondition and proofs of associated lemmas using our command and tactics.
 - **Utils** Containing python scripts to generate tables
   - **Timing**: Contains a Python script and Coq source file which tests the speed of the intro pattern parser written in Elpi.
   - **generate_linecount_table.py** Generates LOC table as found in the paper
