@@ -42,7 +42,7 @@ Section SkipQueue.
               "l"
       end.
   
-  Print Grammar.
+  Print MLL_insert.
 
 
   Lemma MLL_insert_spec (vs : list val) (v : val) (i : nat) (hd : val) :

@@ -4,7 +4,7 @@ From iris.heap_lang Require Import proofmode notation array.
 
 From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 
-Section SkipQueue.
+Section ArrayLinkedList.
   Context `{!heapGS Σ}.
   Notation iProp := (iProp Σ).
   Implicit Types l nl : loc.
@@ -33,3 +33,4 @@ Section SkipQueue.
     let: "end" := new_lll "l" "n" in
     ("tl" +ₗ #1) <- Fst "end";;
     "end".
+End ArrayLinkedList.
