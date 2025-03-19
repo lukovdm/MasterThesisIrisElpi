@@ -62,8 +62,7 @@ Section RoseTrees.
 
   Inductive rose_tree := Node : list rose_tree → rose_tree.
 
-  Iris
-  Inductive is_rose_tree : loc → rose_tree → iProp
+  Iris Inductive is_rose_tree : loc → rose_tree → iProp :=
     | is_tree_node l ts : is_ho_list_loc is_rose_tree l ts -∗ is_rose_tree l (Node ts).
 
 End RoseTrees.
