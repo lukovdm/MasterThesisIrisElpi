@@ -52,7 +52,7 @@ unfold-gref (const IP) I O :-
 
 pred esteps i:igoal.
 esteps (igoal _ Type _ as IH) :-
-  if-debug (coq.say "================= Goal =================" {igoal->string IH} ""),
+  if-debug (coq.say "################# Goal #################" {igoal->string IH} ""),
   esteps.conn Type R LF RF, !,
   esteps.do IH R LF RF.
 
@@ -102,7 +102,7 @@ esteps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
   eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
 esteps.do _ T F _ :- !,
-  if-debug (coq.say "No case for relation" T "with " F "😢 stopping").
+  if-debug (coq.say "No case for relation" {coq.term->string T} "with " {coq.term->string F} "😢 stopping" T F).
 
 pred eiunfold-id i:id, i:goal, o:goal.
 eiunfold-id ID (goal Ctx R T P A) (goal Ctx R T' P A) :-

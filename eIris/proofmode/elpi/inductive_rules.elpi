@@ -131,15 +131,12 @@ mk-unfold-2.proof-1 Ps N Proper Mono H :-
 
 pred mk-unfold-2.proof-2 i:int, i:int, i:term, i:term, i:igoal.
 mk-unfold-2.proof-2 Ps N Proper Mono IH :-
-  % std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
-  % eiApplyLem (app [Proper | Holes]) IH [] [IH1, IH2],
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes2 N\ !,
     h = igoal N PType PProof,
-    std.iota Ps List,
-    std.map List (x\r\ r = {{ _ }}) Holes2,
+    coq.mk-n-holes Ps Holes2,
     coq.elaborate-skeleton (app [Proper | Holes2]) PType PProof D,
     if (D = ok) (true) (if-debug (coq.say "IProper error" D), fail)
   )] [IH1, IH2],
@@ -202,11 +199,10 @@ pred mk-unfold-1.proof-2 i:int, i:int, i:term, i:term, i:term, i:igoal.
 mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono IH :-
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes2 N\ !,
     h = igoal N PType PProof,
-    std.iota Ps List,
-    std.map List (x\r\ r = {{ _ }}) Holes2,
+    coq.mk-n-holes Ps Holes2,
     coq.elaborate-skeleton (app [Proper | Holes2]) PType PProof D,
     if (D = ok) (true) (if-debug (coq.say "IProper error" D), fail)
   )] [IH1, IH2],
@@ -216,7 +212,7 @@ mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono IH :-
 
 pred mk-unfold-1.proof-3 i:int, i:term, i:igoal.
 mk-unfold-1.proof-3 Ps Unfold2 IH :-
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [Unfold2 | Holes]) IH [] [AppliedIH], !,
   eiApplyHyp "HF" AppliedIH [].
 
@@ -246,9 +242,9 @@ mk-unfold.proof-1 Ps Unfold1 Unfold2 H0 :-
   eiAndSplit H H1 H2,
   if-debug (coq.say "H1:" {igoal->string H1}),
   if-debug (coq.say "H2:" {igoal->string H2}),
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes1, !,
+  coq.mk-n-holes Ps Holes1, !,
   eiApplyLem (app [Unfold1 | Holes1]) H1 [] [], !,
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes2, !,
+  coq.mk-n-holes Ps Holes2, !,
   eiApplyLem (app [Unfold2 | Holes2]) H2 [] [].
 
 pred mk-unfold i:list param, i:term, i:term, i:term, i:term, i:term, o:igoal.
@@ -300,7 +296,7 @@ mk-constr-lem.proof-1 Unfold2 Ps Nth Total H :-
 
 pred mk-constr-lem.proof-2 i:term, i:int, i:int, i:int, i:igoal.
 mk-constr-lem.proof-2 Unfold2 Ps Nth Total IH :-
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [Unfold2 | Holes]) IH [] [AppliedIH], !,
   mk-constr-lem.proof-3 Nth Total AppliedIH.
 
@@ -497,7 +493,7 @@ mk-ind.proof-2 Ps N Unfold1 Unfold2 Proper Mono Iter H :-
   % Apply Monotinicity
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [MonoiProper | Holes]) H1 [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes'\ sigma PTypeString N\ !,
     h = igoal N PType PProof,
     std.iota Ps List,
@@ -513,7 +509,7 @@ mk-ind.proof-2 Ps N Unfold1 Unfold2 Proper Mono Iter H :-
   eiIntros {std.append [iModalIntro | Pures] [iIdent (iNamed "Hilp")]} IH3 (mk-ind.proof-3 Ps N Unfold2 Proper Mono).
 
 pred mk-ind.proof-3 i:int, i:int, i:term, i:term, i:term, i:igoal.
-mk-ind.proof-3 Ps N Unfold2 Proper Mono  H :-
+mk-ind.proof-3 Ps N Unfold2 Proper Mono H :-
   eiAndSplit H H1 H2,!,
   % Left branch
   eiApplyHyp "Hmon" H1 [IH1],!,
@@ -523,7 +519,7 @@ mk-ind.proof-3 Ps N Unfold2 Proper Mono  H :-
   % Apply Mono
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
-  std.map {std.iota Ps} (x\r\ r = {{ _ }}) Holes, !,
+  coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [MonoiProper | Holes]) IH2 [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes' N\ !,
     h = igoal N PType PProof,
     std.iota Ps List,

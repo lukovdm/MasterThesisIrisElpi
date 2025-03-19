@@ -16,7 +16,7 @@ From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 From eIris.proofmode.elpi Extra Dependency "inductive_rules.elpi" as inductive_rules.
 
 #[arguments(raw)] 
-Elpi Command EI.ind.
+Elpi Command Iris.
 Elpi Accumulate File datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
@@ -150,4 +150,4 @@ Elpi Accumulate lp:{{
       coq.elpi.accumulate _ "induction.db" (clause _ _ (inductive-type Fix IInd))
     ).
 }}.
-Elpi Export EI.ind.
+Elpi Export Iris.

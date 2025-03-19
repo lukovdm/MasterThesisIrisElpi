@@ -686,9 +686,12 @@ eiIntros [iSimpl | IPS] (igoal N _ Proof) C :-
        ) G'' _.
 eiIntros [iDone | IPS] (igoal N Type Proof) C :-
   ((
+    if-debug (coq.say "trying done" {igoal->string (igoal N Type Proof)}),
     coq.ltac.collect-goals Proof [G] _,
+    if-debug (open show-goal G _, !),
     open pm-reduce-goal G [G'], !,
-    open (g\gl\ sigma T P\ g = (goal _ _ T P _), if (true) (true) (coq.say "ahhh is on" T P)) G' _, !, % weird hack, without it things don't work. Don't know why
+    if-debug (open show-goal G' _, !),
+    open (g\gl\ sigma T P TS\ g = (goal _ _ T P _), coq.term->string T TS, if-debug (coq.say "done on type" )) G' _, !, % weird hack, without it things don't work. Don't know why
     open done G' [],
     if-debug (coq.say "done succeeded")
     ); 

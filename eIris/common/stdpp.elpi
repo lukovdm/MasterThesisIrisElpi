@@ -76,6 +76,21 @@ pred goal->string o:string, i:goal, o:list sealed-goal.
 goal->string S (goal _ _ Type Proof _ as G) [seal G] :-
   S is "Goal: " ^ {coq.term->string Proof} ^ " : " ^ {coq.term->string Type}.
 
+pred refine.error i:term, i:goal, o:list sealed-goal.
+refine.error T (goal _ RawEv Ty Ev _) GS :-
+  rm-evar RawEv Ev,
+  (@keepunivs! => coq.elaborate-skeleton T Ty TR D),
+  if (D = error Msg) 
+    (if-debug (coq.say "Failed to refine" {coq.term->string T} "of type" {coq.term->string Ty} ":" Msg), fail)
+    (if-debug (coq.say "Refined" {coq.term->string T} "of type" {coq.term->string Ty} ":" {coq.term->string TR})),
+  coq.ltac.collect-goals TR GS _,
+  % print_constraints,
+  % if-debug (coq.say "collected goals" T RawEv),
+  % (RawEv = T; coq.error "stop"),
+  if-debug (coq.say "pre EV=TR" Ev TR),
+  (Ev = TR; coq.error "stop").
+  % if-debug (coq.say "refine done").
+
 pred type-depth i:term, o:int.
 type-depth (prod _ _ F) N :- !,
   (pi x\ type-depth (F x) N'),

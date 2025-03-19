@@ -19,8 +19,7 @@ Section B.
   Notation iProp := (iProp Σ).
   Implicit Types l tl tr : loc.
 
-  EI.ind
-  Inductive is_tree : loc -> gset nat -> iProp :=
+  Iris Inductive is_tree : loc -> gset nat -> iProp :=
   | tree_empty l : l ↦ NONEV -∗ is_tree l ∅
   | tree_node l (n : nat) tl tr Xl Xr :
     l ↦ (#n, #tl, #tr) -∗
@@ -37,8 +36,7 @@ Section GSets.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_gset : val -> @gset nat _ nat_countable -> iProp :=
+  Iris Inductive is_gset : val -> @gset nat _ nat_countable -> iProp :=
     | empty_is_gset : is_gset NONEV ∅
     | cons_is_gset l tl s (e : nat) ss : 
       l ↦ (#e, tl) -∗ 
@@ -130,8 +128,7 @@ Section Sets.
   Notation iProp := (iProp Σ).
   Implicit Types l : loc.
 
-  EI.ind
-  Inductive is_set : val -> Ensemble nat -> iProp :=
+  Iris Inductive is_set : val -> Ensemble nat -> iProp :=
     | empty_is_set : is_set NONEV (Empty_set nat)
     | cons_is_set l tl s (e : nat) ss : 
       l ↦ (#e, tl) -∗ 

@@ -115,7 +115,7 @@ last-rec-to-and Params BindersRev (app [FixBinder | TS]) Replacements EQTerm :-
     (EQTerm = {{ (⌜True⌝)%I }})
   ).
 last-rec-to-and _ LS (app [T | TS]) _ _ :-
-  coq.error "EI.Ind: " {coq.term->string (app [T | TS])} "has to many or to few arguments (or something else went wrong), expected " {coq.term->string (app {std.rev LS})}.
+  coq.error "Iris: " {coq.term->string (app [T | TS])} "has to many or to few arguments (or something else went wrong), expected " {coq.term->string (app {std.rev LS})}.
 
 pred last-rec-to-and.eqs i:list term, i:list term, i:list term, o:list term, o:list (pair term term).
 last-rec-to-and.eqs _ [] [] [] [] :- !. 
