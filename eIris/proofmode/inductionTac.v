@@ -82,8 +82,8 @@ Elpi Accumulate lp:{{
 }}.
 
 
-Tactic Notation "eiInduction" string(x) "as" string(y) :=
+Tactic Notation "iInduction" string(x) "as" string(y) :=
   elpi eiInduction ltac_string:(x) ltac_string:(y).
 
-Tactic Notation "eiInduction" string(x) :=
+Tactic Notation "iInduction" string(x) :=
   elpi eiInduction ltac_string:(x) "**".

@@ -23,11 +23,6 @@ Section SkipQueue.
       | mark_is_MLL v vs l tl : l ↦ (v, #true, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) vs
       | cons_is_MLL v vs tl l : l ↦ (v, #false, tl) -∗ is_MLL tl vs -∗ is_MLL (SOMEV #l) (v :: vs).
 
-  Check is_MLL_unfold.
-  Print is_MLL_pre.
-  About is_MLL_ind.
-  Check mark_is_MLL.
-  Print is_MLL.
 
   Definition MLL_insert : val :=
     rec: "MLL_insert" "l" "i" "v" :=

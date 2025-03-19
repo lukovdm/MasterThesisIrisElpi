@@ -2,7 +2,7 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation array.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import base reduction inductive tactics inductionTac.
 
 Section SkipQueue.
   Context `{!heapGS Σ}.

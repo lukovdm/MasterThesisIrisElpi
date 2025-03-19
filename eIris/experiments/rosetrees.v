@@ -9,7 +9,7 @@ From iris.proofmode Require Import proofmode tactics coq_tactics reduction.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode notation.
 
-From eIris.proofmode Require Import base reduction inductive intros.
+From eIris.proofmode Require Import inductive tactics inductionTac.
 
 Section Tests.
   Context `{!heapGS Σ}.
@@ -29,7 +29,7 @@ Section Tests.
     unfold IProper, iPointwise_relation, iRespectful.
     iIntros (Φ Φ') "HΦ %l %vs Hil".
     iRevert "HΦ".
-    eiInduction "Hil" as "[Hl %Hvs | * Hl HR IH %Hvs]"; iIntros "#HΦ"; simplify_eq.
+    iInduction "Hil" as "[Hl %Hvs | * Hl HR IH %Hvs]"; iIntros "#HΦ"; simplify_eq.
     {iApply empty_is_R_list. by iFrame. }
     iApply cons_is_R_list.
     iExists _, _, _, _.

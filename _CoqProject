@@ -14,4 +14,4 @@ eIris/proofmode/inductionTac.v
 
 eIris/experiments/twp.v
 
-eIris/experiments/channels.v
+# eIris/experiments/channels.v
