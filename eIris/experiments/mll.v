@@ -41,9 +41,6 @@ Section SkipQueue.
               "hd" <- (Fst (Fst "x"), Snd (Fst "x"), "tl");;
               "l"
       end.
-  
-  Print MLL_insert.
-
 
   Lemma MLL_insert_spec (vs : list val) (v : val) (i : nat) (hd : val) :
     [[{ is_MLL hd vs }]]
@@ -52,7 +49,7 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
+    iInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_alloc l as "Hl".
       wp_pures.
@@ -138,7 +135,7 @@ Section SkipQueue.
   Proof.
     eiIntros "%Phi His".
     iRevert (Phi i).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
+    iInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i Hphi"; simplify_eq.
     - wp_rec.
       wp_pures.
       iModIntro.
@@ -200,7 +197,7 @@ Section SkipQueue.
   Proof.
     eiIntros "%Hlookup %Phi His".
     iRevert (Phi i Hlookup).
-    eiInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i %Hlookup Hphi"; simplify_eq.
+    iInduction "His" as "[%Ha %Ha0|* Hl IH %Ha| * Hl IH %Ha %Ha']"; eiIntros "%Phi %i %Hlookup Hphi"; simplify_eq.
     - wp_rec.
       wp_load.
       wp_pures.

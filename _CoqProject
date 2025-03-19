@@ -13,5 +13,9 @@ eIris/proofmode/inductive.v
 eIris/proofmode/inductionTac.v
 
 eIris/experiments/twp.v
-
-# eIris/experiments/channels.v
+eIris/experiments/channels.v
+eIris/experiments/arraylinkedlist.v
+eIris/experiments/indtests.v
+eIris/experiments/mll.v
+eIris/experiments/rosetrees.v
+eIris/experiments/sets.v
