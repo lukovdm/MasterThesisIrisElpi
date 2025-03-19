@@ -9,8 +9,7 @@ Section SkipQueue.
   Notation iProp := (iProp Σ).
   Implicit Types l nl : loc.
 
-  EI.ind
-  Inductive is_lll : loc → loc → list val → iProp :=
+  Iris Inductive is_lll : loc → loc → list val → iProp :=
       | end_is_lll (n : nat) l vl :
           l ↦ #n -∗ 
           (l +ₗ 1) ↦ NONEV -∗

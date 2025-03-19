@@ -22,4 +22,5 @@ pm-reduce T O :-
 pred pm-reduce-goal i:goal, o:list sealed-goal.
 pm-reduce-goal (goal _ _ Type _ _ as G) GL :-
   pm-reduce Type Type',
-  refine {{ _ : lp:Type' }} G GL.
+  if-debug (coq.say "Reduced goal" {coq.term->string Type} "to" {coq.term->string Type'}),
+  refine.error {{ _ : lp:Type' }} G GL.

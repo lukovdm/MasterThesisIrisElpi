@@ -41,7 +41,7 @@ This project contains three main folders
   - **proofmode**: Contains the sources for the eIris proofmode.
 - **experiments**: Any experiments or examples using our tactics.
   - **Timing**: Contains a Python script and Coq source file which tests the speed of the intro pattern parser written in Elpi.
-  - **indtest.v**: Contains basic examples for using the `ei.Ind` and `eiIntros` tactics.
+  - **indtest.v**: Contains basic examples for using the `Iris` command and `eiIntros` tactic.
   - **sets.v**: Contains the definition of `is_MLL`, the representation predicate for marked linked lists. And several proofs of specifications concerning MLL.
   - **twp.v**: Contains the definition of the total weakest precondition and proofs of associated lemmas using our system.
 - **Latex**: Contains the latex source for the thesis, project proposal and (WIP) presentation.

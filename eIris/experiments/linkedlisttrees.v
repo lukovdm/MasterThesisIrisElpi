@@ -16,8 +16,7 @@ Section Tests.
   Notation iProp := (iProp Σ).
   Implicit Types l tl : loc.
 
-  EI.ind
-  Inductive is_R_list {A} (R : val → A → iProp) : loc → list A → iProp :=
+  Iris Inductive is_R_list {A} (R : val → A → iProp) : loc → list A → iProp :=
     | empty_is_R_list l : l ↦ NONEV -∗ is_R_list R l []
     | cons_is_R_list l v tl x xs : 
         l ↦ (v,#tl) -∗ R v x -∗ is_R_list R tl xs -∗ 
@@ -49,8 +48,7 @@ Section Tests.
 
   Inductive tree := Node : list tree -> tree.
 
-  EI.ind
-  Inductive is_tree : loc -> tree -> iProp :=
+  Iris Inductive is_tree : loc -> tree -> iProp :=
     | node_is_tree l ts :
         is_R_list (λ v t, ∃ l', ⌜v = #l'⌝ ∗ is_tree l' t) l ts -∗
         is_tree l (Node ts).

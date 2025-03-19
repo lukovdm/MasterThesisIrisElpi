@@ -12,15 +12,19 @@ Section Channels.
   Notation iProp := (iProp Σ).
   Implicit Types l nl tl lh lt : loc.
 
-  (* #[debug] *)
-  EI.ind
-  Inductive is_queue (tl : loc) : loc → list val → iProp :=
-      | nill_is_queue : tl ↦ NONEV -∗ is_queue tl tl []
+  Local Definition NIL : val := NONEV.
+  Local Definition CONS (v:val) : val := SOMEV (#0, v).
+  Local Definition LINK (l:loc) : val := SOMEV (#1, #l).
+
+  (* Elpi Trace 37078 999999 / "-trace-only" "unif". *)
+  #[debug]
+  Iris Inductive is_queue (tl : loc) : loc → list val → iProp :=
+      | nill_is_queue : tl ↦ NIL -∗ is_queue tl tl []
       | cons_is_queue v vs l nl : 
-          l ↦ SOMEV (#1, v, #nl) -∗ 
+          l ↦ CONS (v, #nl) -∗ 
           is_queue tl nl vs -∗ is_queue tl l (v :: vs)
       | link_is_queue vs l nl : 
-          l ↦ SOMEV (#2, NONEV, #nl) -∗ 
+          l ↦ LINK nl -∗ 
           is_queue tl nl vs -∗ is_queue tl l vs.
 
   Print is_queue_pre.
