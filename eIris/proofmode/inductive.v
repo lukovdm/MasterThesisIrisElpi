@@ -116,9 +116,9 @@ Elpi Accumulate lp:{{
       (
       mk-ind Params (global (const C)) (global (const Fix)) (global (const U1)) (global (const U2)) (global (const M)) Proper 
                     (global (const IterConst)) TypeTerm NETypeTerm (igoal HC IndType IndProof), !,
-      coq.ltac.collect-goals IndProof GS SGS,
-      if-debug (std.forall GS (x\ coq.ltac.open show-goal x _)),
-      if-debug (std.forall SGS (x\ coq.ltac.open show-goal x _)),
+      % coq.ltac.collect-goals IndProof _GS _SGS,
+      % if-debug (std.forall GS (x\ coq.ltac.open show-goal x _)),
+      % if-debug (std.forall SGS (x\ coq.ltac.open show-goal x _)),
       coq.env.add-const {calc (Name ^ "_ind")} IndProof IndType ff IndConst,
       if-debug (coq.say "Induction" IndConst),
 
