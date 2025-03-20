@@ -14,18 +14,17 @@ Section Channels.
 
   Local Definition NIL : val := NONEV.
   Local Definition CONS (v:val) : val := SOMEV (#0, v).
-  Local Definition LINK (l:loc) : val := SOMEV (#1, #l).
+  Local Definition DEL (l:val) : val := SOMEV (#1, l).
 
-  Iris Inductive is_queue (tl : loc) : loc → list val → iProp :=
-      | nill_is_queue : tl ↦ NIL -∗ is_queue tl tl []
-      | cons_is_queue v vs l nl : 
-          l ↦ CONS (v, #nl) -∗ is_queue tl nl vs -∗ is_queue tl l (v :: vs)
-      | link_is_queue vs l nl : 
-          l ↦ LINK nl -∗ 
-          is_queue tl nl vs -∗ is_queue tl l vs.
+  Iris Inductive is_list_with_tl (tl : loc) : loc → list val → iProp :=
+    | is_list_with_tl_nil : tl ↦ NIL -∗ is_list_with_tl tl tl []
+    | is_list_with_tl_cons v vs l l' :
+      l ↦ CONS (v,#l') -∗ is_list_with_tl tl l' vs -∗ is_list_with_tl tl l (v :: vs)
+    | is_list_with_tl_del vs l l' :
+      l ↦ DEL #l' -∗ is_list_with_tl tl l' vs -∗ is_list_with_tl tl l vs.
 
 
-  Definition new_queue : val := λ: <>,
+  Definition new_list : val := λ: <>,
     let: "end" := Alloc NONE in
     ("end", "end").
 
@@ -54,13 +53,13 @@ Section Channels.
 
   Lemma new_queue_spec:
     {{{ True }}}
-      new_queue #()
+      new_list #()
     {{{ lh lt, RET (#lh, #lt);
-        is_queue lh lt [] }}}.
+      is_list_with_tl lh lt [] }}}.
   Proof.
     iIntros (Φ) "_ HΦ".
     wp_lam. wp_alloc l as "Hl /=".
     wp_pures. iModIntro. iApply "HΦ".
-    iApply nill_is_queue. by iFrame.
+    iApply is_list_with_tl_nil. by iFrame.
   Qed.
 End Channels.
