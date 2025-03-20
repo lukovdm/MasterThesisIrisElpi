@@ -24,10 +24,7 @@ eval $(opam env)
 
 **Step 3: Installing dependencies**
 
-This project is built for Rocq 8.20 with the associated version of the IPM and Rocq-Elpi.
-
-This project is built using the opam package manager. 
-When opam is installed, run the following to install all dependencies.
+Install the dependencies by running the following command
 
 ```bash
 opam install . --deps-only
