@@ -30,30 +30,6 @@ pm-reduce-done G GL :- coq.ltac.call "pm_reduce_done" [] G GL.
 type solve_proper_ltac open-tactic.
 solve_proper_ltac G GL :- coq.ltac.call "solve_proper" [] G GL.
 
-% Set and read Iris context count in elpi goals
-pred increase-ctx-count i:term, o:term.
-increase-ctx-count N NS :-
-  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
-
-pred get-ctx-count i:term, o:term.
-get-ctx-count {{ envs_entails (Envs _ _ lp:N) _ }} N.
-get-ctx-count T _ :-
-  coq.error "get-ctx-count: type not of shape envs entails: " T.
-
-pred set-ctx-count i:term, i:term, o:term.
-set-ctx-count 
-  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
-  NS
-  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }}.
-set-ctx-count T N _ :-
-  coq.error "set-ctx-count: type not of shape envs entails: " N T.
-
-pred set-ctx-count-proof i:igoal, o:igoal.
-set-ctx-count-proof (igoal N Type Proof) (igoal N IncType IncProof) :-
-  set-ctx-count Type N IncType,
-  coq.elaborate-skeleton {{ _ : lp:IncType }} Type Proof ok,
-  Proof = {{ lp:IncProof : _ }}.
-
 pred addN i:term, i:open-tactic, i:goal, o:list sealed-goal.
 addN N T (goal Ctx Trigger Type Proof Args) GL :-
   pm-reduce Type Type',

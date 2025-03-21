@@ -70,8 +70,9 @@ Section GSetsList.
       gset_add hd (#e)
     {{{ hd', RET hd'; is_gset hd' (s ∪ {[ e ]}) }}}.
   Proof.
-    eiIntros "%Phi His".
+    iIntros "%Phi His".
     iRevert (Phi).
+    Set Printing Implicit.
     iInduction "His" as "[%Hhd %Hset | * Hpt %Helem %Hsub IH %Hl]"; eiIntros "%Phi Hphi".
     - wp_rec.
       simplify_eq.
@@ -98,11 +99,11 @@ Section GSetsList.
       wp_load.
       wp_pures.
       unfold bool_decide, decide_rel.
-      destruct (val_eq_dec #e #a1); wp_pures.
+      destruct (val_eq_dec #e #a0); wp_pures.
       + eiDestruct "IH" as "[_ His]".
         iModIntro. iApply "Hphi".
         iApply cons_is_gset.
-        iExists l, tl, a1, (a0 ∖ {[a1]}). 
+        iExists l, tl, a0, _. 
         simplify_eq.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
@@ -123,7 +124,7 @@ Section GSetsList.
         * rewrite difference_union_distr_l_L.
           rewrite (difference_disjoint_L {[ e ]}); [done|].
           apply disjoint_singleton_r, not_elem_of_singleton.
-          destruct (Nat.eq_dec e a1); try done.
+          destruct (Nat.eq_dec e a0); try done.
           simplify_eq.
   Qed.
 End GSetsList.
@@ -207,11 +208,11 @@ Section Sets.
       wp_load.
       wp_pures.
       unfold bool_decide, decide_rel.
-      destruct (val_eq_dec #e #a1); wp_pures.
+      destruct (val_eq_dec #e #a0); wp_pures.
       + eiDestruct "IH" as "[_ His]".
         iModIntro. iApply "Hphi".
         iApply cons_is_set.
-        iExists _, _, _, (Ensembles.Subtract nat a0 e). 
+        iExists _, _, _, (Ensembles.Subtract nat elpi_ctx_entry_4_ e). 
         simplify_eq.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
@@ -233,7 +234,7 @@ Section Sets.
         iFrame.
         repeat iSplit; try iPureIntro; try done.
         apply Add_Subtract_comm.
-        destruct (Nat.eq_dec e a1); try done.
+        destruct (Nat.eq_dec e a0); try done.
         simplify_eq.
   Qed.
 End Sets.

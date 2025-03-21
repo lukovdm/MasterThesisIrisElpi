@@ -118,8 +118,8 @@ mk-fix-ne Params NEType Fix Type Proof :-
 
 
 pred mk-unfold-2.proof i:int, i:int, i:term, i:term, i:igoal.
-mk-unfold-2.proof Ps N Proper Mono (igoal HC Type Proof) :-
-  eintros-forall (igoal HC Type Proof) (mk-unfold-2.proof-1 Ps N Proper Mono).
+mk-unfold-2.proof Ps N Proper Mono (igoal Type Proof) :-
+  eintros-forall (igoal Type Proof) (mk-unfold-2.proof-1 Ps N Proper Mono).
 
 pred mk-unfold-2.proof-1 i:int, i:int, i:term, i:term, i:igoal.
 mk-unfold-2.proof-1 Ps N Proper Mono H :-
@@ -134,8 +134,8 @@ mk-unfold-2.proof-2 Ps N Proper Mono IH :-
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
   coq.mk-n-holes Ps Holes, !,
-  eiApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes2 N\ !,
-    h = igoal N PType PProof,
+  eiApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType PProof List Holes2\ !,
+    h = igoal PType PProof,
     coq.mk-n-holes Ps Holes2,
     coq.elaborate-skeleton (app [Proper | Holes2]) PType PProof D,
     if (D = ok) (true) (if-debug (coq.say "IProper error" D), fail)
@@ -146,16 +146,16 @@ mk-unfold-2.proof-2 Ps N Proper Mono IH :-
   eiIntros {std.append [iModalIntro | Pures] [iIdent (iNamed "H"), iHyp "H", iModalIntro, iHyp "HI"]} IH1 (ih\ true).
 
 pred mk-unfold-2 i:list param, i:term, i:term, i:term, i:term, i:term, o:igoal.
-mk-unfold-2 Params Pre Proper Mono Fix Type (igoal HC ToProof Proof) :-
+mk-unfold-2 Params Pre Proper Mono Fix Type (igoal ToProof Proof) :-
   mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:U ⊢ lp:F }}) Params Pre [Fix] [] Type ToProof', !,
   replace-params-ty Params ToProof' ToProof, !,
   if-debug (coq.say "unfold 2:" {coq.term->string ToProof}),
-  mk-unfold-2.proof {std.length Params} {type-depth Type} Proper Mono (igoal HC ToProof Proof).
+  mk-unfold-2.proof {std.length Params} {type-depth Type} Proper Mono (igoal ToProof Proof).
 
 
 pred mk-unfold-1.proof i:list param, i:int, i:term, i:term, i:term, i:term, i:term, i:term, i:igoal.
-mk-unfold-1.proof Params N NEType Pre Fix Unfold2 Proper Mono (igoal HC Type Proof) :-
-  eintros-forall (igoal HC Type Proof) (mk-unfold-1.proof-1 Params N NEType Pre Fix Unfold2 Proper Mono), !,
+mk-unfold-1.proof Params N NEType Pre Fix Unfold2 Proper Mono (igoal Type Proof) :-
+  eintros-forall (igoal Type Proof) (mk-unfold-1.proof-1 Params N NEType Pre Fix Unfold2 Proper Mono), !,
   if-debug (coq.say "Only solve_proper is left"),
   coq.ltac.collect-goals Proof GS SGS, !,
   std.forall GS (g\
@@ -201,7 +201,7 @@ mk-unfold-1.proof-2 Ps N Unfold2 Proper Mono IH :-
   type-to-fun MonoiProper' MonoiProper,
   coq.mk-n-holes Ps Holes, !,
   eiApplyLem (app [MonoiProper | Holes]) IH [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes2 N\ !,
-    h = igoal N PType PProof,
+    h = igoal PType PProof,
     coq.mk-n-holes Ps Holes2,
     coq.elaborate-skeleton (app [Proper | Holes2]) PType PProof D,
     if (D = ok) (true) (if-debug (coq.say "IProper error" D), fail)
@@ -217,17 +217,16 @@ mk-unfold-1.proof-3 Ps Unfold2 IH :-
   eiApplyHyp "HF" AppliedIH [].
 
 pred mk-unfold-1 i:list param, i:term, i:term, i:term, i:term, i:term , i:term, i:term, o:igoal.
-mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type NEType (igoal HC ToProof Proof) :-
+mk-unfold-1 Params Unfold2 Pre Proper Mono Fix Type NEType (igoal ToProof Proof) :-
   mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:F ⊢ lp:U }}) Params Pre [Fix] [] Type ToProofNoParams', !,
   coq.elaborate-skeleton ToProofNoParams' {{ Type }} ToProofNoParams D, !,
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making Unfold1 type ("{coq.term->string ToProofNoParams}":Type):" Msg), fail) 
     (if-debug (coq.say "Proving Unfold1:" {coq.term->string ToProofNoParams})), !,
-  HC = {{ 1%positive }},
-  mk-unfold-1.proof Params {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (igoal HC ToProofNoParams ProofNoPramas),
+  mk-unfold-1.proof Params {type-depth Type} NEType Pre Fix Unfold2 Proper Mono (igoal ToProofNoParams ProofNoPramas),
   replace-params-ty Params ToProofNoParams ToProof,!,
   replace-params-bo Params ProofNoPramas Proof,
-  if-debug (coq.say "unfold 1 done"). % {igoal->string (igoal HC ToProof Proof)}).
+  if-debug (coq.say "unfold 1 done").
 
 
 pred mk-unfold.proof i:int, i:term, i:term, i:igoal.
@@ -248,11 +247,11 @@ mk-unfold.proof-1 Ps Unfold1 Unfold2 H0 :-
   eiApplyLem (app [Unfold2 | Holes2]) H2 [] [].
 
 pred mk-unfold i:list param, i:term, i:term, i:term, i:term, i:term, o:igoal.
-mk-unfold Params Unfold1 Unfold2 Pre Fix Type (igoal HC ToProof Proof) :-
+mk-unfold Params Unfold1 Unfold2 Pre Fix Type (igoal ToProof Proof) :-
   mk-fix-toproof (u\f\res\ sigma U\ sigma F\ u = [U], f = [F], res = {{ lp:F ⊣⊢ lp:U }}) Params Pre [Fix] [] Type ToProof', !,
   replace-params-ty Params ToProof' ToProof,!,
   if-debug (coq.say "unfold:" {coq.term->string ToProof}),
-  mk-unfold.proof {std.length Params} Unfold1 Unfold2 (igoal HC ToProof Proof),
+  mk-unfold.proof {std.length Params} Unfold1 Unfold2 (igoal ToProof Proof),
   if-debug (coq.say "unfold done").
 
 
@@ -318,7 +317,7 @@ pred mk-constr-lem i:list param, i:term, i:(term -> list indc-decl), i:term, i:t
 mk-constr-lem Params Unfold2 Constructors PreBody Fix Type Nth Total ConstrLem :-
   mk-constr-lem.toproof Params PreBody Fix Type Nth Total [] [] ConstrType,
   if-debug (coq.say "----- Constr Lemma" { coq.term->string ConstrType } ),
-  mk-constr-lem.proof Unfold2 {std.length Params} Nth Total (igoal {{ 1%positive }} ConstrType ConstrProof),
+  mk-constr-lem.proof Unfold2 {std.length Params} Nth Total (igoal ConstrType ConstrProof),
   
   std.nth Nth (Constructors Fix) (constructor Name _),
   coq.env.add-const Name ConstrProof ConstrType ff ConstrLem.
@@ -363,9 +362,9 @@ mk-iter.toproof-2 Params Pre Fix Type Phi {{ (□ lp:Assump) -∗ lp:Prem }} :-
   mk-iter.toproof.inner-2 Params Fix Phi [] Type Prem.
 
 pred mk-iter.proof i:list param, i:prop, i:term, i:int, i:igoal.
-mk-iter.proof Params HasNE NEType N (igoal HC Type Proof) :-
+mk-iter.proof Params HasNE NEType N (igoal Type Proof) :-
 
-  eintros-forall-remember (igoal HC Type Proof) (mk-iter.proof-1 Params HasNE NEType N),
+  eintros-forall-remember (igoal Type Proof) (mk-iter.proof-1 Params HasNE NEType N),
   if-debug (coq.say "Only solve_proper is left"),
   coq.ltac.collect-goals Proof GS SGS, !,
   std.forall GS (g\
@@ -415,7 +414,7 @@ mk-iter.proof-2.aux Phi Base RevL (app [Phi | L]) :- !,
 
 
 pred mk-iter i:list param, i:term, i:term, i:term, i:term, o:igoal.
-mk-iter Params Pre Fix Type NEType (igoal HC ToProof Proof) :- 
+mk-iter Params Pre Fix Type NEType (igoal ToProof Proof) :- 
   mk-iter.toproof Params Pre Fix Type NEType ToProof', !,
   replace-params-ty Params ToProof' ToProof'', !,
   if-debug (coq.say "iter to proof" {coq.term->string ToProof''}), !,
@@ -423,7 +422,7 @@ mk-iter Params Pre Fix Type NEType (igoal HC ToProof Proof) :-
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making iter proof type ("{coq.term->string ToProof}":Type):" Msg), fail) 
     (true), !,
-  mk-iter.proof Params (Type = NEType) NEType {type-depth Type} (igoal HC ToProof Proof),
+  mk-iter.proof Params (Type = NEType) NEType {type-depth Type} (igoal ToProof Proof),
   if-debug (coq.say "iter proof finished").
 
 
@@ -466,8 +465,8 @@ mk-ind.toproof-inner Params Pre Fix Phi RevXs Type _ {{ bi_wand lp:L lp:R }} :-
   R = app [Phi | Xs].
 
 pred mk-ind.proof i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:igoal.
-mk-ind.proof Ps N Unfold1 Unfold2 Proper Mono Iter (igoal HC Type Proof) :-
-  eintros-forall (igoal HC Type Proof) (mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter),
+mk-ind.proof Ps N Unfold1 Unfold2 Proper Mono Iter (igoal Type Proof) :-
+  eintros-forall (igoal Type Proof) (mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter),
   if-debug (coq.say "Only solve_proper is left"),
   coq.ltac.collect-goals Proof GS SGS, !,
   std.forall GS (g\
@@ -479,7 +478,7 @@ mk-ind.proof Ps N Unfold1 Unfold2 Proper Mono Iter (igoal HC Type Proof) :-
     coq.ltac.open solve_proper_ltac g []
   ).
 
-pred mk-ind.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term i:igoal.
+pred mk-ind.proof-1 i:int, i:int, i:term, i:term, i:term, i:term, i:term, i:igoal.
 mk-ind.proof-1 Ps N Unfold1 Unfold2 Proper Mono Iter H :-
   eiStartProof H IH, !,
   std.map {std.iota N} (x\r\ r = iPure none) Pures, !,
@@ -494,8 +493,8 @@ mk-ind.proof-2 Ps N Unfold1 Unfold2 Proper Mono Iter H :-
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
   coq.mk-n-holes Ps Holes, !,
-  eiApplyLem (app [MonoiProper | Holes]) H1 [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes'\ sigma PTypeString N\ !,
-    h = igoal N PType PProof,
+  eiApplyLem (app [MonoiProper | Holes]) H1 [(h\ sigma PType PProof List Holes' PTypeString\ !,
+    h = igoal PType PProof,
     std.iota Ps List,
     std.map List (x\r\ r = {{ _ }}) Holes',
     coq.elaborate-skeleton (app [Proper | Holes']) PType PProof D,
@@ -520,8 +519,8 @@ mk-ind.proof-3 Ps N Unfold2 Proper Mono H :-
   ((copy {{ @IProper }} {{ @iProper }} :- !) => copy Mono MonoiProper'),
   type-to-fun MonoiProper' MonoiProper,
   coq.mk-n-holes Ps Holes, !,
-  eiApplyLem (app [MonoiProper | Holes]) IH2 [(h\ sigma PType\ sigma PProof\ sigma List\ sigma Holes' N\ !,
-    h = igoal N PType PProof,
+  eiApplyLem (app [MonoiProper | Holes]) IH2 [(h\ sigma PType PProof List Holes'\ !,
+    h = igoal PType PProof,
     std.iota Ps List,
     std.map List (x\r\ r = {{ _ }}) Holes',
     coq.elaborate-skeleton (app [Proper | Holes']) PType PProof D,
@@ -532,7 +531,7 @@ mk-ind.proof-3 Ps N Unfold2 Proper Mono H :-
   eiIntros {std.append [iModalIntro | Pures] [iList [[iDrop, iIdent (iNamed "Hilp")]], iHyp "Hilp"]} IH3 (ih\ true).
 
 pred mk-ind i:list param, i:term, i:term, i:term, i:term, i:term, i:term, i:term, i:term, i:term, o:igoal.
-mk-ind Params Pre Fix Unfold1 Unfold2 Proper Mono Iter Type NEType (igoal HC ToProof Proof) :-
+mk-ind Params Pre Fix Unfold1 Unfold2 Proper Mono Iter Type NEType (igoal ToProof Proof) :-
   mk-ind.toproof Params Pre Fix Type NEType ToProof',
   replace-params-ty Params ToProof' ToProof'', !,
   if-debug (coq.say "ind to proof" {coq.term->string ToProof''}), !,
@@ -540,6 +539,6 @@ mk-ind Params Pre Fix Unfold1 Unfold2 Proper Mono Iter Type NEType (igoal HC ToP
   if (D = error Msg) 
     (if-debug (coq.say "Failure in making ind proof type ("{coq.term->string ToProof}":Type):" Msg), fail) 
     (true), !,
-  mk-ind.proof {std.length Params} {type-depth Type} Unfold1 Unfold2 Proper Mono Iter (igoal HC ToProof Proof), !,
+  mk-ind.proof {std.length Params} {type-depth Type} Unfold1 Unfold2 Proper Mono Iter (igoal ToProof Proof), !,
   if-debug (coq.say "ind proof finished").
   

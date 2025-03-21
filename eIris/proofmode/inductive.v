@@ -80,17 +80,17 @@ Elpi Accumulate lp:{{
 
     if (get-option "nounfold" tt) (true)
       (
-      mk-unfold-2 Params (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (igoal HC Unfold2Type Unfold2Proof),
+      mk-unfold-2 Params (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm (igoal Unfold2Type Unfold2Proof),
       coq.env.add-const {calc (Name ^ "_unfold_2")} Unfold2Proof Unfold2Type ff U2, !,
       if-debug (coq.say "unfold_2" U2), !,
  
       mk-unfold-1 Params (global (const U2)) (global (const C)) (global (const M)) Proper (global (const Fix)) TypeTerm
-                  NETypeTerm (igoal HC Unfold1Type Unfold1Proof), !,
+                  NETypeTerm (igoal Unfold1Type Unfold1Proof), !,
       if-debug (coq.say "unfold_1 made now defining it (slow?)"), !,
       coq.env.add-const {calc (Name ^ "_unfold_1")} Unfold1Proof Unfold1Type ff U1, !,
       if-debug (coq.say "unfold_1" U1), !,
 
-      mk-unfold Params (global (const U1)) (global (const U2)) (global (const C)) (global (const Fix)) TypeTerm (igoal HC UnfoldType UnfoldProof),
+      mk-unfold Params (global (const U1)) (global (const U2)) (global (const C)) (global (const Fix)) TypeTerm (igoal UnfoldType UnfoldProof),
       coq.env.add-const {calc (Name ^ "_unfold")} UnfoldProof UnfoldType ff U, !,
       if-debug (coq.say "unfold" U), !,
 
@@ -105,7 +105,7 @@ Elpi Accumulate lp:{{
 
     if (get-option "noiter" tt) (true)
       ( 
-      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm NETypeTerm (igoal HC IterType IterProof),
+      mk-iter Params (global (const C)) (global (const Fix)) TypeTerm NETypeTerm (igoal IterType IterProof),
       coq.env.add-const {calc (Name ^ "_iter")} IterProof IterType ff IterConst,
       if-debug (coq.say "Iter" IterConst),
       
@@ -115,7 +115,7 @@ Elpi Accumulate lp:{{
     if (get-option "noind" tt) (true)
       (
       mk-ind Params (global (const C)) (global (const Fix)) (global (const U1)) (global (const U2)) (global (const M)) Proper 
-                    (global (const IterConst)) TypeTerm NETypeTerm (igoal HC IndType IndProof), !,
+                    (global (const IterConst)) TypeTerm NETypeTerm (igoal IndType IndProof), !,
       % coq.ltac.collect-goals IndProof _GS _SGS,
       % if-debug (std.forall GS (x\ coq.ltac.open show-goal x _)),
       % if-debug (std.forall SGS (x\ coq.ltac.open show-goal x _)),

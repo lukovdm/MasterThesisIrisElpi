@@ -34,19 +34,17 @@ Elpi Accumulate lp:{{
     [get-option "debug" tt, get-option "start" Start] => (
       parse_args Args IPS, !,
       eiOfCoqProof G IH, !,
-      eiIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+      eiIntros IPS IH (ih\ true), !,
       coq.ltac.collect-goals Proof GL SG,
-      all (open show-goal) GL _,
-      all (open pm-reduce-goal) GL GL', !,
-      all (open show-goal) GL' _,
+      all (open pm_reduce) GL GL', !,
       std.append GL' SG GS
     ).
   solve (goal _ _ _ Proof Args as G) GS :-
     parse_args Args IPS, !,
     eiOfCoqProof G IH, !,
-    eiIntros IPS IH (ih\ set-ctx-count-proof ih _), !,
+    eiIntros IPS IH (ih\ true), !,
     coq.ltac.collect-goals Proof GL SG,
-    all (open pm-reduce-goal) GL GL',
+    all (open pm_reduce) GL GL',
     std.append GL' SG GS.
 }}.
 
@@ -69,18 +67,18 @@ Elpi Accumulate lp:{{
     [get-option "debug" tt, get-option "start" Start] => (
       parse_destruct_args Args ID IP, !,
       eiOfCoqProof G IH, !,
-      eiDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
+      eiDestruct ID IP IH (ih\ true ), !,
       coq.ltac.collect-goals Proof GL SG,
-      all (open pm-reduce-goal) GL GL',
+      all (open pm_reduce) GL GL',
       all (open show-goal) GL' _,
       std.append GL' SG GS
     ).
   solve (goal _ _ _ Proof Args as G) GS :-
     parse_destruct_args Args ID IP, !,
     eiOfCoqProof G IH, !,
-    eiDestruct ID IP IH (ih\ set-ctx-count-proof ih _), !,
+    eiDestruct ID IP IH (ih\ true ), !,
     coq.ltac.collect-goals Proof GL SG,
-    all (open pm-reduce-goal) GL GL',
+    all (open pm_reduce) GL GL',
     std.append GL' SG GS.
 }}.
 
@@ -92,3 +90,12 @@ Tactic Notation "eiDestruct" string(x) "as" string(y) :=
 
 Tactic Notation "eiDestruct" string(x) :=
   elpi eiDestruct ltac_string:(x) "**".
+
+Tactic Notation "eiIntrosDebug" string(x) :=
+  elpi eiIntros "debug" ltac_string:(x).
+
+Tactic Notation "eiDestructDebug" string(x) "as" string(y) :=
+  elpi eiDestruct "debug" ltac_string:(x) ltac_string:(y).
+
+Tactic Notation "eiDestructDebug" string(x) :=
+  elpi eiDestruct "debug" ltac_string:(x) "**".

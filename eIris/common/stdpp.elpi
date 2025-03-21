@@ -82,7 +82,7 @@ refine.error T (goal _ RawEv Ty Ev _) GS :-
   (@keepunivs! => coq.elaborate-skeleton T Ty TR D),
   if (D = error Msg) 
     (if-debug (coq.say "Failed to refine" {coq.term->string T} "of type" {coq.term->string Ty} ":" Msg), fail)
-    (if-debug (coq.say "Refined" {coq.term->string T} "of type" {coq.term->string Ty} ":" {coq.term->string TR})),
+    (if-debug (coq.say "Refined" {coq.term->string T} "of type" {coq.term->string Ty} " into " {coq.term->string TR})),
   coq.ltac.collect-goals TR GS _,
   Ev = TR,
   if-debug (coq.say "refine done").
@@ -94,11 +94,45 @@ type-depth (prod _ _ F) N :- !,
 type-depth _ 0.
 
 kind igoal type.
-type igoal term -> term -> term -> igoal. % the anonymous iris hyp counter, the type and the proof
+type igoal term -> term -> igoal. % the anonymous iris hyp counter, the type and the proof
 
 pred igoal->string i:igoal, o:string.
-igoal->string (igoal N T P) S :-
-  S is {coq.term->string N} ^ " ⊢ " ^ {coq.term->string P} ^ " (" ^ {std.any->string P} ^ ") : \n" ^ {coq.term->string T}.
+igoal->string (igoal T P) S :-
+  (coq.term->string {get-ctx-count T} NTerm; NTerm = ""),
+  S is NTerm ^ " ⊢ " ^ {coq.term->string P} ^ " (" ^ {std.any->string P} ^ ") : \n" ^ {coq.term->string T}.
+
+
+% Set and read Iris context count in elpi goals
+pred increase-ctx-count i:term, o:term.
+increase-ctx-count N NS :-
+  coq.reduction.vm.norm {{ Pos.succ lp:N }} _ NS.
+
+pred get-ctx-count i:term, o:term.
+get-ctx-count {{ @envs_entails _ (@Envs _ _ _ lp:N) _ }} N :- !.
+get-ctx-count T N :-
+  coq.say "get-ctx-count: type not of shape envs entails: " {{ @envs_entails _ (@Envs _ _ _ lp:N) _ }} "\n" T,
+  fail.
+
+pred set-ctx-count i:term, i:term, o:term.
+set-ctx-count 
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES _) lp:P }}
+  NS
+  {{ @envs_entails lp:PROP (@Envs lp:PROPE lp:EI lp:ES lp:NS) lp:P }} :- !.
+set-ctx-count T N _ :-
+  coq.say "set-ctx-count: type not of shape envs entails: " N T,
+  fail.
+
+pred set-ctx-count-proof i:igoal, o:igoal.
+set-ctx-count-proof (igoal Type Proof) (igoal Type IncProof) :-
+  coq.elaborate-skeleton {{ _ : lp:Type }} Type Proof ok,
+  Proof = {{ lp:IncProof : _ }}.
+
+pred incr-ctx-count-type i:term, o:term, o:term.
+incr-ctx-count-type T N IncT :-
+  get-ctx-count T N,
+  increase-ctx-count N IncN,
+  set-ctx-count T IncN IncT.
+
 
 % Handle params and remove them when neccesary
 kind param type.

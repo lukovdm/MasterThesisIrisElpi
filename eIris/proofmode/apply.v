@@ -17,13 +17,13 @@ Elpi Accumulate lp:{{
   pred go-iApply i:list argument, i:igoal, o:list sealed-goal.
   go-iApply [str Hyp] IH GL' :-
     eiApplyHyp Hyp IH IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (igoal _ _ Proof), coq.ltac.collect-goals Proof r _) GLL,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ Proof), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 
   go-iApply [trm Lem] IH GL' :-
     eiApplyLem Lem IH [] IHS, !,
-    std.map IHS (x\r\ sigma Proof\ x = (igoal _ _ Proof), coq.ltac.collect-goals Proof r _) GLL,
+    std.map IHS (x\r\ sigma Proof\ x = (igoal _ Proof), coq.ltac.collect-goals Proof r _) GLL,
     std.flatten GLL GL,
     all (open pm-reduce-goal) GL GL'.
 

@@ -6,12 +6,12 @@ accumulate eIris/proofmode/elpi/eiris_tactics.
 shorten coq.ltac.{ open, thenl, all }.
 
 pred eiPoseProper i:igoal, i:term, i:term, o:ident, o:igoal.
-eiPoseProper (igoal N Type Proof) R F (iAnon N) (igoal NS PosedType PosedProof) :-
-  increase-ctx-count N NS,
+eiPoseProper (igoal Type Proof) R F (iAnon N) (igoal PosedType PosedProof) :-
+  incr-ctx-count-type Type N Type',
   ident->term (iAnon N) _ NT,
   (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}} 
-                Type Proof ok),
+                Type' Proof ok),
   Proof = {{ tac_pose_proof _ _ _ _ (into_emp_valid_proj _ _ lp:IEVProof (iproper_top_to_iproper _ _ _ _ _ (lp:IPTProof : IProperTop _ _ _))) lp:PosedProof }},
   coq.ltac.collect-goals IEVProof [G1] _,
   open (coq.ltac.call "iIntoEmpValid" []) G1 TCGL,
@@ -51,7 +51,7 @@ unfold-gref (const IP) I O :-
   coq.reduction.lazy.bi-norm I' O.
 
 pred esteps i:igoal.
-esteps (igoal _ Type _ as IH) :-
+esteps (igoal Type _ as IH) :-
   if-debug (coq.say "################# Goal #################" {igoal->string IH} ""),
   esteps.conn Type R LF RF, !,
   esteps.do IH R LF RF.
@@ -90,14 +90,14 @@ esteps.do IH R (app [F | FS]) _ :-
   if-debug (coq.say "Apply relation" {coq.term->string R} "with" {coq.term->string (app [F | FS'])}),
   eiApplyProper IH R (app [F | FS']) HS, !,
   std.map HS (x\r\ esteps x) _.
-esteps.do (igoal N Type Proof) _ (app [global (const F) | _ ]) _ :-
+esteps.do (igoal Type Proof) _ (app [global (const F) | _ ]) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (igoal N UnfoldedType Proof).
-esteps.do (igoal N Type Proof) _ (global (const F)) _ :-
+  esteps (igoal UnfoldedType Proof).
+esteps.do (igoal Type Proof) _ (global (const F)) _ :-
   if-debug (coq.say "Unfolding" F),
   unfold-gref (const F) Type UnfoldedType, !,
-  esteps (igoal N UnfoldedType Proof).
+  esteps (igoal UnfoldedType Proof).
 esteps.do IH _ _ _ :-
   if-debug (coq.say "Applying done"),
   eiIntros [iDone] IH (_\ if-debug (coq.say "done failed"), fail).
