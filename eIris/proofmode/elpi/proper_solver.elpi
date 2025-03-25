@@ -8,7 +8,7 @@ shorten coq.ltac.{ open, thenl, all }.
 pred eiPoseProper i:igoal, i:term, i:term, o:ident, o:igoal.
 eiPoseProper (igoal Type Proof) R F (iAnon N) (igoal PosedType PosedProof) :-
   incr-ctx-count-type Type N Type',
-  ident->term (iAnon N) _ NT,
+  ident->term (iAnon N) NT,
   (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ (iproper_top_to_iproper _ _ _ _ _ (_ : IProperTop lp:R lp:F _))) _}} 
                 Type' Proof ok),

@@ -8,13 +8,16 @@ shorten coq.ltac.{ open, thenl, all }.
 
 
 % Manage identifiers as coq terms
-pred ident->term i:ident, o:string, o:term.
-ident->term (iNamed S) S T :- !,
+pred ident->term i:ident, o:term.
+ident->term (iNamed S) T :- !,
   string->stringterm S ST,
   T = {{ INamed lp:ST }}.
-ident->term (iAnon N) "anon" T :- !,
+ident->term (iAnon N) T :- !,
   T = {{ IAnon lp:N }}.
 
+pred ident->string i:ident, o:string.
+ident->string (iNamed S) S.
+ident->string (iAnon _) "anon".
 
 pred ident-for-pat i:intro_pat, i:term, o:ident, o:term.
 ident-for-pat (iList [[IP]]) Type ID Type' :-
@@ -35,10 +38,10 @@ ident-for-pat.default _ _ Type (iAnon N) Type' :-
 
 pred find-hyp i:ident, i:term, o:term.
 find-hyp ID {{ envs_entails (Envs lp:P _ _) _ }} H :-
-  ident->term ID _ IDT,
+  ident->term ID IDT,
   find-hyp.aux IDT P H.
 find-hyp ID {{ envs_entails (Envs _ lp:S _) _ }} H :-
-  ident->term ID _ IDT,
+  ident->term ID IDT,
   find-hyp.aux IDT S H.
 pred find-hyp.aux i:term, i:term, o:term.
 find-hyp.aux IDT {{ Esnoc _ lp:IDT lp:H }} H :- !.
@@ -81,7 +84,7 @@ eiRight (igoal Type Proof) (igoal RightType RightProof) :-
 pred eiSplit i:bool, i:list ident, i:igoal, o:igoal, o:igoal.
 eiSplit IsLeft Hyps (igoal Type Proof) (igoal LType LProof) (igoal RType RProof) :-
   if (IsLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
-  std.map Hyps (x\r\ ident->term x _ r) HypsT,
+  std.map Hyps ident->term HypsT,
   list->listterm HypsT ListT,
   coq.typecheck ListT {{ list _ }} ok,
   (@no-tc! => coq.elaborate-skeleton {{ tac_sep_split _ lp:D lp:ListT _ _ _ _ _ }} Type Proof ok),
@@ -117,7 +120,7 @@ eiAndSplit (igoal Type Proof) (igoal LType LProof) (igoal RType RProof) :-
 
 pred eiEvalIn i:ident, i:igoal, o:igoal, o:igoal.
 eiEvalIn ID (igoal Type Proof) IH (igoal EvalType EvalProof) :-
-  ident->term ID _ T,
+  ident->term ID T,
   pm-reduce Type Type',
   (@no-tc! => coq.elaborate-skeleton {{ tac_eval_in _ lp:T _ _ _ _ _ _ _ }} Type' Proof ok),
   Proof = {{ tac_eval_in _ _ _ _ _ _ lp:Refl lp:StartProof lp:EvalProof }},
@@ -208,9 +211,14 @@ pred refine-igoal-with i:term, i:igoal.
 refine-igoal-with T (igoal Ty P) :-
   coq.elaborate-skeleton T Ty P ok, T = P.
 
+pred tc-solve-term i:term.
+tc-solve-term T :-
+  coq.ltac.collect-goals T [G] _,
+  open tc_solve G [].
+
 pred eiIntro-ident i:ident, i:igoal, o:igoal.
 eiIntro-ident ID (igoal _ _ as H) (igoal IType IProof) :-
-  ident->term ID X T,
+  ident->term ID T,
   (@no-tc! ==> refine-igoal-with {{ tac_impl_intro _ lp:T _ _ _ lp:FromImpl lp:Spatial lp:FromAffinely lp:IProof }} H),
   coq.ltac.collect-goals FromImpl [G1] _,
   open tc_solve G1 [],
@@ -224,16 +232,16 @@ eiIntro-ident ID (igoal _ _ as H) (igoal IType IProof) :-
   !,
   coq.typecheck IProof IType' ok,
   pm-reduce IType' IType,
-  if (IType = {{ False }}) (coq.error "eiIntro: " X " not fresh") (true).
-eiIntro-ident ID (igoal _ _ as H) (igoal IType IProof) :-
-  ident->term ID IDStr T, % data conversion
-  (@no-tc! ==> refine-igoal-with {{ tac_wand_intro _ lp:T _ _ _ lp:FromWand lp:IProof }} H), 
+  if (IType = {{ False }}) (coq.error "eiIntro: " {ident->string ID} " not fresh") (true).
+eiIntro-ident ID GOAL (igoal IType IProof) :-
+  ident->term ID T, % data conversion
+  (@no-tc! ==> refine-igoal-with {{ tac_wand_intro _ lp:T _ _ _ lp:FromWand lp:IProof }} GOAL), 
   tc-solve-term FromWand, !, 
   coq.typecheck IProof IType' ok, % inspect subgoal
   pm-reduce IType' IType, % normalize subgoal
-  if (IType = {{ False }}) (coq.error "eiIntro: " IDStr " not fresh") (true).
+  std.assert! (not (IType = {{ False }})) "eiIntro: not fresh".
 eiIntro-ident ID _ _ :-
-  ident->term ID X _,
+  ident->string ID X,
   coq.error "eiIntro: " X " could not introduce".
 
 pred eiIntro-fresh i:igoal, o:igoal.
@@ -250,20 +258,20 @@ eiExFalso (igoal Type Proof) (igoal FalseType FalseProof) :-
 
 pred eiClear i:ident, i:igoal, o:igoal.
 eiClear ID (igoal Type Proof) (igoal ClearType ClearProof) :-
-  ident->term ID IDS IDT,
+  ident->term ID IDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_clear _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_clear _ _ _ _ _ lp:Lookup lp:TC lp:ClearProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.error "iClear:" IDS "not found"),
+  (open pm_reflexivity G1 []; coq.error "iClear:" {ident->string ID} "not found"),
   coq.ltac.collect-goals TC [G2] _,
   (
     thenl [
       open pm_reduce,
       open tc_solve
     ] G2 []; 
-    coq.error "iClear:" IDS "not affine and the goal not absorbing"
+    coq.error "iClear:" {ident->string ID} "not affine and the goal not absorbing"
   ),
 
   coq.typecheck ClearProof RedType ok,
@@ -273,7 +281,8 @@ eiClear ID (igoal Type Proof) (igoal ClearType ClearProof) :-
 
 pred eiPure i:ident, i:option string, i:igoal, i:(igoal -> prop).
 eiPure ID PID (igoal Type Proof) C :-
-  ident->term ID IDS IDT,
+  ident->term ID IDT,
+  ident->string ID IDS,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_pure _ lp:IDT _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_pure _ _ _ _ _ _ lp:Lookup lp:IntoPure lp:Affine lp:IntroProof }},
@@ -306,7 +315,7 @@ eiPure ID PID (igoal Type Proof) C :-
 pred eiPoseLem i:term, i:igoal, o:ident, i:list (igoal -> prop), o:igoal.
 eiPoseLem Lem (igoal Type Proof) (iAnon N) Cs (igoal PosedType PosedProof) :-
   incr-ctx-count-type Type N Type',
-  ident->term (iAnon N) _ NT, !,
+  ident->term (iAnon N) NT, !,
 
   (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof _ lp:NT _ _ (into_emp_valid_proj _ _ _ lp:Lem) _}} 
@@ -328,7 +337,7 @@ eiPoseLem Lem (igoal Type Proof) (iAnon N) Cs (igoal PosedType PosedProof) :-
 pred eiPoseHyp i:term, i:igoal, o:ident, o:igoal.
 eiPoseHyp Hyp (igoal Type Proof) (iAnon N) (igoal PosedType PosedProof) :-
   incr-ctx-count-type Type N Type',
-  ident->term (iAnon N) _ NT,
+  ident->term (iAnon N) NT,
   (@no-tc! => coq.elaborate-skeleton 
                 {{ tac_pose_proof_hyp _ lp:Hyp lp:NT _ _}} 
                 Type' Proof ok),
@@ -341,7 +350,7 @@ eiPoseHyp Hyp (igoal Type Proof) (iAnon N) (igoal PosedType PosedProof) :-
 
 pred eiSpecializeWand i:igoal, i:ident, o:igoal, o:igoal.
 eiSpecializeWand (igoal Type Proof) ID (igoal LType LProof) (igoal RType RProof) :-
-    ident->term ID _IDS IDT,
+    ident->term ID IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
                 Type Proof ok),
     Proof = {{ tac_specialize_assert_no_am _ _ _ _ _ _ _ _ _ _ lp:RefP lp:TC1P lp:TC2P lp:ConjP}},
@@ -363,7 +372,7 @@ eiSpecializeWand (igoal Type Proof) ID (igoal LType LProof) (igoal RType RProof)
 
 pred eiSpecializeForall i:igoal, i:ident, i:term, o:igoal.
 eiSpecializeForall (igoal Type Proof) ID Arg (igoal SType SProof) :- 
-    ident->term ID _IDS IDT,
+    ident->term ID IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_forall_specialize _ lp:IDT _ _ _ _ _ _ _ }} 
                 Type Proof D),
     if (D = error Message) 
@@ -386,7 +395,7 @@ eiSpecializeForall (igoal Type Proof) ID Arg (igoal SType SProof) :-
 
 pred eiApplySimpleHyp i:igoal, i:ident, o:igoal.
 eiApplySimpleHyp (igoal Type Proof) ID (igoal ApType ApProof) :-
-  ident->term ID _IDS IDT,
+  ident->term ID IDT,
   (@no-tc! => coq.elaborate-skeleton {{ tac_apply _ lp:IDT _ _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply hyp failed" D), fail),
   Proof = {{ tac_apply _ _ _ _ _ _ lp:RefProof lp:TCProof lp:ApProof }},
@@ -400,7 +409,7 @@ eiApplySimpleHyp (igoal Type Proof) ID (igoal ApType ApProof) :-
 
 pred eiApplySimpleExact i:igoal, i:ident.
 eiApplySimpleExact (igoal Type Proof) ID :-
-  ident->term ID _IDS IDT,
+  ident->term ID IDT,
   (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof D),
   if (D = ok) (true) (if-debug (coq.say "simple apply exact failed" D), fail),
   Proof = {{ tac_assumption _ _ _ _ _ lp:RefProof lp:TCProof lp:RTCProof }},
@@ -452,7 +461,7 @@ eiApplyHyp.aux IH ID [IHL | IHS] :-
 
 pred eiIntuitionistic i:ident, i:igoal, o:igoal.
 eiIntuitionistic ID (igoal Type Proof) (igoal IntType IntProof) :-
-  ident->term ID X T,
+  ident->term ID T,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_impl_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_impl_intro_intuitionistic _ _ _ _ _ _ lp:FromImpl lp:IP lp:IntProof }},
@@ -465,10 +474,10 @@ eiIntuitionistic ID (igoal Type Proof) (igoal IntType IntProof) :-
 
   coq.typecheck IntProof RedType ok,
   pm-reduce RedType IntType,
-  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " X " not fresh") (true).
+  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " {ident->string ID} " not fresh") (true).
 
 eiIntuitionistic ID (igoal Type Proof) (igoal IntType IntProof) :-
-  ident->term ID X T,
+  ident->term ID T,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_wand_intro_intuitionistic _ lp:T _ _ _ _ lp:FromWand lp:IP lp:TCOR lp:IntProof }},
@@ -483,24 +492,24 @@ eiIntuitionistic ID (igoal Type Proof) (igoal IntType IntProof) :-
 
   coq.typecheck IntProof RedType ok,
   pm-reduce RedType IntType,
-  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " X " not fresh") (true).
+  if (IntType = {{ False }}) (coq.error "eiIntuitionistic: " {ident->string ID} " not fresh") (true).
 
 eiIntuitionistic ID _ _ :- !,
-  ident->term ID X _,
-  coq.error {calc ("eiIntuitionistic: " ^ X ^ " could not introduce")}.
+  ident->term ID _,
+  coq.error "eiIntuitionistic:" {ident->string ID} "could not introduce".
 
 
 pred eiAndDestruct i:ident, i:ident, i:ident, i:igoal, o:igoal.
 eiAndDestruct HID H1ID H2ID (igoal Type Proof) (igoal AndType AndProof) :-
-  ident->term HID ID HIDT,
-  ident->term H1ID _ H1IDT,
-  ident->term H2ID _ H2IDT,
+  ident->term HID HIDT,
+  ident->term H1ID H1IDT,
+  ident->term H2ID H2IDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_and_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_and_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.error "iAndDestruct:" ID "not found"),
+  (open pm_reflexivity G1 []; coq.error "iAndDestruct:" {ident->string HID} "not found"),
   coq.ltac.collect-goals Into [G2] _,
   (
     thenl [
@@ -517,8 +526,8 @@ eiAndDestruct HID H1ID H2ID (igoal Type Proof) (igoal AndType AndProof) :-
 
 pred eiAndChoiceDestruct i:ident, i:ident, i:bool, i:igoal, o:igoal.
 eiAndChoiceDestruct ID OID ChooseLeft (igoal Type Proof) (igoal AndType AndProof) :-
-  ident->term ID X IDT,
-  ident->term OID OX OIDT,
+  ident->term ID IDT,
+  ident->term OID OIDT,
 
   if (ChooseLeft = tt) (D = {{ Left }}) (D = {{ Right }}),
 
@@ -526,7 +535,7 @@ eiAndChoiceDestruct ID OID ChooseLeft (igoal Type Proof) (igoal AndType AndProof
   Proof = {{ tac_and_destruct_choice _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:AndProof }},
 
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; coq.error "iAndChoiceDestruct:" X "not found"),
+  (open pm_reflexivity G1 []; coq.error "iAndChoiceDestruct:" {ident->string ID} "not found"),
   coq.ltac.collect-goals Into [G2] _,
   (
     thenl [
@@ -538,20 +547,20 @@ eiAndChoiceDestruct ID OID ChooseLeft (igoal Type Proof) (igoal AndType AndProof
 
   coq.typecheck AndProof RedType ok,
   pm-reduce RedType AndType,
-  if (AndType = {{ False }}) (coq.error "iAndChoiceDestruct: " OX " not fresh") (true).
+  if (AndType = {{ False }}) (coq.error "iAndChoiceDestruct: "  {ident->string OID} " not fresh") (true).
 
 
 pred eiOrDestruct i:ident, i:ident, i:ident, i:igoal, o:igoal, o:igoal.
 eiOrDestruct HID H1ID H2ID (igoal Type Proof) (igoal OrLType OrLProof) (igoal OrRType OrRProof) :-
-  ident->term HID ID HIDT,
-  ident->term H1ID _ H1IDT,
-  ident->term H2ID _ H2IDT,
+  ident->term HID HIDT,
+  ident->term H1ID H1IDT,
+  ident->term H2ID H2IDT,
   
   (@no-tc! => coq.elaborate-skeleton {{ tac_or_destruct _ lp:HIDT _ lp:H1IDT lp:H2IDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_or_destruct _ _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ConjProof }},
   
   coq.ltac.collect-goals Lookup [G1] _,
-  (open pm_reflexivity G1 []; (open show-goal G1 _, coq.error "iOrDestruct:" ID "not found")),
+  (open pm_reflexivity G1 []; (open show-goal G1 _, coq.error "iOrDestruct:" {ident->string HID} "not found")),
   coq.ltac.collect-goals Into [G2] _,
   if-debug (coq.say "intoOr", open show-goal G2 _),
   (open tc_solve G2 []; (open show-goal G2 _, coq.say "iOrDestruct: cannot destruct")),
@@ -571,8 +580,8 @@ macro @bt-error! B :- get-option "bt-error" B.
 
 pred eiExistDestruct i:ident, i:option string, i:ident, i:igoal, i:(igoal -> prop).
 eiExistDestruct ID X HID (igoal Type Proof) C :- !,
-  ident->term ID _ IDT,
-  ident->term HID _ HIDT,
+  ident->term ID IDT,
+  ident->term HID HIDT,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_exist_destruct_without_name _ lp:IDT _ lp:HIDT _ _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_exist_destruct_without_name _ _ _ _ _ _ _ _ lp:Lookup lp:Into lp:ExistProof }},
@@ -601,7 +610,8 @@ eiExistDestruct ID X HID (igoal Type Proof) C :- !,
 
 pred eiExact i:ident, i:igoal.
 eiExact ID (igoal Type Proof) :-
-  ident->term ID IDS IDT,
+  ident->term ID IDT,
+  ident->string ID IDS,
 
   (@no-tc! => coq.elaborate-skeleton {{ tac_assumption _ lp:IDT _ _ _ _ _ _ }} Type Proof ok),
   Proof = {{ tac_assumption _ _ _ _ _ lp:Lookup lp:FromAs lp:TC }},
