@@ -9,15 +9,15 @@ From eIris.proofmode Require Export proper.
 From eIris.proofmode Require Export reduction.
 From eIris.proofmode Require Import inductiveDB.
 From eIris.proofmode Require Import base.
-From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
-From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
+From eIris.common Extra Dependency "utils.elpi" as utils.
+From eIris.common Extra Dependency "inductive_datatypes.elpi" as inductive_datatypes.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 From eIris.proofmode.elpi Extra Dependency "mk_inductive.elpi" as mkinductive.
 From eIris.proofmode.elpi Extra Dependency "inductive_rules.elpi" as inductive_rules.
 
 #[arguments(raw)] 
 Elpi Command Iris.
-Elpi Accumulate File datatypes.
+Elpi Accumulate File inductive_datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File mkinductive.

@@ -1,4 +1,4 @@
-accumulate eIris/common/stdpp.
+accumulate eIris/common/utils.
 accumulate eIris/common/parser.
 accumulate eIris/common/tokenize.
 accumulate eIris/proofmode/elpi/iris_ltac.
@@ -349,8 +349,7 @@ eiPoseHyp Hyp (igoal Type Proof) (iAnon N) (igoal PosedType PosedProof) :-
 
 
 pred eiSpecializeWand i:igoal, i:ident, o:igoal, o:igoal.
-eiSpecializeWand (igoal Type Proof) ID 
-  (igoal LType LProof) (igoal RType RProof) :-
+eiSpecializeWand (igoal Type Proof) ID (igoal LType LProof) (igoal RType RProof) :-
     ident->term ID IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
                 Type Proof ok),
