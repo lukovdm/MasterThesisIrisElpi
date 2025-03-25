@@ -1,16 +1,13 @@
 opam-version: "2.0"
-name: "eiris"
+name: "eIris"
 version: "dev"
-synopsis: "Extending the Iris Proof Mode with Inductive Predicates using Elpi"
+synopsis: ""
 description: """
-A system of commands and tactics to generate least fixpoint inductive predicates 
-in the Iris speartion logic. The project is created using the Elpi 
-meta-programming language.
 """
-maintainer: "Luko van der Maas <eiInd@luko.dev>"
-authors: "Luko van der Maas <eiInd@luko.dev>"
+maintainer: "Luko van der Maas <luko.vandermaas@ru.nl>"
+authors: "Luko van der Maas <luko.vandermaas@ru.nl>"
 license: "BSD-3-Clause"
-homepage: "https://github.com/lukovdm/MasterThesisIrisElpi"
+homepage: "https://github.com/lukovdm/MasterThesisIrisElpi/tree/ITP"
 bug-reports: "https://github.com/lukovdm/MasterThesisIrisElpi/issues"
 dev-repo: "git://github.com/lukovdm/MasterThesisIrisElpi.git"
 depends: [
