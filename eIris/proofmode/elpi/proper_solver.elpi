@@ -1,4 +1,4 @@
-accumulate eIris/common/stdpp.
+accumulate eIris/common/utils.
 accumulate eIris/proofmode/elpi/reduction.
 accumulate eIris/proofmode/elpi/iris_ltac.
 accumulate eIris/proofmode/elpi/eiris_tactics.

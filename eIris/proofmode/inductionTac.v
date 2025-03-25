@@ -8,13 +8,13 @@ From stdpp Require Import numbers.
 
 From eIris.proofmode Require Import base inductiveDB inductive.
 From eIris.proofmode Require Export reduction.
-From eIris.common Extra Dependency "datatypes.elpi" as datatypes.
+From eIris.common Extra Dependency "inductive_datatypes.elpi" as inductive_datatypes.
 From eIris.proofmode.elpi Extra Dependency "iris_ltac.elpi" as iris_ltac.
 From eIris.proofmode.elpi Extra Dependency "eiris_tactics.elpi" as eiris_tactics.
 
 
 Elpi Tactic eiInduction.
-Elpi Accumulate File datatypes.
+Elpi Accumulate File inductive_datatypes.
 Elpi Accumulate Db reduction.db.
 Elpi Accumulate Db induction.db.
 Elpi Accumulate File eiris_tactics.

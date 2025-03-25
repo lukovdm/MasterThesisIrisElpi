@@ -1,4 +1,4 @@
-accumulate eIris/common/stdpp.
+accumulate eIris/common/utils.
 accumulate eIris/common/parser.
 accumulate eIris/common/tokenize.
 accumulate eIris/proofmode/elpi/iris_ltac.
@@ -228,8 +228,7 @@ eiIntro-ident ID (igoal _ _ as H) (igoal IType IProof) :-
 eiIntro-ident ID (igoal _ _ as H) (igoal IType IProof) :-
   ident->term ID IDStr T, % data conversion
   (@no-tc! ==> refine-igoal-with {{ tac_wand_intro _ lp:T _ _ _ lp:FromWand lp:IProof }} H), 
-  coq.ltac.collect-goals FromWand [G] _,
-  open tc_solve G [], !, 
+  tc-solve-term FromWand, !, 
   coq.typecheck IProof IType' ok, % inspect subgoal
   pm-reduce IType' IType, % normalize subgoal
   if (IType = {{ False }}) (coq.error "eiIntro: " IDStr " not fresh") (true).
@@ -341,8 +340,7 @@ eiPoseHyp Hyp (igoal Type Proof) (iAnon N) (igoal PosedType PosedProof) :-
 
 
 pred eiSpecializeWand i:igoal, i:ident, o:igoal, o:igoal.
-eiSpecializeWand (igoal Type Proof) ID 
-  (igoal LType LProof) (igoal RType RProof) :-
+eiSpecializeWand (igoal Type Proof) ID (igoal LType LProof) (igoal RType RProof) :-
     ident->term ID _IDS IDT,
     (@no-tc! => coq.elaborate-skeleton {{ tac_specialize_assert_no_am _ lp:IDT _ false [] _ _ _ _ _ _ _ _ _}} 
                 Type Proof ok),

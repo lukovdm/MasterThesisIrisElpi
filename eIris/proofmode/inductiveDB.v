@@ -3,7 +3,7 @@ From iris.prelude Require Import options.
 
 
 Elpi Db induction.db lp:{{
-  accumulate eIris/common/datatypes.
+  accumulate eIris/common/inductive_datatypes.
 
   pred inductive-pre o:gref, o:gref.
   pred inductive-mono o:gref, o:gref.

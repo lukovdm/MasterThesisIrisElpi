@@ -1,10 +1,15 @@
-accumulate eIris/common/stdpp.
+accumulate eIris/common/utils.
 accumulate eIris/proofmode/elpi/reduction.
 
 shorten coq.ltac.{ open, thenl, all }.
 
 type tc_solve open-tactic.
 tc_solve G GL :- coq.ltac.call "tc_solve" [] G GL.
+
+pred tc-solve-term i:term.
+tc-solve-term P :- 
+  coq.ltac.collect-goals P [G] _,
+  open tc_solve G [].
 
 type pm_reduce open-tactic.
 pm_reduce G GL :- coq.ltac.call "pm_reduce" [] G GL.

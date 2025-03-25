@@ -2,7 +2,7 @@ import sys
 
 
 files = {
-    "Common": ["eIris/common/stdpp.elpi"],
+    "Common": ["eIris/common/utils.elpi"],
     "Iris tactics": [
         "eIris/proofmode/base.v",
         "eIris/common/parser.elpi",

@@ -1,4 +1,4 @@
-accumulate eIris/common/stdpp.
+accumulate eIris/common/utils.
 
 pred reduction-rule o:constant.
 

@@ -2,14 +2,13 @@ From elpi Require Import elpi.
 From iris.proofmode Require Export tactics coq_tactics reduction intro_patterns.
 From iris.prelude Require Import options.
 From iris.heap_lang Require Import proofmode.
-(* From eIris.proofmode Require Import split. *)
 
-From eIris.common Extra Dependency "stdpp.elpi" as stdpp.
+From eIris.common Extra Dependency "utils.elpi" as utils.
 From eIris.common Extra Dependency "tokenize.elpi" as tokenize.
 From eIris.common Extra Dependency "parser.elpi" as parser.
 
 Elpi Tactic print_args.
-Elpi Accumulate File stdpp.
+Elpi Accumulate File utils.
 Elpi Accumulate File tokenize.
 Elpi Accumulate File parser.
 Elpi Accumulate lp:{{
