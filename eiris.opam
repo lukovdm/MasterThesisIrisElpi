@@ -11,7 +11,7 @@ homepage: "https://github.com/lukovdm/MasterThesisIrisElpi/tree/ITP"
 bug-reports: "https://github.com/lukovdm/MasterThesisIrisElpi/issues"
 dev-repo: "git://github.com/lukovdm/MasterThesisIrisElpi.git"
 depends: [
-    "rocq" {= "8.20"}
+    "coq" {= "8.20.1"}
     "coq-iris" {= "4.3.0"}
     "coq-iris-heap-lang" {= "4.3.0"}
     "rocq-elpi" {= "2.5.0"}

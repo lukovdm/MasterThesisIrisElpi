@@ -27,6 +27,9 @@ eval $(opam env)
 Install the dependencies by running the following command
 
 ```bash
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add iris-dev git+https://gitlab.mpi-sws.org/iris/opam.git
+opam update
 opam install . --deps-only
 ```
 
